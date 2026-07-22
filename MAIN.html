@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="es" class="h-full">
+ <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260721-23-5f0351f"}');</script><script src="/_sdk/e358eac22bd01364.telemetry_sdk.js" integrity="sha512-KPxp3rw4K8Nu9ceWJc3gyM7srgaZxiFWOVbyu260EYzzAqdz10mfo5xyXrCx+wEKtGo77JbtmwXvFLbwrGzwvw=="></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stardust Tarot Booking</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/58fe3688b755eeb3.element_sdk.js" integrity="sha512-OMjvInGwXrNzr3Wzjbb1g4+6UqSJ6JZQ8iyW9B1TgkUVKtQQya+sYfHVDL3seI5VxPiNT5nwy1K0LUByUi9ETQ=="></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg: '#faf6f2', surface: '#f5f0eb', accent: '#a97791',
+        txt: '#32292a', txtsec: '#443f40', txtsoft: '#7a6d80'
+      },
+      fontFamily: {
+        title: ['Cormorant Garamond', 'serif'],
+        body: ['DM Sans', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+  <style>
+  html, body { height: 100%; margin: 0; }
+  .card-shadow { box-shadow: 0 0 30px rgba(169,119,145,0.15); }
+  .chip { transition: all 0.2s ease; cursor: pointer; user-select: none; }
+  .chip:hover { border-color: #a97791; }
+  .chip.active { background: #a97791; color: #fff; border-color: #a97791; }
+  .toast-enter { animation: toastIn 0.3s ease forwards; }
+  .toast-exit { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes toastOut { from { opacity:1; transform: translateY(0); } to { opacity:0; transform: translateY(-10px); } }
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  .toggle-track { width: 44px; height: 24px; border-radius: 12px; transition: background 0.2s; cursor: pointer; position: relative; }
+  .toggle-track::after { content:''; position:absolute; width:20px; height:20px; border-radius:50%; background:#fff; top:2px; left:2px; transition: transform 0.2s; }
+  .toggle-track.on { background: #a97791; }
+  .toggle-track.on::after { transform: translateX(20px); }
+  .toggle-track.off { background: #ccc; }
+  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+</style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/935a53bc2e11fb8d.data_sdk.js" type="text/javascript" integrity="sha512-qr2oyPnEys1WebcOABaRh6hG77r5PWpqeWW6JTKbRJqly/INsfBi31CVNlTmHqjgeLpkVmmHZJUdxSx/32tOFQ=="></script>
+ </head>
+ <body class="h-full bg-bg font-body text-txt overflow-auto">
+  <div id="app" class="w-full min-h-full flex flex-col items-center px-4 py-8"><!-- Header -->
+   <div class="text-center mb-6">
+    <p class="text-accent text-sm mb-3">⊹ ୨ᰔ୧ ⊹</p>
+    <h1 id="pageTitle" class="font-title text-3xl md:text-4xl font-bold text-txt">Stardust Tarot</h1>
+    <div class="flex items-center justify-center gap-2 mt-2 mb-3"><i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
+     <p class="text-txt font-medium">@thestardust.tarot</p>
+    </div>
+    <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">Agenda tu lectura personalizada. Recuerda enviar tu comprobante por mensaje directo para agendarte</p>
+   </div><!-- Progress -->
+   <div class="flex items-center gap-2 mb-6">
+    <div id="dot1" class="w-3 h-3 rounded-full bg-accent"></div>
+    <div id="bar1" class="w-8 h-0.5 bg-gray-300"></div>
+    <div id="dot2" class="w-3 h-3 rounded-full bg-gray-300"></div>
+    <div id="bar2" class="w-8 h-0.5 bg-gray-300"></div>
+    <div id="dot3" class="w-3 h-3 rounded-full bg-gray-300"></div>
+    <div id="bar3" class="w-8 h-0.5 bg-gray-300"></div>
+    <div id="dot4" class="w-3 h-3 rounded-full bg-gray-300"></div>
+   </div><!-- Steps Container -->
+   <div class="w-full max-w-lg"><!-- STEP 1 -->
+    <div id="step1" class="card-shadow bg-white rounded-2xl p-6 fade-in">
+     <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
+     <p class="text-txtsoft text-sm mb-5">¿Cómo podemos comunicarnos contigo?</p><label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label> <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition"> <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
+     <div class="grid grid-cols-2 gap-2 mb-3">
+      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp">
+       <i data-lucide="message-circle" class="w-4 h-4"></i>WhatsApp
+      </div>
+      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram">
+       <i data-lucide="send" class="w-4 h-4"></i>Telegram
+      </div>
+      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo">
+       <i data-lucide="mail" class="w-4 h-4"></i>Correo
+      </div>
+      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord">
+       <i data-lucide="hash" class="w-4 h-4"></i>Discord
+      </div>
+     </div>
+     <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p><label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label> <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition"> <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+    </div><!-- STEP 2 -->
+    <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
+     <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
+     <p class="text-txtsoft text-sm mb-5">Selecciona una o varias lecturas</p>
+     <div class="flex flex-col gap-2 mb-4" id="readingsContainer">
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="general_corta" data-price="7.50">
+       <div class="font-medium">
+        Lectura General corta
+       </div>
+       <div class="text-xs opacity-70">
+        $7.50 — 6 cartas — 10 min
+       </div>
+      </div>
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="amor_corta" data-price="7.50">
+       <div class="font-medium">
+        Amor / Relaciones corta
+       </div>
+       <div class="text-xs opacity-70">
+        $7.50 — 6 cartas — 10 min
+       </div>
+      </div>
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="trabajo_corta" data-price="7.50">
+       <div class="font-medium">
+        Trabajo / Dinero corta
+       </div>
+       <div class="text-xs opacity-70">
+        $7.50 — 6 cartas — 10 min
+       </div>
+      </div>
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="general_extensa" data-price="12.50">
+       <div class="font-medium">
+        Lectura General extensa
+       </div>
+       <div class="text-xs opacity-70">
+        $12.50 — 9 cartas — 20 min
+       </div>
+      </div>
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="especial_anio" data-price="12.50">
+       <div class="font-medium">
+        Lectura Especial Inicio de Año
+       </div>
+       <div class="text-xs opacity-70">
+        $12.50 — 9 cartas — 20 min
+       </div>
+      </div>
+     </div>
+     <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
+      <div>
+       <p class="text-sm font-medium">¿Lectura de emergencia?</p>
+       <p class="text-xs text-txtsoft">+$7.00 adicional</p>
+      </div>
+      <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+     </div><label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label> <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+     <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+     </div>
+    </div><!-- STEP 3 -->
+    <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
+     <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
+     <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p><label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label> <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
+     <p class="text-xs text-txtsoft mb-4">¿Tu lectura no la marcaste como emergencia? Agéndala dos días después de la fecha de hoy. 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
+     <div class="grid grid-cols-2 gap-2 mb-4">
+      <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)">
+       <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">4pm – 6pm</span>
+      </div>
+      <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Noche (7pm–9pm)">
+       <i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 9pm</span>
+      </div>
+     </div><label class="block text-sm font-medium text-txtsec mb-2">Método de pago</label>
+     <div class="grid grid-cols-2 gap-2 mb-5">
+      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">
+       Binance USDT
+      </div>
+      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">
+       Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span>
+      </div>
+      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">
+       PayPal<br><span class="text-xs opacity-70">+$2 comisión</span>
+      </div>
+      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">
+       Tarjeta<br>
+        Internacional
+      </div>
+     </div>
+     <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Ver Recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+     </div>
+    </div><!-- STEP 4 -->
+    <div id="step4" class="card-shadow bg-white rounded-2xl p-6 hidden">
+     <h2 class="font-title text-2xl font-semibold mb-1">Recibo y Confirmación</h2>
+     <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
+     <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3"><input type="checkbox" id="consentCheck" class="mt-1 accent-[#a97791]"> <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las condiciones del servicio de lectura de tarot.</label>
+     </div>
+     <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
+      <div class="text-center mb-3">
+       <p class="text-accent text-sm">⊹ ୨ᰔ୧ ⊹</p>
+       <p class="font-title text-lg font-semibold">The Stardust Tarot</p>
+       <p class="text-xs text-txtsoft">Comprobante de Lectura</p>
+      </div>
+      <div class="border-t border-dashed border-gray-200 my-3"></div>
+      <div id="receiptBody" class="text-sm space-y-2"></div>
+      <div class="border-t border-dashed border-gray-200 my-3"></div>
+      <div class="text-center">
+       <p class="text-xs text-txtsoft">TOTAL</p>
+       <p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p>
+      </div>
+     </div>
+     <p class="text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle screenshot a esta página y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+     <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
+     </div><!-- Options Panel -->
+     <div id="optionsPanel" class="hidden mt-4 fade-in">
+      <div class="flex flex-col gap-2"><button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button> <button onclick="copyToClipboard()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar al portapapeles</button>
+      </div>
+     </div><!-- Success -->
+     <div id="successPanel" class="hidden mt-4 fade-in text-center">
+      <div class="text-4xl mb-2">
+       ✨
+      </div>
+      <p class="font-title text-xl font-semibold mb-1">¡Listo!</p>
+      <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido procesado exitosamente</p>
+      <div class="flex gap-3"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button> <button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div><!-- Toast container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+// ── State ──
+const state = {
+  platform: '', contacto: '', nombre: '', readings: {},
+  emergency: false, fecha: '', horario: '', pago: '', detalle: ''
+};
+
+const platformHints = {
+  whatsapp: 'Ej: +58 412 1234567',
+  telegram: 'Ej: @tuusuario',
+  correo: 'Ej: correo@ejemplo.com',
+  discord: 'Ej: usuario#1234'
+};
+
+const readingNames = {
+  general_corta: 'Lectura General corta',
+  amor_corta: 'Amor / Relaciones corta',
+  trabajo_corta: 'Trabajo / Dinero corta',
+  general_extensa: 'Lectura General extensa',
+  especial_anio: 'Lectura Especial Inicio de Año'
+};
+
+// ── Platform chips ──
+document.querySelectorAll('[data-platform]').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('[data-platform]').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    state.platform = c.dataset.platform;
+    document.getElementById('platformHint').textContent = platformHints[state.platform] || '';
+    document.getElementById('inpContact').placeholder = platformHints[state.platform] || '';
+  });
+});
+
+// ── Reading chips (multi-select) ──
+document.querySelectorAll('.reading-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    c.classList.toggle('active');
+    const key = c.dataset.reading;
+    if (state.readings[key]) { delete state.readings[key]; }
+    else { state.readings[key] = parseFloat(c.dataset.price); }
+  });
+});
+
+// ── Horario chips ──
+document.querySelectorAll('.horario-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.horario-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    state.horario = c.dataset.horario;
+  });
+});
+
+// ── Pago chips ──
+document.querySelectorAll('.pago-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.pago-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    state.pago = c.dataset.pago;
+  });
+});
+
+function toggleEmergency() {
+  state.emergency = !state.emergency;
+  const t = document.getElementById('emergencyToggle');
+  t.classList.toggle('on', state.emergency);
+  t.classList.toggle('off', !state.emergency);
+  updateDateRestrictions();
+}
+
+function formatDateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function updateDateRestrictions() {
+  const input = document.getElementById('inpDate');
+  if (!input) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + (state.emergency ? 0 : 2));
+
+  input.min = formatDateValue(minDate);
+
+  if (input.value && input.value < input.min) {
+    input.value = '';
+  }
+}
+
+function calcTotal() {
+  let total = Object.values(state.readings).reduce((a, b) => a + b, 0);
+  if (state.emergency) total += 7;
+  if (state.pago === 'PayPal') total += 2;
+  return total;
+}
+
+// ── Navigation ──
+function goStep(n) {
+  // Save inputs
+  state.nombre = document.getElementById('inpName').value.trim();
+  state.contacto = document.getElementById('inpContact').value.trim();
+  state.detalle = document.getElementById('inpDetalle').value.trim();
+  state.fecha = document.getElementById('inpDate').value;
+  updateDateRestrictions();
+
+  // Validation
+  if (n === 2) {
+    if (!state.nombre) return showNotification('Ingresa tu nombre');
+    if (!state.platform) return showNotification('Selecciona una plataforma');
+    if (!state.contacto) return showNotification('Ingresa tu contacto');
+  }
+  if (n === 3) {
+    if (Object.keys(state.readings).length === 0) return showNotification('Selecciona al menos una lectura');
+  }
+  if (n === 4) {
+    if (!state.fecha) return showNotification('Selecciona una fecha');
+    if (!state.horario) return showNotification('Selecciona un horario');
+    if (!state.pago) return showNotification('Selecciona un método de pago');
+    buildReceipt();
+  }
+
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('step' + i);
+    el.classList.add('hidden');
+    el.classList.remove('fade-in');
+  });
+  const target = document.getElementById('step' + n);
+  target.classList.remove('hidden');
+  // trigger reflow for animation
+  void target.offsetWidth;
+  target.classList.add('fade-in');
+
+  // Update progress dots
+  const accentBg = 'bg-accent';
+  const grayBg = 'bg-gray-300';
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.classList.toggle(accentBg, i <= n);
+    dot.classList.toggle(grayBg, i > n);
+    if (i < 4) {
+      const bar = document.getElementById('bar' + i);
+      bar.classList.toggle(accentBg, i < n);
+      bar.classList.toggle(grayBg, i >= n);
+    }
+  }
+
+  // Reset step4 panels
+  if (n === 4) {
+    document.getElementById('preConfirmBtns').classList.remove('hidden');
+    document.getElementById('optionsPanel').classList.add('hidden');
+    document.getElementById('successPanel').classList.add('hidden');
+    document.getElementById('consentCheck').checked = false;
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => lucide.createIcons(), 50);
+}
+
+function buildReceipt() {
+  let html = '';
+  const row = (l, v) => `<div class="flex justify-between"><span class="text-txtsoft">${l}</span><span class="font-medium">${v}</span></div>`;
+  html += row('Nombre', state.nombre);
+  html += row('Plataforma', state.platform.charAt(0).toUpperCase() + state.platform.slice(1));
+  html += row('Contacto', state.contacto);
+  html += row('Fecha', state.fecha);
+  html += row('Horario', state.horario);
+  html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
+  html += '<p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-1">Lecturas</p>';
+  for (const [key, price] of Object.entries(state.readings)) {
+    html += row(readingNames[key], '$' + price.toFixed(2));
+  }
+  if (state.emergency) {
+    html += row('Emergencia', '+$7.00');
+  }
+  if (state.pago === 'PayPal') {
+    html += row('Comisión PayPal', '+$2.00');
+  }
+  html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
+  html += row('Método de pago', state.pago);
+  if (state.detalle) {
+    html += `<div class="mt-2"><span class="text-txtsoft text-xs">Detalle:</span><p class="text-sm mt-0.5">${state.detalle}</p></div>`;
+  }
+  document.getElementById('receiptBody').innerHTML = html;
+  document.getElementById('receiptTotal').textContent = '$' + calcTotal().toFixed(2);
+}
+
+function confirmReceipt() {
+  if (!document.getElementById('consentCheck').checked) {
+    return showNotification('Acepta las condiciones para continuar');
+  }
+  document.getElementById('preConfirmBtns').classList.add('hidden');
+  document.getElementById('optionsPanel').classList.remove('hidden');
+  document.getElementById('optionsPanel').classList.add('fade-in');
+}
+
+// ── Receipt text ──
+function generateReceiptText() {
+  const line = '─'.repeat(32);
+  let t = '';
+  t += '       ⊹ ୨ᰔ୧ ⊹\n';
+  t += '   The Stardust Tarot\n';
+  t += '   Comprobante de Lectura\n';
+  t += line + '\n';
+  t += `Nombre: ${state.nombre}\n`;
+  t += `Plataforma: ${state.platform}\n`;
+  t += `Contacto: ${state.contacto}\n`;
+  t += `Fecha: ${state.fecha}\n`;
+  t += `Horario: ${state.horario}\n`;
+  t += line + '\n';
+  t += 'LECTURAS:\n';
+  for (const [key, price] of Object.entries(state.readings)) {
+    t += `  • ${readingNames[key]} — $${price.toFixed(2)}\n`;
+  }
+  if (state.emergency) t += `  • Emergencia — +$7.00\n`;
+  if (state.pago === 'PayPal') t += `  • Comisión PayPal — +$2.00\n`;
+  t += line + '\n';
+  t += `Método de pago: ${state.pago}\n`;
+  if (state.detalle) t += `Detalle: ${state.detalle}\n`;
+  t += line + '\n';
+  t += `TOTAL: $${calcTotal().toFixed(2)}\n`;
+  t += '       ⊹ ୨ᰔ୧ ⊹\n';
+  return t;
+}
+
+// ── Actions ──
+function sendToContact() {
+  const text = encodeURIComponent(generateReceiptText());
+  if (state.platform === 'whatsapp') {
+    const num = state.contacto.replace(/\D/g, '');
+    window.open(`https://wa.me/${num}?text=${text}`, '_blank');
+  } else if (state.platform === 'telegram') {
+    window.open(`https://t.me/${state.contacto.replace('@','')}?text=${text}`, '_blank');
+  } else if (state.platform === 'correo') {
+    window.open(`mailto:${state.contacto}?subject=${encodeURIComponent('Recibo Stardust Tarot')}&body=${text}`, '_blank');
+  } else if (state.platform === 'discord') {
+    navigator.clipboard.writeText(generateReceiptText());
+    showNotification('Recibo copiado — pégalo en Discord');
+  }
+  showNotification('Enviado a tu contacto');
+}
+
+function sendToStardust() {
+  navigator.clipboard.writeText(generateReceiptText());
+  window.open('https://www.instagram.com/thestardust.tarot/', '_blank');
+  showNotification('Recibo copiado — pégalo en Instagram');
+}
+
+async function downloadPDF() {
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+    const w = doc.internal.pageSize.getWidth();
+    let y = 18;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(169, 119, 145);
+    doc.text('⊹ ୨ᰔ୧ ⊹', w / 2, y, { align: 'center' }); y += 7;
+
+    doc.setFontSize(18);
+    doc.setTextColor(50, 41, 42);
+    doc.text('The Stardust Tarot', w / 2, y, { align: 'center' }); y += 6;
+
+    doc.setFontSize(9);
+    doc.setTextColor(122, 109, 128);
+    doc.text('Comprobante de Lectura', w / 2, y, { align: 'center' }); y += 8;
+
+    doc.setDrawColor(200);
+    doc.setLineDashPattern([2, 2], 0);
+    doc.line(15, y, w - 15, y); y += 7;
+
+    const addRow = (label, value) => {
+      doc.setFontSize(9);
+      doc.setTextColor(122, 109, 128);
+      doc.text(label, 18, y);
+      doc.setTextColor(50, 41, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value, w - 18, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 5.5;
+    };
+
+    addRow('Nombre', state.nombre);
+    addRow('Plataforma', state.platform);
+    addRow('Contacto', state.contacto);
+    addRow('Fecha', state.fecha);
+    addRow('Horario', state.horario);
+
+    doc.line(15, y, w - 15, y); y += 6;
+    doc.setFontSize(8);
+    doc.setTextColor(122, 109, 128);
+    doc.text('LECTURAS', 18, y); y += 5;
+
+    for (const [key, price] of Object.entries(state.readings)) {
+      addRow(readingNames[key], '$' + price.toFixed(2));
+    }
+    if (state.emergency) addRow('Emergencia', '+$7.00');
+    if (state.pago === 'PayPal') addRow('Comisión PayPal', '+$2.00');
+
+    doc.line(15, y, w - 15, y); y += 6;
+    addRow('Método de pago', state.pago);
+
+    if (state.detalle) {
+      y += 2;
+      doc.setFontSize(8);
+      doc.setTextColor(122, 109, 128);
+      doc.text('Detalle:', 18, y); y += 5;
+      doc.setTextColor(50, 41, 42);
+      const lines = doc.splitTextToSize(state.detalle, w - 36);
+      doc.text(lines, 18, y); y += lines.length * 4.5;
+    }
+
+    y += 5;
+    doc.line(15, y, w - 15, y); y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(122, 109, 128);
+    doc.text('TOTAL', w / 2, y, { align: 'center' }); y += 7;
+    doc.setFontSize(22);
+    doc.setTextColor(169, 119, 145);
+    doc.setFont('helvetica', 'bold');
+    doc.text('$' + calcTotal().toFixed(2), w / 2, y, { align: 'center' });
+
+    doc.save('recibo-tarot.pdf');
+    showNotification('PDF descargado');
+  } catch (e) {
+    console.error(e);
+    showNotification('Error al generar el PDF');
+  }
+}
+
+function copyToClipboard() {
+  navigator.clipboard.writeText(generateReceiptText());
+  showNotification('Recibo copiado al portapapeles');
+}
+
+async function doAll() {
+  copyToClipboard();
+  await new Promise(r => setTimeout(r, 500));
+  sendToContact();
+  await new Promise(r => setTimeout(r, 500));
+  sendToStardust();
+  await new Promise(r => setTimeout(r, 500));
+  await downloadPDF();
+  document.getElementById('optionsPanel').classList.add('hidden');
+  document.getElementById('successPanel').classList.remove('hidden');
+  document.getElementById('successPanel').classList.add('fade-in');
+}
+
+function showOptionsAgain() {
+  document.getElementById('successPanel').classList.add('hidden');
+  document.getElementById('optionsPanel').classList.remove('hidden');
+}
+
+function resetForm() {
+  state.platform = ''; state.contacto = ''; state.nombre = '';
+  state.readings = {}; state.emergency = false;
+  state.fecha = ''; state.horario = ''; state.pago = ''; state.detalle = '';
+
+  document.getElementById('inpName').value = '';
+  document.getElementById('inpContact').value = '';
+  document.getElementById('inpDetalle').value = '';
+  document.getElementById('inpDate').value = '';
+  document.getElementById('platformHint').textContent = '';
+  document.getElementById('inpContact').placeholder = 'Selecciona una plataforma arriba';
+
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  const t = document.getElementById('emergencyToggle');
+  t.classList.remove('on'); t.classList.add('off');
+
+  goStep(1);
+}
+
+// ── Toast ──
+function showNotification(msg) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast-enter bg-white card-shadow rounded-xl px-4 py-3 text-sm text-txt flex items-center gap-2 max-w-xs';
+  toast.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-accent flex-shrink-0"></i>${msg}`;
+  container.appendChild(toast);
+  lucide.createIcons();
+  setTimeout(() => {
+    toast.classList.remove('toast-enter');
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ── Element SDK ──
+const defaultConfig = {
+  page_title: 'The Stardust Tarot',
+  ornament_text: '⊹ ୨ᰔ୧ ⊹',
+  background_color: '#faf6f2',
+  surface_color: '#f5f0eb',
+  accent_color: '#a97791',
+  text_color: '#32292a',
+  soft_color: '#7a6d80',
+  font_family: 'Cormorant Garamond',
+  font_size: 16
+};
+
+function applyConfig(config) {
+  const c = { ...defaultConfig, ...config };
+  document.getElementById('pageTitle').textContent = c.page_title;
+  document.getElementById('ornament').textContent = c.ornament_text;
+
+  document.body.style.backgroundColor = c.background_color;
+  document.documentElement.style.setProperty('--accent', c.accent_color);
+
+  // Apply accent to active chips and accent-colored elements
+  const style = document.getElementById('dynamicStyle') || (() => {
+    const s = document.createElement('style'); s.id = 'dynamicStyle';
+    document.head.appendChild(s); return s;
+  })();
+  style.textContent = `
+    .chip.active { background: ${c.accent_color} !important; border-color: ${c.accent_color} !important; }
+    .chip:hover { border-color: ${c.accent_color} !important; }
+    .toggle-track.on { background: ${c.accent_color} !important; }
+    .text-accent, #receiptTotal { color: ${c.accent_color} !important; }
+    .bg-accent { background-color: ${c.accent_color} !important; }
+    .border-accent { border-color: ${c.accent_color} !important; }
+    .bg-surface, .bg-surface\\/50 { background-color: ${c.surface_color} !important; }
+    .hover\\:bg-surface:hover { background-color: ${c.surface_color} !important; }
+    body { color: ${c.text_color}; }
+    .text-txtsoft { color: ${c.soft_color} !important; }
+  `;
+
+  const font = c.font_family || defaultConfig.font_family;
+  const baseSize = c.font_size || defaultConfig.font_size;
+  document.querySelectorAll('.font-title, h1, h2').forEach(el => {
+    el.style.fontFamily = `${font}, serif`;
+  });
+  const titleEl = document.getElementById('pageTitle');
+  if (titleEl) titleEl.style.fontSize = `${baseSize * 2}px`;
+  document.querySelectorAll('h2').forEach(el => el.style.fontSize = `${baseSize * 1.5}px`);
+}
+
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => applyConfig(config),
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+      { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+      { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+      { get: () => config.accent_color || defaultConfig.accent_color, set: v => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
+      { get: () => config.soft_color || defaultConfig.soft_color, set: v => { config.soft_color = v; window.elementSdk.setConfig({ soft_color: v }); } },
+    ],
+    borderables: [],
+    fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+    fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['page_title', config.page_title || defaultConfig.page_title],
+    ['ornament_text', config.ornament_text || defaultConfig.ornament_text],
+  ])
+});
+
+updateDateRestrictions();
+
+lucide.createIcons();
+</script>
+ </body>
+</html>
