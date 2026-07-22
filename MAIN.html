@@ -68,19 +68,19 @@ tailwind.config = {
    <div class="w-full max-w-lg"><!-- STEP 1 -->
     <div id="step1" class="card-shadow bg-white rounded-2xl p-6 fade-in">
      <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
-     <p class="text-txtsoft text-sm mb-5">¿Cómo podemos comunicarnos contigo?</p><label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label> <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition"> <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
+     <p class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p><label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label> <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition"> <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
      <div class="grid grid-cols-2 gap-2 mb-3">
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp">
-       <i data-lucide="message-circle" class="w-4 h-4"></i>WhatsApp
+       <i data-lucide="message-circle" class="w-4 h-4"></i>📱 WhatsApp
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram">
-       <i data-lucide="send" class="w-4 h-4"></i>Telegram
+       <i data-lucide="send" class="w-4 h-4"></i>📫 Telegram
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo">
-       <i data-lucide="mail" class="w-4 h-4"></i>Correo
+       <i data-lucide="mail" class="w-4 h-4"></i>💌 Correo
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord">
-       <i data-lucide="hash" class="w-4 h-4"></i>Discord
+       <i data-lucide="hash" class="w-4 h-4"></i>📮 Discord
       </div>
      </div>
      <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p><label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label> <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition"> <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
@@ -99,7 +99,7 @@ tailwind.config = {
       </div>
       <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="amor_corta" data-price="7.50">
        <div class="font-medium">
-        Amor / Relaciones corta
+        Amor & Relaciones corta
        </div>
        <div class="text-xs opacity-70">
         $7.50 — 6 cartas — 10 min
@@ -107,7 +107,7 @@ tailwind.config = {
       </div>
       <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="trabajo_corta" data-price="7.50">
        <div class="font-medium">
-        Trabajo / Dinero corta
+        Trabajo & Dinero corta
        </div>
        <div class="text-xs opacity-70">
         $7.50 — 6 cartas — 10 min
@@ -118,15 +118,15 @@ tailwind.config = {
         Lectura General extensa
        </div>
        <div class="text-xs opacity-70">
-        $12.50 — 9 cartas — 20 min
+        $12.50 — 11 cartas — 20 min
        </div>
       </div>
       <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="especial_anio" data-price="12.50">
        <div class="font-medium">
-        Lectura Especial Inicio de Año
+        Lectura Radiografía De Amor extensa
        </div>
        <div class="text-xs opacity-70">
-        $12.50 — 9 cartas — 20 min
+        $12.50 — 11 cartas — 20 min
        </div>
       </div>
      </div>
@@ -146,21 +146,22 @@ tailwind.config = {
      <p class="text-xs text-txtsoft mb-4">¿Tu lectura no la marcaste como emergencia? Agéndala dos días después de la fecha de hoy. 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
      <div class="grid grid-cols-2 gap-2 mb-4">
       <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)">
-       <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">4pm – 6pm</span>
+       <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span>
       </div>
       <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Noche (7pm–9pm)">
-       <i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 9pm</span>
+       <i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 10pm</span>
       </div>
      </div><label class="block text-sm font-medium text-txtsec mb-2">Método de pago</label>
      <div class="grid grid-cols-2 gap-2 mb-5">
       <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">
-       Binance USDT
+       Binance <br>
+        USDT 💵
       </div>
       <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">
        Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span>
       </div>
       <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">
-       PayPal<br><span class="text-xs opacity-70">+$2 comisión</span>
+       PayPal<br><span class="text-xs opacity-70">+$2.5 comisión</span>
       </div>
       <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">
        Tarjeta<br>
@@ -189,11 +190,13 @@ tailwind.config = {
        <p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p>
       </div>
      </div>
-     <p class="text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle screenshot a esta página y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+     <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle screenshot a esta página o descarga la imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
      <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
      </div><!-- Options Panel -->
      <div id="optionsPanel" class="hidden mt-4 fade-in">
-      <div class="flex flex-col gap-2"><button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button> <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button> <button onclick="copyToClipboard()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar texto del recibo</button>
+      <div class="flex flex-col gap-2">
+       <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
+       <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
       </div>
      </div><!-- Success -->
      <div id="successPanel" class="hidden mt-4 fade-in text-center">
@@ -201,8 +204,12 @@ tailwind.config = {
        ✨
       </div>
       <p class="font-title text-xl font-semibold mb-1">¡Listo!</p>
-      <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido procesado exitosamente</p>
-      <div class="flex gap-3"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button> <button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button>
+      <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido creado exitosamente</p>
+      <div class="flex flex-col gap-2 mt-2">
+       <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
+       <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
+      </div>
+      <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button> <button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button>
       </div>
      </div>
     </div>
@@ -226,10 +233,10 @@ const platformHints = {
 
 const readingNames = {
   general_corta: 'Lectura General corta',
-  amor_corta: 'Amor / Relaciones corta',
-  trabajo_corta: 'Trabajo / Dinero corta',
+  amor_corta: 'Amor & Relaciones corta',
+  trabajo_corta: 'Trabajo & Dinero corta',
   general_extensa: 'Lectura General extensa',
-  especial_anio: 'Lectura Especial Inicio de Año'
+  especial_anio: 'Lectura Radiografía De Amor'
 };
 
 // ── Platform chips ──
@@ -405,8 +412,10 @@ function confirmReceipt() {
     return showNotification('Acepta las condiciones para continuar');
   }
   document.getElementById('preConfirmBtns').classList.add('hidden');
-  document.getElementById('optionsPanel').classList.remove('hidden');
-  document.getElementById('optionsPanel').classList.add('fade-in');
+  document.getElementById('confirmHint').classList.remove('hidden');
+  document.getElementById('optionsPanel').classList.add('hidden');
+  document.getElementById('successPanel').classList.remove('hidden');
+  document.getElementById('successPanel').classList.add('fade-in');
 }
 
 // ── Receipt text ──
@@ -502,6 +511,7 @@ async function doAll() {
 function showOptionsAgain() {
   document.getElementById('successPanel').classList.add('hidden');
   document.getElementById('optionsPanel').classList.remove('hidden');
+  document.getElementById('confirmHint').classList.remove('hidden');
 }
 
 function resetForm() {
