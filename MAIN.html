@@ -193,7 +193,7 @@ tailwind.config = {
      <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
      </div><!-- Options Panel -->
      <div id="optionsPanel" class="hidden mt-4 fade-in">
-      <div class="flex flex-col gap-2"><button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button> <button onclick="copyToClipboard()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar al portapapeles</button>
+      <div class="flex flex-col gap-2"><button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button> <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button> <button onclick="copyToClipboard()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar texto del recibo</button>
       </div>
      </div><!-- Success -->
      <div id="successPanel" class="hidden mt-4 fade-in text-center">
@@ -209,7 +209,7 @@ tailwind.config = {
    </div>
   </div><!-- Toast container -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
 // ── State ──
 const state = {
@@ -461,87 +461,24 @@ function sendToStardust() {
   showNotification('Recibo copiado — pégalo en Instagram');
 }
 
-async function downloadPDF() {
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a5' });
-    const w = doc.internal.pageSize.getWidth();
-    let y = 18;
+function downloadImage() {
+  const receipt = document.getElementById('receiptCard');
+  if (!receipt) return;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(169, 119, 145);
-    doc.text('⊹ ୨ᰔ୧ ⊹', w / 2, y, { align: 'center' }); y += 7;
+  receipt.style.border = 'none';
 
-    doc.setFontSize(18);
-    doc.setTextColor(50, 41, 42);
-    doc.text('The Stardust Tarot', w / 2, y, { align: 'center' }); y += 6;
-
-    doc.setFontSize(9);
-    doc.setTextColor(122, 109, 128);
-    doc.text('Comprobante de Lectura', w / 2, y, { align: 'center' }); y += 8;
-
-    doc.setDrawColor(200);
-    doc.setLineDashPattern([2, 2], 0);
-    doc.line(15, y, w - 15, y); y += 7;
-
-    const addRow = (label, value) => {
-      doc.setFontSize(9);
-      doc.setTextColor(122, 109, 128);
-      doc.text(label, 18, y);
-      doc.setTextColor(50, 41, 42);
-      doc.setFont('helvetica', 'bold');
-      doc.text(value, w - 18, y, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-      y += 5.5;
-    };
-
-    addRow('Nombre', state.nombre);
-    addRow('Plataforma', state.platform);
-    addRow('Contacto', state.contacto);
-    addRow('Fecha', state.fecha);
-    addRow('Horario', state.horario);
-
-    doc.line(15, y, w - 15, y); y += 6;
-    doc.setFontSize(8);
-    doc.setTextColor(122, 109, 128);
-    doc.text('LECTURAS', 18, y); y += 5;
-
-    for (const [key, price] of Object.entries(state.readings)) {
-      addRow(readingNames[key], '$' + price.toFixed(2));
-    }
-    if (state.emergency) addRow('Emergencia', '+$7.00');
-    if (state.pago === 'PayPal') addRow('Comisión PayPal', '+$2.00');
-
-    doc.line(15, y, w - 15, y); y += 6;
-    addRow('Método de pago', state.pago);
-
-    if (state.detalle) {
-      y += 2;
-      doc.setFontSize(8);
-      doc.setTextColor(122, 109, 128);
-      doc.text('Detalle:', 18, y); y += 5;
-      doc.setTextColor(50, 41, 42);
-      const lines = doc.splitTextToSize(state.detalle, w - 36);
-      doc.text(lines, 18, y); y += lines.length * 4.5;
-    }
-
-    y += 5;
-    doc.line(15, y, w - 15, y); y += 8;
-    doc.setFontSize(8);
-    doc.setTextColor(122, 109, 128);
-    doc.text('TOTAL', w / 2, y, { align: 'center' }); y += 7;
-    doc.setFontSize(22);
-    doc.setTextColor(169, 119, 145);
-    doc.setFont('helvetica', 'bold');
-    doc.text('$' + calcTotal().toFixed(2), w / 2, y, { align: 'center' });
-
-    doc.save('recibo-tarot.pdf');
-    showNotification('PDF descargado');
-  } catch (e) {
-    console.error(e);
-    showNotification('Error al generar el PDF');
-  }
+  html2canvas(receipt, { backgroundColor: '#faf6f2', scale: 2 }).then(canvas => {
+    receipt.style.border = '';
+    const link = document.createElement('a');
+    link.download = 'recibo-stardust-tarot.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showNotification('Imagen descargada');
+  }).catch(err => {
+    receipt.style.border = '';
+    console.error(err);
+    showNotification('Error al generar la imagen');
+  });
 }
 
 function copyToClipboard() {
