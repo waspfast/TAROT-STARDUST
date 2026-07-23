@@ -71,16 +71,16 @@ tailwind.config = {
      <p class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p><label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label> <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition"> <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
      <div class="grid grid-cols-2 gap-2 mb-3">
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp">
-       <i data-lucide="message-circle" class="w-4 h-4"></i>📱 WhatsApp
+       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram">
-       <i data-lucide="send" class="w-4 h-4"></i>📫 Telegram
+       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo">
-       <i data-lucide="mail" class="w-4 h-4"></i>💌 Correo
+       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo
       </div>
       <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord">
-       <i data-lucide="hash" class="w-4 h-4"></i>📮 Discord
+       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord
       </div>
      </div>
      <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p><label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label> <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition"> <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
@@ -597,27 +597,32 @@ function applyConfig(config) {
   document.querySelectorAll('h2').forEach(el => el.style.fontSize = `${baseSize * 1.5}px`);
 }
 
-window.elementSdk.init({
-  defaultConfig,
-  onConfigChange: async (config) => applyConfig(config),
-  mapToCapabilities: (config) => ({
-    recolorables: [
-      { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-      { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-      { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-      { get: () => config.accent_color || defaultConfig.accent_color, set: v => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
-      { get: () => config.soft_color || defaultConfig.soft_color, set: v => { config.soft_color = v; window.elementSdk.setConfig({ soft_color: v }); } },
-    ],
-    borderables: [],
-    fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
-    fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
-  }),
-  mapToEditPanelValues: (config) => new Map([
-    ['page_title', config.page_title || defaultConfig.page_title],
-    ['ornament_text', config.ornament_text || defaultConfig.ornament_text],
-  ])
-});
+if (window.elementSdk && typeof window.elementSdk.init === 'function') {
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => applyConfig(config),
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+        { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+        { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+        { get: () => config.accent_color || defaultConfig.accent_color, set: v => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
+        { get: () => config.soft_color || defaultConfig.soft_color, set: v => { config.soft_color = v; window.elementSdk.setConfig({ soft_color: v }); } },
+      ],
+      borderables: [],
+      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ['page_title', config.page_title || defaultConfig.page_title],
+      ['ornament_text', config.ornament_text || defaultConfig.ornament_text],
+    ])
+  });
+} else {
+  console.warn('elementSdk no disponible; se continúa con la vista estática.');
+}
 
+lucide.createIcons();
 updateDateRestrictions();
 
 lucide.createIcons();
