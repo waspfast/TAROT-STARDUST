@@ -36,6 +36,10 @@ tailwind.config = {
   @keyframes toastOut { from { opacity:1; transform: translateY(0); } to { opacity:0; transform: translateY(-10px); } }
   .fade-in { animation: fadeIn 0.4s ease; }
   @keyframes fadeIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  .category-btn { transition: all 0.2s ease; cursor: pointer; user-select: none; }
+  .category-btn:hover { border-color: #a97791; background: rgba(169,119,145,0.06); transform: translateY(-1px); }
+  .category-btn.active { background: #a97791; color: #fff; border-color: #a97791; }
+  .reading-panel { animation: fadeIn 0.35s ease; }
   .toggle-track { width: 44px; height: 24px; border-radius: 12px; transition: background 0.2s; cursor: pointer; position: relative; }
   .toggle-track::after { content:''; position:absolute; width:20px; height:20px; border-radius:50%; background:#fff; top:2px; left:2px; transition: transform 0.2s; }
   .toggle-track.on { background: #a97791; }
@@ -87,48 +91,38 @@ tailwind.config = {
     </div><!-- STEP 2 -->
     <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
      <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
-     <p class="text-txtsoft text-sm mb-5">Selecciona una o varias lecturas</p>
-     <div class="flex flex-col gap-2 mb-4" id="readingsContainer">
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="general_corta" data-price="7.50">
-       <div class="font-medium">
-        Lectura General corta
-       </div>
-       <div class="text-xs opacity-70">
-        $7.50 — 6 cartas — 10 min
-       </div>
-      </div>
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="amor_corta" data-price="7.50">
-       <div class="font-medium">
-        Amor & Relaciones corta
-       </div>
-       <div class="text-xs opacity-70">
-        $7.50 — 6 cartas — 10 min
-       </div>
-      </div>
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="trabajo_corta" data-price="7.50">
-       <div class="font-medium">
-        Trabajo & Dinero corta
-       </div>
-       <div class="text-xs opacity-70">
-        $7.50 — 6 cartas — 10 min
-       </div>
-      </div>
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="general_extensa" data-price="12.50">
-       <div class="font-medium">
-        Lectura General extensa
-       </div>
-       <div class="text-xs opacity-70">
-        $12.50 — 11 cartas — 20 min
-       </div>
-      </div>
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm" data-reading="especial_anio" data-price="12.50">
-       <div class="font-medium">
-        Lectura Radiografía De Amor extensa
-       </div>
-       <div class="text-xs opacity-70">
-        $12.50 — 11 cartas — 20 min
-       </div>
-      </div>
+     <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
+     <!-- Category menu -->
+     <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
+      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor">
+       <i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>
+       Amor & Relaciones
+      </button>
+      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo">
+       <i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>
+       Trabajo
+      </button>
+      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general">
+       <i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>
+       General
+      </button>
+      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa">
+       <i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>
+       Lectura extensa
+      </button>
+     </div>
+     <!-- Readings by category -->
+     <div id="readingsPanel" class="hidden reading-panel mb-4">
+      <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition">
+       <i data-lucide="arrow-left" class="w-4 h-4"></i>
+       <span id="selectedCategoryLabel">Volver a categorías</span>
+      </button>
+      <div class="flex flex-col gap-2" id="readingsContainer"></div>
+     </div>
+     <!-- Selected readings summary -->
+     <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
+      <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
+      <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
      </div>
      <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
       <div>
@@ -221,7 +215,8 @@ tailwind.config = {
 // ── State ──
 const state = {
   platform: '', contacto: '', nombre: '', readings: {},
-  emergency: false, fecha: '', horario: '', pago: '', detalle: ''
+  emergency: false, fecha: '', horario: '', pago: '', detalle: '',
+  readingCategory: ''
 };
 
 const platformHints = {
@@ -236,10 +231,104 @@ const readingNames = {
   amor_corta: 'Amor & Relaciones corta',
   trabajo_corta: 'Trabajo & Dinero corta',
   general_extensa: 'Lectura General extensa',
-  especial_anio: 'Lectura Radiografía De Amor'
+  especial_anio: 'Lectura Radiografía De Amor extensa'
 };
 
-// ── Platform chips ──
+const categoryLabels = {
+  amor: 'Amor & Relaciones',
+  trabajo: 'Trabajo',
+  general: 'General',
+  extensa: 'Lectura extensa'
+};
+
+const readingsCatalog = [
+  { id: 'general_corta', categories: ['general'], title: 'Lectura General corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
+  { id: 'amor_corta', categories: ['amor'], title: 'Amor & Relaciones corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
+  { id: 'trabajo_corta', categories: ['trabajo'], title: 'Trabajo & Dinero corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
+  { id: 'general_extensa', categories: ['general', 'extensa'], title: 'Lectura General extensa', price: 12.50, detail: '$12.50 — 11 cartas — 20 min' },
+  { id: 'especial_anio', categories: ['amor', 'extensa'], title: 'Lectura Radiografía De Amor extensa', price: 12.50, detail: '$12.50 — 11 cartas — 20 min' }
+];
+
+function renderReadingsForCategory(category) {
+  const container = document.getElementById('readingsContainer');
+  const readings = readingsCatalog.filter(r => r.categories.includes(category));
+  container.innerHTML = readings.map(r => `
+    <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm${state.readings[r.id] ? ' active' : ''}"
+         data-reading="${r.id}" data-price="${r.price}">
+      <div class="font-medium">${r.title}</div>
+      <div class="text-xs opacity-70">${r.detail}</div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.reading-chip').forEach(c => {
+    c.addEventListener('click', () => toggleReading(c));
+  });
+}
+
+function toggleReading(chip) {
+  chip.classList.toggle('active');
+  const key = chip.dataset.reading;
+  if (state.readings[key]) delete state.readings[key];
+  else state.readings[key] = parseFloat(chip.dataset.price);
+  updateSelectedReadingsSummary();
+}
+
+function updateSelectedReadingsSummary() {
+  const summary = document.getElementById('selectedReadingsSummary');
+  const list = document.getElementById('selectedReadingsList');
+  const keys = Object.keys(state.readings);
+
+  if (keys.length === 0) {
+    summary.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  summary.classList.remove('hidden');
+  list.innerHTML = keys.map(key => `
+    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2.5 py-1 text-xs">
+      ${readingNames[key]}
+      <button type="button" class="text-txtsoft hover:text-accent transition" data-remove="${key}" aria-label="Quitar lectura">×</button>
+    </span>
+  `).join('');
+
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.remove;
+      delete state.readings[key];
+      document.querySelectorAll(`.reading-chip[data-reading="${key}"]`).forEach(c => c.classList.remove('active'));
+      updateSelectedReadingsSummary();
+    });
+  });
+}
+
+function showReadingCategory(category) {
+  state.readingCategory = category;
+  document.getElementById('categoryMenu').classList.add('hidden');
+  document.getElementById('readingsPanel').classList.remove('hidden');
+  document.getElementById('selectedCategoryLabel').textContent = categoryLabels[category];
+  document.getElementById('readingStepHint').textContent = 'Selecciona una o varias lecturas de esta categoría';
+  renderReadingsForCategory(category);
+  setTimeout(() => lucide.createIcons(), 50);
+}
+
+function backToCategories() {
+  state.readingCategory = '';
+  document.getElementById('readingsPanel').classList.add('hidden');
+  document.getElementById('categoryMenu').classList.remove('hidden');
+  document.getElementById('readingStepHint').textContent = 'Elige una categoría para ver las lecturas disponibles';
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+}
+
+document.querySelectorAll('.category-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    showReadingCategory(btn.dataset.category);
+  });
+});
+
+document.getElementById('backToCategories').addEventListener('click', backToCategories);
 document.querySelectorAll('[data-platform]').forEach(c => {
   c.addEventListener('click', () => {
     document.querySelectorAll('[data-platform]').forEach(x => x.classList.remove('active'));
@@ -250,17 +339,7 @@ document.querySelectorAll('[data-platform]').forEach(c => {
   });
 });
 
-// ── Reading chips (multi-select) ──
-document.querySelectorAll('.reading-chip').forEach(c => {
-  c.addEventListener('click', () => {
-    c.classList.toggle('active');
-    const key = c.dataset.reading;
-    if (state.readings[key]) { delete state.readings[key]; }
-    else { state.readings[key] = parseFloat(c.dataset.price); }
-  });
-});
-
-// ── Horario chips ──
+// ── Platform chips ──
 document.querySelectorAll('.horario-chip').forEach(c => {
   c.addEventListener('click', () => {
     document.querySelectorAll('.horario-chip').forEach(x => x.classList.remove('active'));
@@ -518,6 +597,7 @@ function resetForm() {
   state.platform = ''; state.contacto = ''; state.nombre = '';
   state.readings = {}; state.emergency = false;
   state.fecha = ''; state.horario = ''; state.pago = ''; state.detalle = '';
+  state.readingCategory = '';
 
   document.getElementById('inpName').value = '';
   document.getElementById('inpContact').value = '';
@@ -527,6 +607,9 @@ function resetForm() {
   document.getElementById('inpContact').placeholder = 'Selecciona una plataforma arriba';
 
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.category-btn').forEach(c => c.classList.remove('active'));
+  backToCategories();
+  updateSelectedReadingsSummary();
   const t = document.getElementById('emergencyToggle');
   t.classList.remove('on'); t.classList.add('off');
 
@@ -576,6 +659,8 @@ function applyConfig(config) {
   })();
   style.textContent = `
     .chip.active { background: ${c.accent_color} !important; border-color: ${c.accent_color} !important; }
+    .category-btn:hover { border-color: ${c.accent_color} !important; background: rgba(169,119,145,0.06) !important; }
+    .category-btn.active { background: ${c.accent_color} !important; border-color: ${c.accent_color} !important; color: #fff !important; }
     .chip:hover { border-color: ${c.accent_color} !important; }
     .toggle-track.on { background: ${c.accent_color} !important; }
     .text-accent, #receiptTotal { color: ${c.accent_color} !important; }
