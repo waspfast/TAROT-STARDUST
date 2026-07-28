@@ -269,8 +269,14 @@ function renderReadingsForCategory(category) {
 function toggleReading(chip) {
   chip.classList.toggle('active');
   const key = chip.dataset.reading;
-  if (state.readings[key]) delete state.readings[key];
-  else state.readings[key] = parseFloat(chip.dataset.price);
+
+  if (state.readings[key]) {
+    delete state.readings[key];
+  } else {
+    state.readings[key] = parseFloat(chip.dataset.price);
+  }
+
+  backToCategories();
   updateSelectedReadingsSummary();
 }
 
