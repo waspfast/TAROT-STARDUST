@@ -250,6 +250,29 @@ const readingsCatalog = [
   { id: 'especial_anio', categories: ['amor', 'extensa'], title: 'Lectura Radiografía De Amor extensa', price: 12.50, detail: '$12.50 — 11 cartas — 20 min' }
 ];
 
+// Replace this with your Cloudflare Worker URL
+const WORKER_URL = 'https://stardustworker.and-gab-riv.workers.dev/';
+
+function enviarNotificacionRecibo() {
+  try {
+    const datosRecibo = getReceiptDataForNotification();
+
+    fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datosRecibo)
+    })
+    .then(res => res.json())
+    .then(data => console.log('Notificación enviada:', data))
+    .catch(err => console.error('Error enviando notificación:', err));
+
+  } catch (err) {
+    console.error('Error preparando envío:', err);
+  }
+}
+
 function renderReadingsForCategory(category) {
   const container = document.getElementById('readingsContainer');
   const readings = readingsCatalog.filter(r => r.categories.includes(category));
@@ -493,8 +516,7 @@ function buildReceipt() {
   document.getElementById('receiptTotal').textContent = '$' + calcTotal().toFixed(2);
 }
 
-const TELEGRAM_BOT_TOKEN = '1234567890:ABCDEF1234567890abcdef1234567890';
-const TELEGRAM_CHAT_ID = '123456789';
+const WORKER_URL = 'https://stardustworker.and-gab-riv.workers.dev/'; 
 
 function getReceiptDataForNotification() {
   const lecturas = Object.keys(state.readings).length
@@ -515,41 +537,23 @@ function getReceiptDataForNotification() {
   };
 }
 
-function buildTelegramMessage(data) {
-  return [
-    '🔔 *Nuevo comprobante confirmado*',
-    '',
-    `👤 Cliente: ${data.usuario}`,
-    `📱 Contacto: ${data.plataforma} — ${data.contacto}`,
-    `📅 Fecha: ${data.fecha}`,
-    `🕒 Horario: ${data.horario}`,
-    `💳 Método de pago: ${data.metodo_pago}`,
-    `💰 Total: ${data.total}`,
-    `📖 Lecturas: ${data.lecturas}`,
-    `⚠️ Emergencia: ${data.emergencia}`,
-    data.detalle ? `📝 Detalle: ${data.detalle}` : '',
-    '',
-    '✅ Revisa el panel para gestionar la reserva.'
-  ].filter(Boolean).join('\n');
-}
-
 function enviarNotificacionRecibo() {
   try {
     const datosRecibo = getReceiptDataForNotification();
-    const mensaje = buildTelegramMessage(datosRecibo);
 
-    const params = new URLSearchParams({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: mensaje,
-      parse_mode: 'Markdown'
-    });
+    fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datosRecibo)
+    })
+    .then(res => res.json())
+    .then(data => console.log('Notificación enviada:', data))
+    .catch(err => console.error('Error enviando notificación:', err));
 
-    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?${params.toString()}`, {
-      method: 'GET',
-      mode: 'no-cors'
-    }).catch(() => {});
   } catch (err) {
-    console.error('Error preparando Telegram:', err);
+    console.error('Error preparando envío:', err);
   }
 }
 
