@@ -251,7 +251,7 @@ const readingsCatalog = [
 ];
 
 // Replace this with your Cloudflare Worker URL
-const WORKER_URL = 'https://stardustworker.and-gab-riv.workers.dev/';
+const WORKER_URL = 'https://tarotstardust.pages.dev/';
 
 function enviarNotificacionRecibo() {
   try {
@@ -514,47 +514,6 @@ function buildReceipt() {
   }
   document.getElementById('receiptBody').innerHTML = html;
   document.getElementById('receiptTotal').textContent = '$' + calcTotal().toFixed(2);
-}
-
-const WORKER_URL = 'https://tarotstardust.pages.dev/'; 
-
-function getReceiptDataForNotification() {
-  const lecturas = Object.keys(state.readings).length
-    ? Object.keys(state.readings).map(key => readingNames[key] || key).join(', ')
-    : 'Sin lectura seleccionada';
-
-  return {
-    usuario: state.nombre || 'Sin nombre',
-    plataforma: state.platform || 'Sin plataforma',
-    contacto: state.contacto || 'Sin contacto',
-    fecha: state.fecha || 'Sin fecha',
-    horario: state.horario || 'Sin horario',
-    metodo_pago: state.pago || 'Sin método',
-    total: `$${calcTotal().toFixed(2)}`,
-    lecturas,
-    detalle: state.detalle || 'Sin detalle',
-    emergencia: state.emergency ? 'Sí' : 'No'
-  };
-}
-
-function enviarNotificacionRecibo() {
-  try {
-    const datosRecibo = getReceiptDataForNotification();
-
-    fetch(WORKER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(datosRecibo)
-    })
-    .then(res => res.json())
-    .then(data => console.log('Notificación enviada:', data))
-    .catch(err => console.error('Error enviando notificación:', err));
-
-  } catch (err) {
-    console.error('Error preparando envío:', err);
-  }
 }
 
 function confirmReceipt() {
