@@ -155,12 +155,12 @@ tailwind.config = {
   <div class="stars-bg" aria-hidden="true"></div>
    <div id="app" class="w-full min-h-full flex flex-col items-center px-4 py-8"><!-- Header -->
     <div id="brandHeader" class="text-center mb-6 hidden">
-     <p class="text-accent text-sm mb-3">⊹ ୨ᰔ୧ ⊹</p>
+     <p class="text-accent text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
      <h1 id="pageTitle" class="font-title text-3xl md:text-4xl font-bold text-txt">Stardust Tarot</h1>
      <div class="flex items-center justify-center gap-2 mt-2 mb-3"><i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
       <p class="text-txt font-medium">@thestardust.tarot</p>
      </div>
-     <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">Agenda tu lectura personalizada. Recuerda enviar tu comprobante por mensaje directo para agendarte</p>
+     <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">reserva tu lectura de tarot en pocos pasos!<br> elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por DM ✦</p>
     </div><!-- Progress -->
     <div id="progressBar" class="flex items-center gap-2 mb-6">
      <div id="dot1" class="w-3 h-3 rounded-full bg-accent"></div>
@@ -173,12 +173,12 @@ tailwind.config = {
     </div><!-- Steps Container -->
     <div class="w-full max-w-lg"><!-- STEP 0 -->
      <div id="step0" class="card-shadow bg-white rounded-2xl p-8 fade-in text-center">
-      <p class="text-accent text-sm mb-4">⊹ ୨ᰔ୧ ⊹</p>
-      <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>aquí agendas tu lectura de tarot</h2><p class="text-2xl text-accent/60 mb-4">✦</p>
+      <p class="text-accent text-sm mb-4">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+      <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>tu lectura de tarot<br>empieza aquí </h2><p class="text-2xl text-accent/60 mb-4">✦</p>
       <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
       <p class="text-txtsoft/50 mb-8 tracking-widest"></p>
       <div class="flex flex-col gap-3 max-w-xs mx-auto">
-       <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez</button>
+       <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
        <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
       </div>
       <p class="about-link text-center mt-6">
@@ -265,7 +265,7 @@ tailwind.config = {
      <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
      <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
      <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p><label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label> <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
-     <p class="text-xs text-txtsoft mb-4">Si quieres la lectura el mismo día, recuerda seleccionar "lectura de emergencia" 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
+     <p class="text-xs text-txtsoft mb-4">Si quieres la lectura para el día de hoy o mañana, recuerda seleccionar "lectura de emergencia" 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
      <div class="grid grid-cols-2 gap-2 mb-4">
       <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)">
        <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span>
@@ -316,7 +316,7 @@ tailwind.config = {
        <p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p>
       </div>
      </div>
-      <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle screenshot a esta página o descarga la imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+      <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
       <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
       </div><!-- Loading Panel -->
       <div id="loadingPanel" class="hidden mt-4 fade-in text-center">
@@ -590,7 +590,7 @@ function updateDateRestrictions() {
 }
 
 function showAbout() {
-  showNotification('Stardust Tarot — lecturas personalizadas de tarot. Conecta con tu intuición. ✨');
+  showNotification('stardust tarot — son lecturas de tarot conscientes, sin predicciones ni respuestas absolutas. un espacio para ver tu situación desde otro ángulo y tomar tus propias decisiones ✨');
 }
 
 function welcomeAction(tipo) {
