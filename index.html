@@ -174,9 +174,8 @@ tailwind.config = {
     <div class="w-full max-w-lg"><!-- STEP 0 -->
      <div id="step0" class="card-shadow bg-white rounded-2xl p-8 fade-in text-center">
       <p class="text-accent text-sm mb-4">⊹ ୨ᰔ୧ ⊹</p>
-      <h2 class="font-title text-3xl md:text-4xl italic font-bold text-txt mb-4">bienvenida a stardust tarot, aquí puedes agendar tu lectura ♥</h2>
-      <p class="text-2xl text-accent/60 mb-4">✦</p>
-      <p class="font-title text-lg italic text-txtsoft mb-8">recuerda que las cartas no deciden por ti, solo iluminan lo que ya sabes</p>
+      <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>aquí agendas tu lectura de tarot</h2><p class="text-2xl text-accent/60 mb-4">✦</p>
+      <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
       <p class="text-txtsoft/50 mb-8 tracking-widest"></p>
       <div class="flex flex-col gap-3 max-w-xs mx-auto">
        <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez</button>
@@ -266,7 +265,7 @@ tailwind.config = {
      <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
      <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
      <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p><label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label> <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
-     <p class="text-xs text-txtsoft mb-4">¿Tu lectura no la marcaste como emergencia? Agéndala dos días después de la fecha de hoy. 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
+     <p class="text-xs text-txtsoft mb-4">Si quieres la lectura el mismo día, recuerda seleccionar "lectura de emergencia" 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
      <div class="grid grid-cols-2 gap-2 mb-4">
       <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)">
        <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span>
