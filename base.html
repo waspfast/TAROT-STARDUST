@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stardust Tarot Booking</title>
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- Header -->
+    <div id="brandHeader">
+      <p>⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+      <img src="BRAND/LOGO.PNG.png" alt="Stardust Tarot">
+      <div>
+        <p>@thestardust.tarot</p>
+      </div>
+      <p>reserva tu lectura de tarot en pocos pasos! elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por DM ✦</p>
+    </div>
+
+    <!-- Progress -->
+    <div id="progressBar">
+      <div id="dot1"></div>
+      <div id="bar1"></div>
+      <div id="dot2"></div>
+      <div id="bar2"></div>
+      <div id="dot3"></div>
+      <div id="bar3"></div>
+      <div id="dot4"></div>
+    </div>
+
+    <!-- Steps Container -->
+    <div>
+
+      <!-- STEP 0 - Bienvenida -->
+      <div id="step0">
+        <p>⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <img src="BRAND/LOGO.PNG.png" alt="Stardust Tarot">
+        <h2>bienvenida, tu lectura de tarot empieza aquí</h2>
+        <p>✦</p>
+        <p>luz para lo que ya sabes, pero aún no ves</p>
+        <div>
+          <button>primera vez ♡</button>
+          <button>ya he tenido una lectura</button>
+        </div>
+        <p>¿qué es Stardust Tarot? · políticas y condiciones</p>
+      </div>
+
+      <!-- STEP 1 - Contacto -->
+      <div id="step1">
+        <h2>Datos de Contacto</h2>
+        <p>¿Cómo puedo comunicarme contigo?</p>
+        <label>Nombre y Apellido</label>
+        <input type="text" placeholder="Tu nombre completo">
+        <div>
+          <label>Plataforma de contacto</label>
+          <div>
+            <div>WhatsApp</div>
+            <div>Telegram</div>
+            <div>Correo</div>
+            <div>Discord</div>
+          </div>
+          <label>Usuario, correo o número</label>
+          <input type="text" placeholder="Selecciona una plataforma arriba">
+        </div>
+        <button>Siguiente</button>
+        <p>¿qué es Stardust Tarot? · políticas y condiciones</p>
+      </div>
+
+      <!-- STEP 2 - Lectura -->
+      <div id="step2">
+        <h2>Tipo de Lectura</h2>
+        <p>Elige una categoría para ver las lecturas disponibles</p>
+        <div>
+          <div>Amor & Relaciones</div>
+          <div>Trabajo</div>
+          <div>General</div>
+          <div>Lectura extensa</div>
+        </div>
+        <div>
+          <p>Lecturas seleccionadas</p>
+        </div>
+        <div>
+          <div><p>¿Lectura de emergencia?</p><p>+$7.00 adicional</p></div>
+        </div>
+        <label>Detalle de tu consulta</label>
+        <textarea rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..."></textarea>
+        <div>
+          <button>Atrás</button>
+          <button>Siguiente</button>
+        </div>
+        <p>¿qué es Stardust Tarot? · políticas y condiciones</p>
+      </div>
+
+      <!-- STEP 3 - Fecha, Horario y Pago -->
+      <div id="step3">
+        <h2>Fecha, Horario y Pago</h2>
+        <p>Elige cuándo y cómo pagar</p>
+        <label>Fecha de la lectura</label>
+        <input type="date">
+        <p>Si quieres la lectura para el día de hoy o mañana, recuerda seleccionar "lectura de emergencia" 🤍</p>
+        <label>Horario</label>
+        <div>
+          <div>Tarde (4pm–6pm)</div>
+          <div>Noche (7pm–9pm)</div>
+        </div>
+        <label>Método de pago</label>
+        <div>
+          <div>Binance USDT 💵</div>
+          <div>Pago Móvil (tasa BCV)</div>
+          <div>PayPal (+$2.5 comisión)</div>
+          <div>Tarjeta Internacional</div>
+        </div>
+        <div>
+          <div>
+            <p>🧾 Transferencia por Binance Pay</p>
+            <p>Transfiere el monto exacto a este correo de Binance:</p>
+            <p>andreagonzalez2218@gmail.com</p>
+            <label>Número de referencia</label>
+            <input type="text" placeholder="Ej: 123456789">
+            <label>Correo electrónico (de quien pagó)</label>
+            <input type="email" placeholder="tucorreo@ejemplo.com">
+          </div>
+          <div>
+            <p>📱 Pago Móvil (tasa BCV)</p>
+            <label>Banco destino</label>
+            <select>
+              <option>Selecciona un banco</option>
+              <option>Banco de Venezuela</option>
+              <option>Banesco</option>
+              <option>Mercantil</option>
+              <option>Provincial</option>
+              <option>BOD</option>
+              <option>Bancaribe</option>
+              <option>Banco Nacional de Crédito (BNC)</option>
+              <option>Banplus</option>
+              <option>Banco Plaza</option>
+              <option>Banco Exterior</option>
+              <option>Banco Occidental de Descuento (BOD)</option>
+              <option>Banco del Tesoro</option>
+              <option>Banco Venezolano de Crédito</option>
+              <option>Banco Sofitasa</option>
+              <option>Banco Activo</option>
+            </select>
+            <label>Número de teléfono (de quien pagó)</label>
+            <input type="tel" placeholder="0412 123 4567">
+            <label>Número de referencia</label>
+            <input type="text" placeholder="Ej: 123456789">
+          </div>
+          <div>
+            <p>💳 PayPal (+$2.50 comisión)</p>
+            <p>Se añaden $2.50 por comisión de PayPal al total. Haz clic en el botón para pagar:</p>
+            <a href="https://paypal.me/aggrx" target="_blank" rel="noopener noreferrer">Pagar con PayPal →</a>
+            <label>Número de referencia</label>
+            <input type="text" placeholder="Ej: 123456789">
+          </div>
+          <div>
+            <p>💳 Tarjeta Internacional</p>
+            <p>Próximamente disponible</p>
+          </div>
+        </div>
+        <div>
+          <button>Atrás</button>
+          <button>Ver Recibo</button>
+        </div>
+        <p>¿qué es Stardust Tarot? · políticas y condiciones</p>
+      </div>
+
+      <!-- STEP 4 - Recibo -->
+      <div id="step4">
+        <h2>Recibo y Confirmación</h2>
+        <p>Revisa los datos antes de confirmar</p>
+        <div>
+          <input type="checkbox" id="consentCheck">
+          <label for="consentCheck">Confirmo que los datos proporcionados son correctos y acepto las políticas y condiciones del servicio de lectura de tarot.</label>
+        </div>
+        <div>
+          <div>
+            <p>⊹ ୨ᰔ୧ ⊹</p>
+            <p>Stardust Tarot</p>
+            <p>Comprobante de Lectura</p>
+          </div>
+          <div></div>
+          <div>
+            <p>TOTAL</p>
+            <p>$0.00</p>
+          </div>
+        </div>
+        <p>Hazle captura de pantalla o descarga esta imagen y envíalo por DM a @thestardust.tarot</p>
+        <div>
+          <button>Atrás</button>
+          <button>Confirmar</button>
+        </div>
+        <div>
+          <p>Enviando confirmación…</p>
+        </div>
+        <div>
+          <div>
+            <button>Descargar imagen</button>
+            <button>Enviar a @thestardust.tarot</button>
+            <button>Atrás</button>
+          </div>
+        </div>
+        <div>
+          <p>✨</p>
+          <p>¡Listo!</p>
+          <p>Tu recibo ha sido creado exitosamente</p>
+          <div>
+            <button>Descargar imagen</button>
+            <button>Enviar a @thestardust.tarot</button>
+          </div>
+          <div>
+            <button>Volver a comprobantes</button>
+            <button>Agendar otra</button>
+          </div>
+        </div>
+        <p>¿qué es Stardust Tarot? · políticas y condiciones</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
