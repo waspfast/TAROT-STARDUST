@@ -15,7 +15,9 @@ function validateStep3() {
 }
 
 function validateStep4Payment() {
-  state.payRef = (document.getElementById('payRefBinance')?.value || '').trim();
+  state.payRef = state.pago === 'Pago Móvil'
+    ? (document.getElementById('payRefPM')?.value || '').trim()
+    : (document.getElementById('payRefBinance')?.value || '').trim();
   state.payEmail = (document.getElementById('payEmailBinance')?.value || '').trim();
   state.payBanco = document.getElementById('payBancoDestino')?.value || '';
   state.payTelefono = (document.getElementById('payTelefono')?.value || '').trim();

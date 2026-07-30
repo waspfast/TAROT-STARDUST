@@ -2,3 +2,11 @@
 html, body { height: 100%; margin: 0; }
 body { box-sizing: border-box; }
 .card-shadow { box-shadow: 0 0 30px rgba(169,119,145,0.15); }
+
+/* Input focus glow */
+input:focus, textarea:focus, select:focus {
+  border-color: #a97791;
+  box-shadow: 0 0 0 3px rgba(169, 119, 145, 0.12);
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
