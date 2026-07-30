@@ -1,0 +1,4 @@
+/* ── base.css — Reset, html/body, tipografía base ── */
+html, body { height: 100%; margin: 0; }
+body { box-sizing: border-box; }
+.card-shadow { box-shadow: 0 0 30px rgba(169,119,145,0.15); }

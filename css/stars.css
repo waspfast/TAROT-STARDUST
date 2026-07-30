@@ -1,0 +1,50 @@
+/* ── stars.css — Fondo de estrellas titilantes ── */
+.stars-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.stars-bg::before,
+.stars-bg::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  animation: sparkle 4s ease-in-out infinite alternate;
+}
+.stars-bg::before {
+  opacity: 0.5;
+  box-shadow:
+    10vw 20vh #c9a87c, 70vw 80vh #a97791, 45vw 15vh #b8a9c9,
+    85vw 40vh #c9a87c, 30vw 90vh #d4a0b0, 65vw 55vh #a0a0a0,
+    5vw 70vh #c9a87c, 50vw 5vh #b8a9c9, 95vw 75vh #a97791,
+    20vw 35vh #d4a0b0, 75vw 25vh #c9a87c, 40vw 85vh #b8a9c9,
+    15vw 60vh #a0a0a0, 90vw 10vh #a97791, 55vw 45vh #c9a87c,
+    80vw 95vh #d4a0b0, 25vw 15vh #b8a9c9, 60vw 65vh #a97791,
+    10vw 30vh #c9a87c, 35vw 50vh #a0a0a0, 70vw 5vh #d4a0b0,
+    15vw 80vh #c9a87c, 95vw 45vh #b8a9c9, 30vw 70vh #a97791,
+    65vw 30vh #d4a0b0;
+}
+.stars-bg::after {
+  animation-delay: -2s;
+  opacity: 0.6;
+  box-shadow:
+    18vw 82vh #b8a9c9, 68vw 18vh #d4a0b0, 52vw 72vh #a97791,
+    8vw 38vh #c9a87c, 92vw 62vh #a0a0a0, 42vw 28vh #b8a9c9,
+    78vw 8vh #d4a0b0, 22vw 92vh #a97791, 88vw 52vh #c9a87c,
+    12vw 12vh #b8a9c9, 58vw 48vh #d4a0b0, 32vw 32vh #a0a0a0,
+    72vw 88vh #c9a87c, 2vw 58vh #a97791, 98vw 28vh #b8a9c9,
+    48vw 98vh #d4a0b0, 28vw 68vh #c9a87c, 82vw 42vh #a0a0a0,
+    38vw 58vh #a97791, 62vw 22vh #b8a9c9, 14vw 78vh #d4a0b0,
+    94vw 18vh #c9a87c, 54vw 38vh #a97791, 24vw 84vh #b8a9c9,
+    74vw 54vh #d4a0b0, 44vw 14vh #c9a87c, 6vw 94vh #a0a0a0,
+    84vw 74vh #a97791, 34vw 44vh #b8a9c9, 66vw 34vh #d4a0b0;
+}
+@keyframes sparkle {
+  0%   { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 0.8; transform: scale(1.1); }
+}

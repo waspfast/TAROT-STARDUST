@@ -1,973 +1,245 @@
 <!doctype html>
 <html lang="es" class="h-full">
- <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260721-23-5f0351f"}');</script><script src="/_sdk/e358eac22bd01364.telemetry_sdk.js" integrity="sha512-KPxp3rw4K8Nu9ceWJc3gyM7srgaZxiFWOVbyu260EYzzAqdz10mfo5xyXrCx+wEKtGo77JbtmwXvFLbwrGzwvw=="></script>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stardust Tarot Booking</title>
+  <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/58fe3688b755eeb3.element_sdk.js" integrity="sha512-OMjvInGwXrNzr3Wzjbb1g4+6UqSJ6JZQ8iyW9B1TgkUVKtQQya+sYfHVDL3seI5VxPiNT5nwy1K0LUByUi9ETQ=="></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        bg: '#faf6f2', surface: '#f5f0eb', accent: '#a97791',
-        txt: '#32292a', txtsec: '#443f40', txtsoft: '#7a6d80'
-      },
-      fontFamily: {
-        title: ['Cormorant Garamond', 'serif'],
-        body: ['DM Sans', 'sans-serif']
-      }
-    }
-  }
-}
-</script>
-  <style>
-    /* Estrellas de fondo titilantes */
-.stars-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: transparent;
-  overflow: hidden;
-}
-/* Estrellas de fondo visibles sobre fondo claro */
-.stars-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: transparent;
-  overflow: hidden;
-}
-
-.stars-bg::before,
-.stars-bg::after {
-  content: "";
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  animation: sparkle 4s ease-in-out infinite alternate;
-}
-
-/* Capa 1 – estrellas más grandes y doradas/rosadas */
-.stars-bg::before {
-  opacity: 0.5;
-  box-shadow:
-    10vw 20vh #c9a87c,   /* dorado suave */
-    70vw 80vh #a97791,   /* acento rosa */
-    45vw 15vh #b8a9c9,   /* lavanda */
-    85vw 40vh #c9a87c,
-    30vw 90vh #d4a0b0,   /* rosa empolvado */
-    65vw 55vh #a0a0a0,   /* gris medio */
-    5vw 70vh #c9a87c,
-    50vw 5vh #b8a9c9,
-    95vw 75vh #a97791,
-    20vw 35vh #d4a0b0,
-    75vw 25vh #c9a87c,
-    40vw 85vh #b8a9c9,
-    15vw 60vh #a0a0a0,
-    90vw 10vh #a97791,
-    55vw 45vh #c9a87c,
-    80vw 95vh #d4a0b0,
-    25vw 15vh #b8a9c9,
-    60vw 65vh #a97791,
-    10vw 30vh #c9a87c,
-    35vw 50vh #a0a0a0,
-    70vw 5vh #d4a0b0,
-    15vw 80vh #c9a87c,
-    95vw 45vh #b8a9c9,
-    30vw 70vh #a97791,
-    65vw 30vh #d4a0b0;
-}
-
-/* Capa 2 – un poco más pequeñas y con otros tonos */
-.stars-bg::after {
-  animation-delay: -2s;
-  opacity: 0.6;
-  box-shadow:
-    18vw 82vh #b8a9c9,
-    68vw 18vh #d4a0b0,
-    52vw 72vh #a97791,
-    8vw 38vh #c9a87c,
-    92vw 62vh #a0a0a0,
-    42vw 28vh #b8a9c9,
-    78vw 8vh #d4a0b0,
-    22vw 92vh #a97791,
-    88vw 52vh #c9a87c,
-    12vw 12vh #b8a9c9,
-    58vw 48vh #d4a0b0,
-    32vw 32vh #a0a0a0,
-    72vw 88vh #c9a87c,
-    2vw 58vh #a97791,
-    98vw 28vh #b8a9c9,
-    48vw 98vh #d4a0b0,
-    28vw 68vh #c9a87c,
-    82vw 42vh #a0a0a0,
-    38vw 58vh #a97791,
-    62vw 22vh #b8a9c9,
-    14vw 78vh #d4a0b0,
-    94vw 18vh #c9a87c,
-    54vw 38vh #a97791,
-    24vw 84vh #b8a9c9,
-    74vw 54vh #d4a0b0,
-    44vw 14vh #c9a87c,
-    6vw 94vh #a0a0a0,
-    84vw 74vh #a97791,
-    34vw 44vh #b8a9c9,
-    66vw 34vh #d4a0b0;
-}
-
-@keyframes sparkle {
-  0%   { opacity: 0.3; transform: scale(0.8); }
-  100% { opacity: 0.8; transform: scale(1.1); }
-}
-  html, body { height: 100%; margin: 0; }
-  .card-shadow { box-shadow: 0 0 30px rgba(169,119,145,0.15); }
-  .chip { transition: all 0.2s ease; cursor: pointer; user-select: none; }
-  .chip:hover { border-color: #a97791; }
-  .chip.active { background: #a97791; color: #fff; border-color: #a97791; }
-  .toast-enter { animation: toastIn 0.3s ease forwards; }
-  .toast-exit { animation: toastOut 0.3s ease forwards; }
-  @keyframes toastIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
-  @keyframes toastOut { from { opacity:1; transform: translateY(0); } to { opacity:0; transform: translateY(-10px); } }
-  .fade-in { animation: fadeIn 0.4s ease; }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
-  .category-btn { transition: all 0.2s ease; cursor: pointer; user-select: none; }
-  .category-btn:hover { border-color: #a97791; background: rgba(169,119,145,0.06); transform: translateY(-1px); }
-  .category-btn.active { background: #a97791; color: #fff; border-color: #a97791; }
-  .reading-panel { animation: fadeIn 0.35s ease; }
-  .toggle-track { width: 44px; height: 24px; border-radius: 12px; transition: background 0.2s; cursor: pointer; position: relative; }
-  .toggle-track::after { content:''; position:absolute; width:20px; height:20px; border-radius:50%; background:#fff; top:2px; left:2px; transition: transform 0.2s; }
-  .toggle-track.on { background: #a97791; }
-  .toggle-track.on::after { transform: translateX(20px); }
-  .toggle-track.off { background: #ccc; }
-  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
-</style>
-  <style>body { box-sizing: border-box; }</style>
-  <script src="/_sdk/935a53bc2e11fb8d.data_sdk.js" type="text/javascript" integrity="sha512-qr2oyPnEys1WebcOABaRh6hG77r5PWpqeWW6JTKbRJqly/INsfBi31CVNlTmHqjgeLpkVmmHZJUdxSx/32tOFQ=="></script>
- </head>
- <body class="h-full bg-bg font-body text-txt overflow-auto">
-  <div class="stars-bg" aria-hidden="true"></div>
-   <div id="app" class="w-full min-h-full flex flex-col items-center px-4 py-8"><!-- Header -->
-    <div id="brandHeader" class="text-center mb-6 hidden">
-     <p class="text-accent text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
-     <h1 id="pageTitle" class="font-title text-3xl md:text-4xl font-bold text-txt">Stardust Tarot</h1>
-     <div class="flex items-center justify-center gap-2 mt-2 mb-3"><i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
-      <p class="text-txt font-medium">@thestardust.tarot</p>
-     </div>
-     <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">reserva tu lectura de tarot en pocos pasos!<br> elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por DM ✦</p>
-    </div><!-- Progress -->
-    <div id="progressBar" class="flex items-center gap-2 mb-6">
-     <div id="dot1" class="w-3 h-3 rounded-full bg-accent"></div>
-     <div id="bar1" class="w-8 h-0.5 bg-gray-300"></div>
-     <div id="dot2" class="w-3 h-3 rounded-full bg-gray-300"></div>
-     <div id="bar2" class="w-8 h-0.5 bg-gray-300"></div>
-     <div id="dot3" class="w-3 h-3 rounded-full bg-gray-300"></div>
-     <div id="bar3" class="w-8 h-0.5 bg-gray-300"></div>
-     <div id="dot4" class="w-3 h-3 rounded-full bg-gray-300"></div>
-    </div><!-- Steps Container -->
-    <div class="w-full max-w-lg"><!-- STEP 0 -->
-     <div id="step0" class="card-shadow bg-white rounded-2xl p-8 fade-in text-center">
-      <p class="text-accent text-sm mb-4">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
-      <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>tu lectura de tarot<br>empieza aquí </h2><p class="text-2xl text-accent/60 mb-4">✦</p>
-      <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
-      <p class="text-txtsoft/50 mb-8 tracking-widest"></p>
-      <div class="flex flex-col gap-3 max-w-xs mx-auto">
-       <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
-       <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
-      </div>
-      <p class="about-link text-center mt-6">
-        <button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button>
-      </p>
-     </div>
-     <!-- STEP 1 -->
-     <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
-     <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
-     <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p><label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label> <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition">
-     <div id="contactExtras">
-     <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
-     <div class="grid grid-cols-2 gap-2 mb-3">
-      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp">
-       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp
-      </div>
-      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram">
-       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram
-      </div>
-      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo">
-       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo
-      </div>
-      <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord">
-       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord
-      </div>
-     </div>
-      <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p><label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label> <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
-     </div>
-      <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-      <p class="about-link text-center mt-6">
-        <button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button>
-      </p>
-     </div>
-     <!-- STEP 2 -->
-     <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
-     <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
-     <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
-     <!-- Category menu -->
-     <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
-      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor">
-       <i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>
-       Amor & Relaciones
-      </button>
-      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo">
-       <i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>
-       Trabajo
-      </button>
-      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general">
-       <i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>
-       General
-      </button>
-      <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa">
-       <i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>
-       Lectura extensa
-      </button>
-     </div>
-     <!-- Readings by category -->
-     <div id="readingsPanel" class="hidden reading-panel mb-4">
-      <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition">
-       <i data-lucide="arrow-left" class="w-4 h-4"></i>
-       <span id="selectedCategoryLabel">Volver a categorías</span>
-      </button>
-      <div class="flex flex-col gap-2" id="readingsContainer"></div>
-     </div>
-     <!-- Selected readings summary -->
-     <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
-      <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
-      <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
-     </div>
-     <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-      <div>
-       <p class="text-sm font-medium">¿Lectura de emergencia?</p>
-       <p class="text-xs text-txtsoft">+$7.00 adicional</p>
-      </div>
-      <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-     </div><label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label> <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
-     <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-     </div>
-      <p class="about-link text-center mt-6">
-        <button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button>
-      </p>
-     </div>
-     <!-- STEP 3 -->
-     <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
-     <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
-     <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p><label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label> <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
-     <p class="text-xs text-txtsoft mb-4">Si quieres la lectura para el día de hoy o mañana, recuerda seleccionar "lectura de emergencia" 🤍</p><label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
-     <div class="grid grid-cols-2 gap-2 mb-4">
-      <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)">
-       <i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span>
-      </div>
-      <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Noche (7pm–9pm)">
-       <i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 10pm</span>
-      </div>
-     </div><label class="block text-sm font-medium text-txtsec mb-2">Método de pago</label>
-     <div class="grid grid-cols-2 gap-2 mb-5">
-      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">
-       Binance <br>
-        USDT 💵
-      </div>
-      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">
-       Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span>
-      </div>
-      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">
-       PayPal<br><span class="text-xs opacity-70">+$2.5 comisión</span>
-      </div>
-      <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">
-       Tarjeta<br>
-        Internacional
-      </div>
-     </div>
-     <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Ver Recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-     </div>
-      <p class="about-link text-center mt-6">
-        <button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button>
-      </p>
-     </div>
-     <!-- STEP 4 -->
-     <div id="step4" class="card-shadow bg-white rounded-2xl p-6 hidden">
-     <h2 class="font-title text-2xl font-semibold mb-1">Recibo y Confirmación</h2>
-     <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
-     <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3"><input type="checkbox" id="consentCheck" class="mt-1 accent-[#a97791]"> <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las condiciones del servicio de lectura de tarot.</label>
-     </div>
-     <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
-      <div class="text-center mb-3">
-       <p class="text-accent text-sm">⊹ ୨ᰔ୧ ⊹</p>
-       <p class="font-title text-lg font-semibold">The Stardust Tarot</p>
-       <p class="text-xs text-txtsoft">Comprobante de Lectura</p>
-      </div>
-      <div class="border-t border-dashed border-gray-200 my-3"></div>
-      <div id="receiptBody" class="text-sm space-y-2"></div>
-      <div class="border-t border-dashed border-gray-200 my-3"></div>
-      <div class="text-center">
-       <p class="text-xs text-txtsoft">TOTAL</p>
-       <p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p>
-      </div>
-     </div>
-      <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
-      <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button> <button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
-      </div><!-- Loading Panel -->
-      <div id="loadingPanel" class="hidden mt-4 fade-in text-center">
-       <div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-accent rounded-full animate-spin mb-4"></div>
-       <p class="text-sm text-txtsoft">Enviando confirmación…</p>
-      </div><!-- Options Panel -->
-     <div id="optionsPanel" class="hidden mt-4 fade-in">
-      <div class="flex flex-col gap-2">
-       <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
-       <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
-       <button onclick="goStep(3)" class="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button>
-      </div>
-     </div><!-- Success -->
-     <div id="successPanel" class="hidden mt-4 fade-in text-center">
-      <div class="text-4xl mb-2">
-       ✨
-      </div>
-      <p class="font-title text-xl font-semibold mb-1">¡Listo!</p>
-      <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido creado exitosamente</p>
-      <div class="flex flex-col gap-2 mt-2">
-       <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
-       <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
-      </div>
-      <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button> <button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button>
-      </div>
-     </div>
-      <p class="about-link text-center mt-6">
-        <button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button>
-      </p>
-     </div>
-    </div><!-- Toast container -->
-  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script>
-// ── State ──
-const state = {
-  esConsultanteNueva: null, // 'nueva' | 'frecuente' | null
-  platform: '', contacto: '', nombre: '', readings: {},
-  emergency: false, fecha: '', horario: '', pago: '', detalle: '',
-  readingCategory: ''
-};
-
-const platformHints = {
-  whatsapp: 'Ej: +58 412 1234567',
-  telegram: 'Ej: @tuusuario',
-  correo: 'Ej: correo@ejemplo.com',
-  discord: 'Ej: usuario#1234'
-};
-
-const readingNames = {
-  general_corta: 'Lectura General corta',
-  amor_corta: 'Amor & Relaciones corta',
-  trabajo_corta: 'Trabajo & Dinero corta',
-  general_extensa: 'Lectura General extensa',
-  especial_anio: 'Lectura Radiografía De Amor extensa'
-};
-
-const categoryLabels = {
-  amor: 'Amor & Relaciones',
-  trabajo: 'Trabajo',
-  general: 'General',
-  extensa: 'Lectura extensa'
-};
-
-const readingsCatalog = [
-  { id: 'general_corta', categories: ['general'], title: 'Lectura General corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
-  { id: 'amor_corta', categories: ['amor'], title: 'Amor & Relaciones corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
-  { id: 'trabajo_corta', categories: ['trabajo'], title: 'Trabajo & Dinero corta', price: 7.50, detail: '$7.50 — 6 cartas — 10 min' },
-  { id: 'general_extensa', categories: ['general', 'extensa'], title: 'Lectura General extensa', price: 12.50, detail: '$12.50 — 11 cartas — 20 min' },
-  { id: 'especial_anio', categories: ['amor', 'extensa'], title: 'Lectura Radiografía De Amor extensa', price: 12.50, detail: '$12.50 — 11 cartas — 20 min' }
-];
-
-// Replace this with your Cloudflare Worker URL
-const WORKER_URL = 'https://stardustworker.and-gab-riv.workers.dev/';
-
-function getReceiptDataForNotification() {
-  const lecturas = Object.keys(state.readings).length
-    ? Object.keys(state.readings).map(key => readingNames[key] || key).join(', ')
-    : 'Sin lectura seleccionada';
-
-  return {
-    usuario: state.nombre || 'Sin nombre',
-    plataforma: state.platform || 'Sin plataforma',
-    contacto: state.contacto || 'Sin contacto',
-    fecha: state.fecha || 'Sin fecha',
-    horario: state.horario || 'Sin horario',
-    metodo_pago: state.pago || 'Sin método',
-    total: `$${calcTotal().toFixed(2)}`,
-    lecturas,
-    detalle: state.detalle || 'Sin detalle',
-    emergencia: state.emergency ? 'Sí' : 'No'
+  tailwind.config = {
+    theme: { extend: {
+      colors: { bg: '#faf6f2', surface: '#f5f0eb', accent: '#a97791', txt: '#32292a', txtsec: '#443f40', txtsoft: '#7a6d80' },
+      fontFamily: { title: ['Cormorant Garamond', 'serif'], body: ['DM Sans', 'sans-serif'] }
+    } }
   };
-}
+  </script>
+  <!-- Third-party libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Local CSS -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/stars.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body class="h-full bg-bg font-body text-txt overflow-auto">
+  <div class="stars-bg" aria-hidden="true"></div>
+  <div id="app" class="w-full min-h-full flex flex-col items-center px-4 py-8">
 
-async function enviarNotificacionRecibo() {
-  try {
-    const datosRecibo = getReceiptDataForNotification();
-    console.log('Enviando al worker:', datosRecibo);
-
-    const response = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datosRecibo)
-    });
-
-    const text = await response.text();
-    console.log('Status del worker:', response.status);
-    console.log('Respuesta del worker:', text);
-
-    let data = {};
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {}
-
-    if (!response.ok) {
-      console.error('Worker respondió con error:', data);
-      return false;
-    }
-
-    return true;
-  } catch (err) {
-    console.error('Error enviando notificación:', err);
-    return false;
-  }
-}
-
-function renderReadingsForCategory(category) {
-  const container = document.getElementById('readingsContainer');
-  const readings = readingsCatalog.filter(r => r.categories.includes(category));
-  container.innerHTML = readings.map(r => `
-    <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm${state.readings[r.id] ? ' active' : ''}"
-         data-reading="${r.id}" data-price="${r.price}">
-      <div class="font-medium">${r.title}</div>
-      <div class="text-xs opacity-70">${r.detail}</div>
+    <!-- Header -->
+    <div id="brandHeader" class="text-center mb-6 hidden">
+      <p class="text-accent text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+      <h1 id="pageTitle" class="font-title text-3xl md:text-4xl font-bold text-txt">Stardust Tarot</h1>
+      <div class="flex items-center justify-center gap-2 mt-2 mb-3">
+        <i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
+        <p class="text-txt font-medium">@thestardust.tarot</p>
+      </div>
+      <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">reserva tu lectura de tarot en pocos pasos!<br> elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por DM ✦</p>
     </div>
-  `).join('');
 
-  container.querySelectorAll('.reading-chip').forEach(c => {
-    c.addEventListener('click', () => toggleReading(c));
-  });
-}
+    <!-- Progress -->
+    <div id="progressBar" class="flex items-center gap-2 mb-6">
+      <div id="dot1" class="w-3 h-3 rounded-full bg-accent"></div>
+      <div id="bar1" class="w-8 h-0.5 bg-gray-300"></div>
+      <div id="dot2" class="w-3 h-3 rounded-full bg-gray-300"></div>
+      <div id="bar2" class="w-8 h-0.5 bg-gray-300"></div>
+      <div id="dot3" class="w-3 h-3 rounded-full bg-gray-300"></div>
+      <div id="bar3" class="w-8 h-0.5 bg-gray-300"></div>
+      <div id="dot4" class="w-3 h-3 rounded-full bg-gray-300"></div>
+    </div>
 
-function toggleReading(chip) {
-  chip.classList.toggle('active');
-  const key = chip.dataset.reading;
+    <!-- Steps Container -->
+    <div class="w-full max-w-lg">
 
-  if (state.readings[key]) {
-    delete state.readings[key];
-  } else {
-    state.readings[key] = parseFloat(chip.dataset.price);
-  }
+      <!-- STEP 0 - Bienvenida -->
+      <div id="step0" class="card-shadow bg-white rounded-2xl p-8 fade-in text-center">
+        <p class="text-accent text-sm mb-4">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>tu lectura de tarot<br>empieza aquí</h2>
+        <p class="text-2xl text-accent/60 mb-4">✦</p>
+        <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
+        <div class="flex flex-col gap-3 max-w-xs mx-auto">
+          <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
+          <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
+        </div>
+        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+      </div>
 
-  backToCategories();
-  updateSelectedReadingsSummary();
-}
+      <!-- STEP 1 - Contacto -->
+      <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
+        <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
+        <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p>
+        <label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label>
+        <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition">
+        <div id="contactExtras">
+          <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp</div>
+            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram</div>
+            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo</div>
+            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord</div>
+          </div>
+          <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p>
+          <label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label>
+          <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
+        </div>
+        <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+      </div>
 
-function updateSelectedReadingsSummary() {
-  const summary = document.getElementById('selectedReadingsSummary');
-  const list = document.getElementById('selectedReadingsList');
-  const keys = Object.keys(state.readings);
+      <!-- STEP 2 - Lectura -->
+      <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
+        <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
+        <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
+        <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>Amor & Relaciones</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>Trabajo</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>General</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa"><i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>Lectura extensa</button>
+        </div>
+        <div id="readingsPanel" class="hidden reading-panel mb-4">
+          <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span id="selectedCategoryLabel">Volver a categorías</span></button>
+          <div class="flex flex-col gap-2" id="readingsContainer"></div>
+        </div>
+        <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
+          <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
+          <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
+          <div><p class="text-sm font-medium">¿Lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
+        <label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label>
+        <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+      </div>
 
-  if (keys.length === 0) {
-    summary.classList.add('hidden');
-    list.innerHTML = '';
-    return;
-  }
+      <!-- STEP 3 - Fecha, Horario y Pago -->
+      <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
+        <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
+        <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p>
+        <label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label>
+        <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
+        <p class="text-xs text-txtsoft mb-4">Si quieres la lectura para el día de hoy o mañana, recuerda seleccionar "lectura de emergencia" 🤍</p>
+        <label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
+          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Noche (7pm–9pm)"><i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 10pm</span></div>
+        </div>
+        <label class="block text-sm font-medium text-txtsec mb-2">Método de pago</label>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">Binance <br>USDT 💵</div>
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span></div>
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">PayPal<br><span class="text-xs opacity-70">+$2.5 comisión</span></div>
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">Tarjeta<br>Internacional</div>
+        </div>
+        <!-- Payment Details Panels -->
+        <div id="paymentDetailsPanel" class="hidden mb-5 fade-in">
+          <div id="detalleBinance" class="payment-detail hidden">
+            <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
+              <p class="text-sm font-medium text-txtsec">🧾 Transferencia por Binance Pay</p>
+              <p class="text-xs text-txtsoft">Transfiere el monto exacto a este correo de Binance:</p>
+              <div class="bg-white rounded-lg px-3 py-2 text-sm font-mono text-accent border border-gray-200 select-all">andreagonzalez2218@gmail.com</div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefBinance" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Correo electrónico (de quien pagó)</label><input id="payEmailBinance" type="email" placeholder="tucorreo@ejemplo.com" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+            </div>
+          </div>
+          <div id="detallePagoMovil" class="payment-detail hidden">
+            <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
+              <p class="text-sm font-medium text-txtsec">📱 Pago Móvil (tasa BCV)</p>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Banco destino</label>
+                <select id="payBancoDestino" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition bg-white">
+                  <option value="">Selecciona un banco</option>
+                  <option value="Banco de Venezuela">Banco de Venezuela</option><option value="Banesco">Banesco</option><option value="Mercantil">Mercantil</option><option value="Provincial">Provincial</option><option value="BOD">BOD</option><option value="Bancaribe">Bancaribe</option>
+                  <option value="Banco Nacional de Crédito">Banco Nacional de Crédito (BNC)</option><option value="Banplus">Banplus</option><option value="Banco Plaza">Banco Plaza</option><option value="Banco Exterior">Banco Exterior</option>
+                  <option value="Banco Occidental de Descuento">Banco Occidental de Descuento (BOD)</option><option value="Banco del Tesoro">Banco del Tesoro</option><option value="Banco Venezolano de Crédito">Banco Venezolano de Crédito</option>
+                  <option value="Banco Sofitasa">Banco Sofitasa</option><option value="Banco Activo">Banco Activo</option>
+                </select>
+              </div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de teléfono (de quien pagó)</label><input id="payTelefono" type="tel" placeholder="0412 123 4567" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefPM" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+            </div>
+          </div>
+          <div id="detallePayPal" class="payment-detail hidden">
+            <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
+              <p class="text-sm font-medium text-txtsec">💳 PayPal (+$2.50 comisión)</p>
+              <p class="text-xs text-txtsoft">Se añaden $2.50 por comisión de PayPal al total. Haz clic en el botón para pagar:</p>
+              <a href="https://paypal.me/aggrx" target="_blank" rel="noopener noreferrer" class="block w-full bg-[#0070ba] text-white rounded-xl py-2.5 text-sm font-medium text-center hover:opacity-90 transition">Pagar con PayPal →</a>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefPayPal" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+            </div>
+          </div>
+          <div id="detalleTarjeta" class="payment-detail hidden">
+            <div class="bg-surface rounded-xl px-4 py-4 text-center"><p class="text-sm font-medium text-txtsec">💳 Tarjeta Internacional</p><p class="text-xs text-txtsoft mt-2">Próximamente disponible</p></div>
+          </div>
+        </div>
+        <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Ver Recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+      </div>
 
-  summary.classList.remove('hidden');
-  list.innerHTML = keys.map(key => `
-    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2.5 py-1 text-xs">
-      ${readingNames[key]}
-      <button type="button" class="text-txtsoft hover:text-accent transition" data-remove="${key}" aria-label="Quitar lectura">×</button>
-    </span>
-  `).join('');
+      <!-- STEP 4 - Recibo -->
+      <div id="step4" class="card-shadow bg-white rounded-2xl p-6 hidden">
+        <h2 class="font-title text-2xl font-semibold mb-1">Recibo y Confirmación</h2>
+        <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
+        <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3">
+          <input type="checkbox" id="consentCheck" class="mt-1 accent-[#a97791]">
+          <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las condiciones del servicio de lectura de tarot.</label>
+        </div>
+        <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
+          <div class="text-center mb-3"><p class="text-accent text-sm">⊹ ୨ᰔ୧ ⊹</p><p class="font-title text-lg font-semibold">The Stardust Tarot</p><p class="text-xs text-txtsoft">Comprobante de Lectura</p></div>
+          <div class="border-t border-dashed border-gray-200 my-3"></div>
+          <div id="receiptBody" class="text-sm space-y-2"></div>
+          <div class="border-t border-dashed border-gray-200 my-3"></div>
+          <div class="text-center"><p class="text-xs text-txtsoft">TOTAL</p><p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p></div>
+        </div>
+        <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+        <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button></div>
+        <div id="loadingPanel" class="hidden mt-4 fade-in text-center"><div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-accent rounded-full animate-spin mb-4"></div><p class="text-sm text-txtsoft">Enviando confirmación…</p></div>
+        <div id="optionsPanel" class="hidden mt-4 fade-in">
+          <div class="flex flex-col gap-2">
+            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
+            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
+            <button onclick="goStep(3)" class="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button>
+          </div>
+        </div>
+        <div id="successPanel" class="hidden mt-4 fade-in text-center">
+          <div class="text-4xl mb-2">✨</div>
+          <p class="font-title text-xl font-semibold mb-1">¡Listo!</p>
+          <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido creado exitosamente</p>
+          <div class="flex flex-col gap-2 mt-2">
+            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
+            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
+          </div>
+          <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button><button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button></div>
+        </div>
+        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+      </div>
 
-  list.querySelectorAll('[data-remove]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.remove;
-      delete state.readings[key];
-      document.querySelectorAll(`.reading-chip[data-reading="${key}"]`).forEach(c => c.classList.remove('active'));
-      updateSelectedReadingsSummary();
-    });
-  });
-}
+    </div><!-- /Steps Container -->
 
-function showReadingCategory(category) {
-  state.readingCategory = category;
-  document.getElementById('categoryMenu').classList.add('hidden');
-  document.getElementById('readingsPanel').classList.remove('hidden');
-  document.getElementById('selectedCategoryLabel').textContent = categoryLabels[category];
-  document.getElementById('readingStepHint').textContent = 'Selecciona una o varias lecturas de esta categoría';
-  renderReadingsForCategory(category);
-  setTimeout(() => lucide.createIcons(), 50);
-}
+    <!-- Toast -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
-function backToCategories() {
-  state.readingCategory = '';
-  document.getElementById('readingsPanel').classList.add('hidden');
-  document.getElementById('categoryMenu').classList.remove('hidden');
-  document.getElementById('readingStepHint').textContent = 'Elige una categoría para ver las lecturas disponibles';
-  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-}
+  </div><!-- /app -->
 
-document.querySelectorAll('.category-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    showReadingCategory(btn.dataset.category);
-  });
-});
-
-document.getElementById('backToCategories').addEventListener('click', backToCategories);
-document.querySelectorAll('[data-platform]').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('[data-platform]').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    state.platform = c.dataset.platform;
-    document.getElementById('platformHint').textContent = platformHints[state.platform] || '';
-    document.getElementById('inpContact').placeholder = platformHints[state.platform] || '';
-  });
-});
-
-// ── Platform chips ──
-document.querySelectorAll('.horario-chip').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('.horario-chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    state.horario = c.dataset.horario;
-  });
-});
-
-// ── Pago chips ──
-document.querySelectorAll('.pago-chip').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('.pago-chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    state.pago = c.dataset.pago;
-  });
-});
-
-function toggleEmergency() {
-  state.emergency = !state.emergency;
-  const t = document.getElementById('emergencyToggle');
-  t.classList.toggle('on', state.emergency);
-  t.classList.toggle('off', !state.emergency);
-  updateDateRestrictions();
-}
-
-function formatDateValue(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function updateDateRestrictions() {
-  const input = document.getElementById('inpDate');
-  if (!input) return;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const minDate = new Date(today);
-  minDate.setDate(today.getDate() + (state.emergency ? 0 : 2));
-
-  input.min = formatDateValue(minDate);
-
-  if (input.value && input.value < input.min) {
-    input.value = '';
-  }
-}
-
-function showAbout() {
-  showNotification('stardust tarot — son lecturas de tarot conscientes, sin predicciones ni respuestas absolutas. un espacio para ver tu situación desde otro ángulo y tomar tus propias decisiones ✨');
-}
-
-function welcomeAction(tipo) {
-  state.esConsultanteNueva = (tipo === 'nueva');
-  goStep(1);
-}
-
-function calcTotal() {
-  let total = Object.values(state.readings).reduce((a, b) => a + b, 0);
-  if (state.emergency) total += 7;
-  if (state.pago === 'PayPal') total += 2;
-  return total;
-}
-
-// ── Navigation ──
-function goStep(n) {
-  // Toggle brand header visibility (hidden for step 0)
-  const brandHeader = document.getElementById('brandHeader');
-  // Toggle progress bar visibility (hidden for step 0)
-  const progressBar = document.getElementById('progressBar');
-  if (n === 0) {
-    brandHeader.classList.add('hidden');
-    progressBar.classList.add('hidden');
-  } else {
-    brandHeader.classList.remove('hidden');
-    progressBar.classList.remove('hidden');
-    // Save inputs for non-step-0 navigation
-    state.nombre = document.getElementById('inpName').value.trim();
-    state.contacto = document.getElementById('inpContact').value.trim();
-    state.detalle = document.getElementById('inpDetalle').value.trim();
-    state.fecha = document.getElementById('inpDate').value;
-    updateDateRestrictions();
-  }
-
-  // Step 1: adapt for returning users (solo nombre)
-  if (n === 1) {
-    const extras = document.getElementById('contactExtras');
-    const subtitle = document.getElementById('contactSubtitle');
-    if (state.esConsultanteNueva === false) {
-      extras.classList.add('hidden');
-      subtitle.textContent = 'solo necesito tu nombre';
-    } else {
-      extras.classList.remove('hidden');
-      subtitle.textContent = '¿Cómo puedo comunicarme contigo?';
-    }
-  }
-
-  // Validation (only for n >= 2)
-  if (n === 2) {
-    if (!state.nombre) return showNotification('Ingresa tu nombre');
-    if (state.esConsultanteNueva !== false) {
-      if (!state.platform) return showNotification('Selecciona una plataforma');
-      if (!state.contacto) return showNotification('Ingresa tu contacto');
-    }
-  }
-  if (n === 3) {
-    if (Object.keys(state.readings).length === 0) return showNotification('Selecciona al menos una lectura');
-  }
-  if (n === 4) {
-    if (!state.fecha) return showNotification('Selecciona una fecha');
-    if (!state.horario) return showNotification('Selecciona un horario');
-    if (!state.pago) return showNotification('Selecciona un método de pago');
-    buildReceipt();
-  }
-
-  // Hide all steps (0-4)
-  [0,1,2,3,4].forEach(i => {
-    const el = document.getElementById('step' + i);
-    if (el) {
-      el.classList.add('hidden');
-      el.classList.remove('fade-in');
-    }
-  });
-  const target = document.getElementById('step' + n);
-  target.classList.remove('hidden');
-  // trigger reflow for animation
-  void target.offsetWidth;
-  target.classList.add('fade-in');
-
-  // Update progress dots (only for n >= 1)
-  if (n >= 1) {
-    const accentBg = 'bg-accent';
-    const grayBg = 'bg-gray-300';
-    for (let i = 1; i <= 4; i++) {
-      const dot = document.getElementById('dot' + i);
-      dot.classList.toggle(accentBg, i <= n);
-      dot.classList.toggle(grayBg, i > n);
-      if (i < 4) {
-        const bar = document.getElementById('bar' + i);
-        bar.classList.toggle(accentBg, i < n);
-        bar.classList.toggle(grayBg, i >= n);
-      }
-    }
-  }
-
-  // Reset step4 panels
-  if (n === 4) {
-    document.getElementById('preConfirmBtns').classList.remove('hidden');
-    document.getElementById('loadingPanel').classList.add('hidden');
-    document.getElementById('optionsPanel').classList.add('hidden');
-    document.getElementById('successPanel').classList.add('hidden');
-    document.getElementById('consentCheck').checked = false;
-  }
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  setTimeout(() => lucide.createIcons(), 50);
-}
-
-function buildReceipt() {
-  let html = '';
-  const row = (l, v) => `<div class="flex justify-between"><span class="text-txtsoft">${l}</span><span class="font-medium">${v}</span></div>`;
-  html += row('Nombre', state.nombre);
-  html += row('Plataforma', state.platform.charAt(0).toUpperCase() + state.platform.slice(1));
-  html += row('Contacto', state.contacto);
-  html += row('Fecha', state.fecha);
-  html += row('Horario', state.horario);
-  html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
-  html += '<p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-1">Lecturas</p>';
-  for (const [key, price] of Object.entries(state.readings)) {
-    html += row(readingNames[key], '$' + price.toFixed(2));
-  }
-  if (state.emergency) {
-    html += row('Emergencia', '+$7.00');
-  }
-  if (state.pago === 'PayPal') {
-    html += row('Comisión PayPal', '+$2.00');
-  }
-  html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
-  html += row('Método de pago', state.pago);
-  if (state.detalle) {
-    html += `<div class="mt-2"><span class="text-txtsoft text-xs">Detalle:</span><p class="text-sm mt-0.5">${state.detalle}</p></div>`;
-  }
-  document.getElementById('receiptBody').innerHTML = html;
-  document.getElementById('receiptTotal').textContent = '$' + calcTotal().toFixed(2);
-}
-
-async function confirmReceipt() {
-  if (!document.getElementById('consentCheck').checked) {
-    return showNotification('Acepta las condiciones para continuar');
-  }
-
-  // Ocultar botones, mostrar loading
-  document.getElementById('preConfirmBtns').classList.add('hidden');
-  document.getElementById('loadingPanel').classList.remove('hidden');
-
-  const ok = await enviarNotificacionRecibo();
-
-  // Ocultar loading
-  document.getElementById('loadingPanel').classList.add('hidden');
-
-  if (!ok) {
-    document.getElementById('preConfirmBtns').classList.remove('hidden');
-    return showNotification('No se pudo enviar la confirmación. Intenta de nuevo.');
-  }
-
-  // Éxito: mostrar hint y success
-  document.getElementById('confirmHint').classList.remove('hidden');
-  document.getElementById('successPanel').classList.remove('hidden');
-  document.getElementById('successPanel').classList.add('fade-in');
-}
-
-// ── Receipt text ──
-function generateReceiptText() {
-  const line = '─'.repeat(32);
-  let t = '';
-  t += '       ⊹ ୨ᰔ୧ ⊹\n';
-  t += '   The Stardust Tarot\n';
-  t += '   Comprobante de Lectura\n';
-  t += line + '\n';
-  t += `Nombre: ${state.nombre}\n`;
-  t += `Plataforma: ${state.platform}\n`;
-  t += `Contacto: ${state.contacto}\n`;
-  t += `Fecha: ${state.fecha}\n`;
-  t += `Horario: ${state.horario}\n`;
-  t += line + '\n';
-  t += 'LECTURAS:\n';
-  for (const [key, price] of Object.entries(state.readings)) {
-    t += `  • ${readingNames[key]} — $${price.toFixed(2)}\n`;
-  }
-  if (state.emergency) t += `  • Emergencia — +$7.00\n`;
-  if (state.pago === 'PayPal') t += `  • Comisión PayPal — +$2.00\n`;
-  t += line + '\n';
-  t += `Método de pago: ${state.pago}\n`;
-  if (state.detalle) t += `Detalle: ${state.detalle}\n`;
-  t += line + '\n';
-  t += `TOTAL: $${calcTotal().toFixed(2)}\n`;
-  t += '       ⊹ ୨ᰔ୧ ⊹\n';
-  return t;
-}
-
-// ── Actions ──
-function sendToContact() {
-  const text = encodeURIComponent(generateReceiptText());
-  if (state.platform === 'whatsapp') {
-    const num = state.contacto.replace(/\D/g, '');
-    window.open(`https://wa.me/${num}?text=${text}`, '_blank');
-  } else if (state.platform === 'telegram') {
-    window.open(`https://t.me/${state.contacto.replace('@','')}?text=${text}`, '_blank');
-  } else if (state.platform === 'correo') {
-    window.open(`mailto:${state.contacto}?subject=${encodeURIComponent('Recibo Stardust Tarot')}&body=${text}`, '_blank');
-  } else if (state.platform === 'discord') {
-    navigator.clipboard.writeText(generateReceiptText());
-    showNotification('Recibo copiado — pégalo en Discord');
-  }
-  showNotification('Enviado a tu contacto');
-}
-
-function sendToStardust() {
-  navigator.clipboard.writeText(generateReceiptText());
-  window.open('https://www.instagram.com/thestardust.tarot/', '_blank');
-  showNotification('Recibo copiado — pégalo en Instagram');
-}
-
-function downloadImage() {
-  const receipt = document.getElementById('receiptCard');
-  if (!receipt) return;
-
-  receipt.style.border = 'none';
-
-  html2canvas(receipt, { backgroundColor: '#faf6f2', scale: 2 }).then(canvas => {
-    receipt.style.border = '';
-    const link = document.createElement('a');
-    link.download = 'recibo-stardust-tarot.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showNotification('Imagen descargada');
-  }).catch(err => {
-    receipt.style.border = '';
-    console.error(err);
-    showNotification('Error al generar la imagen');
-  });
-}
-
-function copyToClipboard() {
-  navigator.clipboard.writeText(generateReceiptText());
-  showNotification('Recibo copiado al portapapeles');
-}
-
-async function doAll() {
-  copyToClipboard();
-  await new Promise(r => setTimeout(r, 500));
-  sendToContact();
-  await new Promise(r => setTimeout(r, 500));
-  sendToStardust();
-  await new Promise(r => setTimeout(r, 500));
-  await downloadPDF();
-  document.getElementById('optionsPanel').classList.add('hidden');
-  document.getElementById('successPanel').classList.remove('hidden');
-  document.getElementById('successPanel').classList.add('fade-in');
-}
-
-function showOptionsAgain() {
-  document.getElementById('successPanel').classList.add('hidden');
-  document.getElementById('optionsPanel').classList.remove('hidden');
-  document.getElementById('confirmHint').classList.remove('hidden');
-}
-
-function resetForm() {
-  state.esConsultanteNueva = null;
-  state.platform = ''; state.contacto = ''; state.nombre = '';
-  state.readings = {}; state.emergency = false;
-  state.fecha = ''; state.horario = ''; state.pago = ''; state.detalle = '';
-  state.readingCategory = '';
-
-  document.getElementById('inpName').value = '';
-  document.getElementById('inpContact').value = '';
-  document.getElementById('inpDetalle').value = '';
-  document.getElementById('inpDate').value = '';
-  document.getElementById('platformHint').textContent = '';
-  document.getElementById('inpContact').placeholder = 'Selecciona una plataforma arriba';
-
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll('.category-btn').forEach(c => c.classList.remove('active'));
-  backToCategories();
-  updateSelectedReadingsSummary();
-  const t = document.getElementById('emergencyToggle');
-  t.classList.remove('on'); t.classList.add('off');
-
-  goStep(0);
-}
-
-// ── Toast ──
-function showNotification(msg) {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = 'toast-enter bg-white card-shadow rounded-xl px-4 py-3 text-sm text-txt flex items-center gap-2 max-w-xs';
-  toast.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-accent flex-shrink-0"></i>${msg}`;
-  container.appendChild(toast);
-  lucide.createIcons();
-  setTimeout(() => {
-    toast.classList.remove('toast-enter');
-    toast.classList.add('toast-exit');
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-// ── Element SDK ──
-const defaultConfig = {
-  page_title: 'The Stardust Tarot',
-  ornament_text: '⊹ ୨ᰔ୧ ⊹',
-  background_color: '#faf6f2',
-  surface_color: '#f5f0eb',
-  accent_color: '#a97791',
-  text_color: '#32292a',
-  soft_color: '#7a6d80',
-  font_family: 'Cormorant Garamond',
-  font_size: 16
-};
-
-function applyConfig(config) {
-  const c = { ...defaultConfig, ...config };
-  document.getElementById('pageTitle').textContent = c.page_title;
-  document.getElementById('ornament').textContent = c.ornament_text;
-
-  document.body.style.backgroundColor = c.background_color;
-  document.documentElement.style.setProperty('--accent', c.accent_color);
-
-  // Apply accent to active chips and accent-colored elements
-  const style = document.getElementById('dynamicStyle') || (() => {
-    const s = document.createElement('style'); s.id = 'dynamicStyle';
-    document.head.appendChild(s); return s;
-  })();
-  style.textContent = `
-    .chip.active { background: ${c.accent_color} !important; border-color: ${c.accent_color} !important; }
-    .category-btn:hover { border-color: ${c.accent_color} !important; background: rgba(169,119,145,0.06) !important; }
-    .category-btn.active { background: ${c.accent_color} !important; border-color: ${c.accent_color} !important; color: #fff !important; }
-    .chip:hover { border-color: ${c.accent_color} !important; }
-    .toggle-track.on { background: ${c.accent_color} !important; }
-    .text-accent, #receiptTotal { color: ${c.accent_color} !important; }
-    .bg-accent { background-color: ${c.accent_color} !important; }
-    .border-accent { border-color: ${c.accent_color} !important; }
-    .bg-surface, .bg-surface\\/50 { background-color: ${c.surface_color} !important; }
-    .hover\\:bg-surface:hover { background-color: ${c.surface_color} !important; }
-    body { color: ${c.text_color}; }
-    .text-txtsoft { color: ${c.soft_color} !important; }
-  `;
-
-  const font = c.font_family || defaultConfig.font_family;
-  const baseSize = c.font_size || defaultConfig.font_size;
-  document.querySelectorAll('.font-title, h1, h2').forEach(el => {
-    el.style.fontFamily = `${font}, serif`;
-  });
-  const titleEl = document.getElementById('pageTitle');
-  if (titleEl) titleEl.style.fontSize = `${baseSize * 2}px`;
-  document.querySelectorAll('h2').forEach(el => el.style.fontSize = `${baseSize * 1.5}px`);
-}
-
-if (window.elementSdk && typeof window.elementSdk.init === 'function') {
-  window.elementSdk.init({
-    defaultConfig,
-    onConfigChange: async (config) => applyConfig(config),
-    mapToCapabilities: (config) => ({
-      recolorables: [
-        { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-        { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-        { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-        { get: () => config.accent_color || defaultConfig.accent_color, set: v => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
-        { get: () => config.soft_color || defaultConfig.soft_color, set: v => { config.soft_color = v; window.elementSdk.setConfig({ soft_color: v }); } },
-      ],
-      borderables: [],
-      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
-      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
-    }),
-    mapToEditPanelValues: (config) => new Map([
-      ['page_title', config.page_title || defaultConfig.page_title],
-      ['ornament_text', config.ornament_text || defaultConfig.ornament_text],
-    ])
-  });
-} else {
-  console.warn('elementSdk no disponible; se continúa con la vista estática.');
-}
-
-lucide.createIcons();
-updateDateRestrictions();
-
-lucide.createIcons();
-goStep(0);
-</script>
- </body>
+  <!-- JS Modules (order: dependencies first) -->
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/data/platforms.js"></script>
+  <script src="js/data/readings.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/toast.js"></script>
+  <script src="js/core/validation.js"></script>
+  <script src="js/core/navigation.js"></script>
+  <script src="js/core/router.js"></script>
+  <script src="js/ui/readings-ui.js"></script>
+  <script src="js/ui/payment-ui.js"></script>
+  <script src="js/ui/receipt-ui.js"></script>
+  <script src="js/actions/sharing.js"></script>
+  <script src="js/actions/download.js"></script>
+  <script src="js/actions/notify.js"></script>
+  <script src="js/element-sdk.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/app.js"></script>
+</body>
 </html>
