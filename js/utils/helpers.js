@@ -36,3 +36,22 @@ function toggleEmergency() {
 function showAbout() {
   showNotification('stardust tarot — son lecturas de tarot conscientes, sin predicciones ni respuestas absolutas. un espacio para ver tu situación desde otro ángulo y tomar tus propias decisiones ✨');
 }
+
+function showPoliticas() {
+  const overlay = document.getElementById('politicasOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  // Re-trigger fade-in animation by removing/adding the class
+  const card = overlay.querySelector('.politicas-card');
+  if (card) {
+    card.classList.remove('fade-in');
+    void card.offsetWidth; // force reflow
+    card.classList.add('fade-in');
+  }
+}
+
+function hidePoliticas(e) {
+  if (e) e.stopPropagation();
+  const overlay = document.getElementById('politicasOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}

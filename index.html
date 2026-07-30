@@ -71,7 +71,7 @@
           <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
           <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
         </div>
-        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
       <!-- STEP 1 - Contacto -->
@@ -93,7 +93,7 @@
           <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
         </div>
         <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
       <!-- STEP 2 - Lectura -->
@@ -121,7 +121,7 @@
         <label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label>
         <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
         <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
-        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
       <!-- STEP 3 - Fecha, Horario y Pago -->
@@ -183,7 +183,7 @@
           </div>
         </div>
         <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Ver Recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
-        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
       <!-- STEP 4 - Recibo -->
@@ -192,7 +192,7 @@
         <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
         <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3">
           <input type="checkbox" id="consentCheck" class="mt-1 accent-[#c4a0ac]">
-          <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las condiciones del servicio de lectura de tarot.</label>
+          <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las <button onclick="showPoliticas()" class="font-bold underline underline-offset-2 hover:text-accent transition inline">políticas y condiciones</button> del servicio de lectura de tarot.</label>
         </div>
         <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
           <div class="text-center mb-3">
@@ -225,7 +225,7 @@
           </div>
           <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button><button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button></div>
         </div>
-        <p class="about-link text-center mt-6"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button></p>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
     </div><!-- /Steps Container -->
@@ -234,6 +234,47 @@
     <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
   </div><!-- /app -->
+
+  <!-- Políticas y Condiciones Overlay -->
+  <div id="politicasOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hidePoliticas(event)" style="background: rgba(0,0,0,0.4);">
+    <div class="politicas-card card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+      <div class="text-center mb-6">
+        <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <h1 class="font-title text-3xl md:text-4xl italic font-normal text-txt">términos y condiciones<br>de las lecturas ✦</h1>
+      </div>
+      <div class="text-sm text-txt leading-relaxed space-y-4 mb-6" style="max-height: 50vh; overflow-y: auto;">
+        <p>antes de comenzar, quiero que tengas claridad sobre cómo funciona este espacio — no como un requisito, sino como parte de la honestidad que guía cada lectura.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">el tarot como herramienta, no como verdad absoluta</h2>
+        <p>las lecturas de Stardust Tarot son un espacio de reflexión y claridad personal. el tarot funciona como espejo — te ayuda a ver tu situación desde otro ángulo, pero no predice el futuro ni toma decisiones por ti. las energías son cambiantes y lo que aparece en una lectura es una perspectiva, no un destino.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">tu decisión siempre es tuya</h2>
+        <p>nada de lo que surja en una lectura debe reemplazar tu propio criterio. tú conoces tu vida mejor que nadie. el tarot puede iluminar, pero la última palabra siempre la tienes tú.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">esto no reemplaza orientación profesional</h2>
+        <p>si estás atravesando una situación de salud física o mental, una crisis emocional o una decisión legal o financiera importante, te recomiendo acompañarte también de un profesional especializado. el tarot es una herramienta de autoconocimiento, no un sustituto de atención profesional.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">confidencialidad</h2>
+        <p>lo que compartes en una lectura se queda aquí. tu consulta, tu nombre y los detalles de tu situación son privados y se respetan siempre. no se comparte información de ningún consultante bajo ninguna circunstancia.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">pagos y reservas</h2>
+        <p>tu espacio queda confirmado una vez que se recibe el comprobante de pago por mensaje directo. los pagos no son reembolsables una vez confirmada la lectura. si necesitas cambiar tu fecha u horario, escríbeme con al menos 24 horas de anticipación y lo coordinamos.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">lecturas de emergencia</h2>
+        <p>las lecturas marcadas como emergencia tienen un costo adicional y se atienden en un plazo menor. este servicio está disponible sujeto a mi disponibilidad del momento.</p>
+
+        <h2 class="font-title text-xl font-semibold italic text-txt pt-2">uso del servicio</h2>
+        <p>las lecturas de Stardust Tarot son con fines de entretenimiento y reflexión personal. al reservar tu lectura confirmas que entiendes la naturaleza del servicio y que la decisión sobre cualquier acción en tu vida es completamente tuya.</p>
+
+        <div class="border-t border-dashed border-gray-200 my-4"></div>
+
+        <p class="text-center">si tienes alguna duda antes de reservar, escríbeme — estoy aquí para aclararte lo que necesites ✦</p>
+      </div>
+      <div class="text-center">
+        <button onclick="hidePoliticas()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- JS Modules (order: dependencies first) -->
   <script src="js/config.js"></script>
