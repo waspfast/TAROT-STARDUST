@@ -35,13 +35,13 @@
 }
 .chip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(169, 119, 145, 0.12);
-  border-color: #a97791;
+  box-shadow: 0 4px 12px rgba(196, 160, 172, 0.12);
+  border-color: #c4a0ac;
 }
 .chip.active {
-  background: #a97791;
+  background: #c4a0ac;
   color: #fff;
-  border-color: #a97791;
+  border-color: #c4a0ac;
   animation: chipSelect 0.25s ease;
 }
 @keyframes chipSelect {
@@ -56,15 +56,15 @@
   user-select: none;
 }
 .category-btn:hover {
-  border-color: #a97791;
-  background: rgba(169,119,145,0.06);
+  border-color: #c4a0ac;
+  background: rgba(196,160,172,0.06);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(169, 119, 145, 0.12);
+  box-shadow: 0 4px 12px rgba(196, 160, 172, 0.12);
 }
 .category-btn.active {
-  background: #a97791;
+  background: #c4a0ac;
   color: #fff;
-  border-color: #a97791;
+  border-color: #c4a0ac;
 }
 
 .reading-panel {
@@ -92,7 +92,7 @@
   transition: transform 0.2s;
 }
 .toggle-track.on {
-  background: #a97791;
+  background: #c4a0ac;
 }
 .toggle-track.on::after {
   transform: translateX(20px);

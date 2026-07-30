@@ -9,7 +9,15 @@
   <script>
   tailwind.config = {
     theme: { extend: {
-      colors: { bg: '#faf6f2', surface: '#f5f0eb', accent: '#a97791', txt: '#32292a', txtsec: '#443f40', txtsoft: '#7a6d80' },
+      colors: {
+        bg:      '#f5f0eb',
+        surface: '#f5f0eb',
+        accent:  '#c4a0ac',
+        accentSoft: '#e8b4c0',
+        txt:     '#3a3535',
+        txtsec:  '#9a8a8f',
+        txtsoft: '#9a8a8f'
+      },
       fontFamily: { title: ['Cormorant Garamond', 'serif'], body: ['DM Sans', 'sans-serif'] }
     } }
   };
@@ -29,9 +37,9 @@
 
     <!-- Header -->
     <div id="brandHeader" class="text-center mb-6 hidden">
-      <p class="text-accent text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
-      <h1 id="pageTitle" class="font-title text-3xl md:text-4xl font-bold text-txt">Stardust Tarot</h1>
-      <div class="flex items-center justify-center gap-2 mt-2 mb-3">
+      <p class="text-accentSoft text-sm mb-1">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+      <img src="BRAND/LOGO.PNG.png" alt="Stardust Tarot" class="h-32 md:h-40 max-w-full mx-auto">
+      <div class="flex items-center justify-center gap-2 mt-1 mb-2">
         <i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
         <p class="text-txt font-medium">@thestardust.tarot</p>
       </div>
@@ -54,9 +62,10 @@
 
       <!-- STEP 0 - Bienvenida -->
       <div id="step0" class="card-shadow bg-white rounded-2xl p-8 fade-in text-center">
-        <p class="text-accent text-sm mb-4">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <p class="text-accentSoft text-sm mb-1">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <img src="BRAND/LOGO.PNG.png" alt="Stardust Tarot" class="h-32 max-w-full mx-auto mb-2">
         <h2 class="font-title text-3xl md:text-4xl italic font-normal text-txt mb-4">bienvenida, <br>tu lectura de tarot<br>empieza aquí</h2>
-        <p class="text-2xl text-accent/60 mb-4">✦</p>
+        <p class="text-2xl text-accentSoft/60 mb-4">✦</p>
         <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
         <div class="flex flex-col gap-3 max-w-xs mx-auto">
           <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
@@ -182,11 +191,15 @@
         <h2 class="font-title text-2xl font-semibold mb-1">Recibo y Confirmación</h2>
         <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
         <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3">
-          <input type="checkbox" id="consentCheck" class="mt-1 accent-[#a97791]">
+          <input type="checkbox" id="consentCheck" class="mt-1 accent-[#c4a0ac]">
           <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las condiciones del servicio de lectura de tarot.</label>
         </div>
         <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
-          <div class="text-center mb-3"><p class="text-accent text-sm">⊹ ୨ᰔ୧ ⊹</p><p class="font-title text-lg font-semibold">The Stardust Tarot</p><p class="text-xs text-txtsoft">Comprobante de Lectura</p></div>
+          <div class="text-center mb-3">
+            <p class="text-accentSoft text-sm">⊹ ୨ᰔ୧ ⊹</p>
+            <p class="font-title text-lg font-semibold">Stardust Tarot</p>
+            <p class="text-xs text-txtsoft">Comprobante de Lectura</p>
+          </div>
           <div class="border-t border-dashed border-gray-200 my-3"></div>
           <div id="receiptBody" class="text-sm space-y-2"></div>
           <div class="border-t border-dashed border-gray-200 my-3"></div>

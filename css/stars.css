@@ -21,30 +21,30 @@
 .stars-bg::before {
   opacity: 0.5;
   box-shadow:
-    10vw 20vh #c9a87c, 70vw 80vh #a97791, 45vw 15vh #b8a9c9,
-    85vw 40vh #c9a87c, 30vw 90vh #d4a0b0, 65vw 55vh #a0a0a0,
-    5vw 70vh #c9a87c, 50vw 5vh #b8a9c9, 95vw 75vh #a97791,
-    20vw 35vh #d4a0b0, 75vw 25vh #c9a87c, 40vw 85vh #b8a9c9,
-    15vw 60vh #a0a0a0, 90vw 10vh #a97791, 55vw 45vh #c9a87c,
-    80vw 95vh #d4a0b0, 25vw 15vh #b8a9c9, 60vw 65vh #a97791,
-    10vw 30vh #c9a87c, 35vw 50vh #a0a0a0, 70vw 5vh #d4a0b0,
-    15vw 80vh #c9a87c, 95vw 45vh #b8a9c9, 30vw 70vh #a97791,
-    65vw 30vh #d4a0b0;
+    10vw 20vh #e8b4c0, 70vw 80vh #c4a0ac, 45vw 15vh #e8b4c0,
+    85vw 40vh #f5f0eb, 30vw 90vh #9a8a8f, 65vw 55vh #c4a0ac,
+    5vw 70vh #e8b4c0, 50vw 5vh #f5f0eb, 95vw 75vh #c4a0ac,
+    20vw 35vh #9a8a8f, 75vw 25vh #e8b4c0, 40vw 85vh #c4a0ac,
+    15vw 60vh #f5f0eb, 90vw 10vh #c4a0ac, 55vw 45vh #e8b4c0,
+    80vw 95vh #9a8a8f, 25vw 15vh #f5f0eb, 60vw 65vh #c4a0ac,
+    10vw 30vh #e8b4c0, 35vw 50vh #c4a0ac, 70vw 5vh #9a8a8f,
+    15vw 80vh #e8b4c0, 95vw 45vh #f5f0eb, 30vw 70vh #c4a0ac,
+    65vw 30vh #9a8a8f;
 }
 .stars-bg::after {
   animation-delay: -2s;
   opacity: 0.6;
   box-shadow:
-    18vw 82vh #b8a9c9, 68vw 18vh #d4a0b0, 52vw 72vh #a97791,
-    8vw 38vh #c9a87c, 92vw 62vh #a0a0a0, 42vw 28vh #b8a9c9,
-    78vw 8vh #d4a0b0, 22vw 92vh #a97791, 88vw 52vh #c9a87c,
-    12vw 12vh #b8a9c9, 58vw 48vh #d4a0b0, 32vw 32vh #a0a0a0,
-    72vw 88vh #c9a87c, 2vw 58vh #a97791, 98vw 28vh #b8a9c9,
-    48vw 98vh #d4a0b0, 28vw 68vh #c9a87c, 82vw 42vh #a0a0a0,
-    38vw 58vh #a97791, 62vw 22vh #b8a9c9, 14vw 78vh #d4a0b0,
-    94vw 18vh #c9a87c, 54vw 38vh #a97791, 24vw 84vh #b8a9c9,
-    74vw 54vh #d4a0b0, 44vw 14vh #c9a87c, 6vw 94vh #a0a0a0,
-    84vw 74vh #a97791, 34vw 44vh #b8a9c9, 66vw 34vh #d4a0b0;
+    18vw 82vh #f5f0eb, 68vw 18vh #9a8a8f, 52vw 72vh #c4a0ac,
+    8vw 38vh #e8b4c0, 92vw 62vh #c4a0ac, 42vw 28vh #f5f0eb,
+    78vw 8vh #9a8a8f, 22vw 92vh #c4a0ac, 88vw 52vh #e8b4c0,
+    12vw 12vh #f5f0eb, 58vw 48vh #9a8a8f, 32vw 32vh #c4a0ac,
+    72vw 88vh #e8b4c0, 2vw 58vh #c4a0ac, 98vw 28vh #f5f0eb,
+    48vw 98vh #9a8a8f, 28vw 68vh #e8b4c0, 82vw 42vh #c4a0ac,
+    38vw 58vh #c4a0ac, 62vw 22vh #f5f0eb, 14vw 78vh #9a8a8f,
+    94vw 18vh #e8b4c0, 54vw 38vh #c4a0ac, 24vw 84vh #f5f0eb,
+    74vw 54vh #9a8a8f, 44vw 14vh #e8b4c0, 6vw 94vh #c4a0ac,
+    84vw 74vh #c4a0ac, 34vw 44vh #f5f0eb, 66vw 34vh #9a8a8f;
 }
 @keyframes sparkle {
   0%   { opacity: 0.3; transform: scale(0.8); }
