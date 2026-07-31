@@ -80,18 +80,20 @@
         <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p>
         <label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label>
         <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition">
-        <div id="contactExtras">
-          <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
-          <div class="grid grid-cols-2 gap-2 mb-3">
-            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp</div>
-            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram</div>
-            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo</div>
-            <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord</div>
+          <div id="contactExtras">
+            <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp</div>
+              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram</div>
+              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo</div>
+              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord</div>
+            </div>
+            <div id="contactInputGroup">
+              <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p>
+              <label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label>
+              <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
+            </div>
           </div>
-          <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p>
-          <label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label>
-          <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
-        </div>
         <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>

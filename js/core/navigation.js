@@ -27,13 +27,13 @@ function goStep(n) {
 
   // ── Step 1: adapt for returning users ──
   if (n === 1) {
-    const extras = document.getElementById('contactExtras');
+    const inputGroup = document.getElementById('contactInputGroup');
     const subtitle = document.getElementById('contactSubtitle');
     if (state.esConsultanteNueva === false) {
-      extras.classList.add('hidden');
+      inputGroup.classList.add('hidden');
       subtitle.textContent = 'para identificar tu reserva necesito tu nombre y cómo contactarte';
     } else {
-      extras.classList.remove('hidden');
+      inputGroup.classList.remove('hidden');
       subtitle.textContent = '¿Cómo puedo comunicarme contigo?';
     }
   }
