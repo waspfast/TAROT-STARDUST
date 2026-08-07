@@ -17,16 +17,6 @@ function buildReceipt() {
   if (state.pago === 'PayPal') html += row('Comisión PayPal', '+$2.50');
   html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
   html += row('Método de pago', state.pago);
-  if (state.pago === 'Binance USDT') {
-    html += row('Ref. Binance', state.payRef);
-    html += row('Email pagador', state.payEmail);
-  }
-  if (state.pago === 'Pago Móvil') {
-    html += row('Banco', state.payBanco);
-    html += row('Teléfono', state.payTelefono);
-    html += row('Referencia', state.payRef);
-  }
-  if (state.pago === 'PayPal') html += row('Ref. PayPal', state.payRefPayPal);
   if (state.detalle) {
     html += `<div class="mt-2"><span class="text-txtsoft text-xs">Detalle:</span><p class="text-sm mt-0.5">${state.detalle}</p></div>`;
   }
@@ -55,16 +45,6 @@ function generateReceiptText() {
   if (state.pago === 'PayPal') t += `  • Comisión PayPal — +$2.50\n`;
   t += line + '\n';
   t += `Método de pago: ${state.pago}\n`;
-  if (state.pago === 'Binance USDT') {
-    t += `  Ref. Binance: ${state.payRef}\n`;
-    t += `  Email pagador: ${state.payEmail}\n`;
-  }
-  if (state.pago === 'Pago Móvil') {
-    t += `  Banco: ${state.payBanco}\n`;
-    t += `  Teléfono: ${state.payTelefono}\n`;
-    t += `  Referencia: ${state.payRef}\n`;
-  }
-  if (state.pago === 'PayPal') t += `  Ref. PayPal: ${state.payRefPayPal}\n`;
   if (state.detalle) t += `Detalle: ${state.detalle}\n`;
   t += line + '\n';
   t += `TOTAL: $${calcTotal().toFixed(2)}\n`;

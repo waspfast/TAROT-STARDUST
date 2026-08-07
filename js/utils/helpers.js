@@ -55,3 +55,21 @@ function hidePoliticas(e) {
   const overlay = document.getElementById('politicasOverlay');
   if (overlay) overlay.classList.add('hidden');
 }
+
+function showLecturasGuide() {
+  const overlay = document.getElementById('lecturasGuideOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  const card = overlay.querySelector('.lecturas-guide-card');
+  if (card) {
+    card.classList.remove('fade-in');
+    void card.offsetWidth;
+    card.classList.add('fade-in');
+  }
+}
+
+function hideLecturasGuide(e) {
+  if (e) e.stopPropagation();
+  const overlay = document.getElementById('lecturasGuideOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}

@@ -71,6 +71,52 @@
   animation: fadeIn 0.35s ease;
 }
 
+/* Reading chip expandable description */
+.reading-expand {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+}
+.reading-expand.open {
+  max-height: 200px;
+  opacity: 1;
+}
+.reading-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(196, 160, 172, 0.08);
+  color: #9a8a8f;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.25s ease;
+}
+.reading-expand-btn:hover {
+  background: rgba(196, 160, 172, 0.18);
+  color: #c4a0ac;
+}
+.reading-expand-btn:active {
+  transform: scale(0.95);
+}
+.reading-expand-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Category subtitles */
+.category-subtitle {
+  font-weight: 400;
+  opacity: 0.6;
+}
+.category-btn.active .category-subtitle {
+  opacity: 0.85;
+}
+
 /* Toggle */
 .toggle-track {
   width: 44px;

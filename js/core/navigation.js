@@ -25,8 +25,8 @@ function goStep(n) {
     progressBar.classList.add('hidden');
   }
 
-  // ── Step 1: adapt for returning users ──
-  if (n === 1) {
+  // ── Step 2: adapt for returning users (contacto) ──
+  if (n === 2) {
     const inputGroup = document.getElementById('contactInputGroup');
     const subtitle = document.getElementById('contactSubtitle');
     if (state.esConsultanteNueva === false) {
@@ -39,8 +39,8 @@ function goStep(n) {
   }
 
   // ── Validations (must happen before animation) ──
-  if (n === 2 && !validateStep2()) return;
-  if (n === 3 && !validateStep3()) return;
+  if (n === 2 && !validateReadings()) return; // step2 = contacto: asegurar lecturas seleccionadas antes de entrar
+  if (n === 3 && !validateContact()) return;  // step3 = fecha/pago: asegurar contacto antes de entrar
   if (n === 4) {
     if (!state.fecha) return showNotification('Selecciona una fecha');
     if (!state.horario) return showNotification('Selecciona un horario');

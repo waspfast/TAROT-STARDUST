@@ -74,8 +74,37 @@
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
-      <!-- STEP 1 - Contacto -->
-      <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
+      <!-- STEP 1 - Lectura -->
+      <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden">
+        <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
+        <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
+        <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>Amor & Relaciones</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>Trabajo</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>General</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa"><i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>Lectura extensa</button>
+        </div>
+        <button type="button" id="lecturasGuideLink" onclick="showLecturasGuide()" class="w-full text-center text-xs text-txtsoft hover:text-accent transition italic underline underline-offset-2 mb-4 py-2.5 border border-dashed border-accent/30 rounded-xl bg-accent/5 hover:bg-accent/10">¿no sabes cuál elegir? te ayudo a decidir ✦</button>
+        <div id="readingsPanel" class="hidden reading-panel mb-4">
+          <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span id="selectedCategoryLabel">Volver a categorías</span></button>
+          <div class="flex flex-col gap-2" id="readingsContainer"></div>
+        </div>
+        <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
+          <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
+          <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
+          <div><p class="text-sm font-medium">¿Lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
+        <label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label>
+        <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+        <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+      </div>
+
+      <!-- STEP 2 - Contacto -->
+      <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
         <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
         <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p>
         <label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label>
@@ -94,35 +123,7 @@
               <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
             </div>
           </div>
-        <button onclick="goStep(2)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
-      </div>
-
-      <!-- STEP 2 - Lectura -->
-      <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
-        <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
-        <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
-        <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>Amor & Relaciones</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>Trabajo</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>General</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa"><i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>Lectura extensa</button>
-        </div>
-        <div id="readingsPanel" class="hidden reading-panel mb-4">
-          <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span id="selectedCategoryLabel">Volver a categorías</span></button>
-          <div class="flex flex-col gap-2" id="readingsContainer"></div>
-        </div>
-        <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
-          <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
-          <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
-        </div>
-        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-          <div><p class="text-sm font-medium">¿Lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-        </div>
-        <label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label>
-        <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
-        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <button onclick="goStep(3)" class="w-full bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
       </div>
 
@@ -274,6 +275,64 @@
       </div>
       <div class="text-center">
         <button onclick="hidePoliticas()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guía de Lecturas Overlay -->
+  <div id="lecturasGuideOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hideLecturasGuide(event)" style="background: rgba(0,0,0,0.4);">
+    <div class="lecturas-guide-card card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+      <div class="text-center mb-6">
+        <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <h1 class="font-title text-3xl md:text-4xl italic font-normal text-txt">encontrar tu lectura ✦</h1>
+        <p class="text-txtsoft text-sm mt-2 leading-relaxed">no hay una elección incorrecta — cada lectura llega cuando la necesitas. esto te ayuda a escuchar cuál resuena hoy.</p>
+      </div>
+      <div class="text-sm text-txt leading-relaxed space-y-5 mb-6" style="max-height: 50vh; overflow-y: auto;">
+        <div>
+          <h2 class="font-title text-lg font-semibold italic text-txt">categorías</h2>
+          <p class="mt-1"><span class="font-medium">amor & relaciones</span> — todo sobre vínculos, encuentros y desencuentros del corazón.</p>
+          <p class="mt-1"><span class="font-medium">trabajo</span> — tu propósito, decisiones laborales y relación con la abundancia.</p>
+          <p class="mt-1"><span class="font-medium">general</span> — un panorama abierto de tu energía actual y caminos posibles.</p>
+          <p class="mt-1"><span class="font-medium">lectura extensa</span> — una exploración profunda con más cartas y más tiempo para ti.</p>
+        </div>
+
+        <div class="border-t border-dashed border-gray-200"></div>
+
+        <div>
+          <h2 class="font-title text-lg font-semibold italic text-txt">las lecturas</h2>
+          <div class="mt-2 space-y-3">
+            <div class="bg-surface rounded-xl px-4 py-3">
+              <p class="font-medium">✧ Lectura General corta <span class="text-txtsoft font-normal">— $7.50</span></p>
+              <p class="text-xs text-txtsoft mt-1">para cuando necesitas claridad rápida sobre una situación puntual. 6 cartas, 10 min.</p>
+              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿este cambio es para mí? ¿qué energía me rodea ahora?</p>
+            </div>
+            <div class="bg-surface rounded-xl px-4 py-3">
+              <p class="font-medium">✧ Amor & Relaciones corta <span class="text-txtsoft font-normal">— $7.50</span></p>
+              <p class="text-xs text-txtsoft mt-1">para ver con nuevos ojos lo que sientes por alguien — o por ti misma. 6 cartas, 10 min.</p>
+              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿qué hay entre nosotros? ¿es momento de soltar o de acercarme?</p>
+            </div>
+            <div class="bg-surface rounded-xl px-4 py-3">
+              <p class="font-medium">✧ Trabajo & Dinero corta <span class="text-txtsoft font-normal">— $7.50</span></p>
+              <p class="text-xs text-txtsoft mt-1">cuando el trabajo o el dinero te tienen dando vueltas y necesitas una brújula. 6 cartas, 10 min.</p>
+              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿sigo en este trabajo? ¿se abre una puerta para mí?</p>
+            </div>
+            <div class="bg-surface rounded-xl px-4 py-3">
+              <p class="font-medium">✧ Lectura General extensa <span class="text-txtsoft font-normal">— $12.50</span></p>
+              <p class="text-xs text-txtsoft mt-1">cuando quieres ver el bosque completo y no solo el árbol. 11 cartas, 20 min.</p>
+              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿hacia dónde voy? ¿qué necesito soltar para avanzar?</p>
+            </div>
+            <div class="bg-surface rounded-xl px-4 py-3">
+              <p class="font-medium">✧ Lectura Radiografía De Amor extensa <span class="text-txtsoft font-normal">— $12.50</span></p>
+              <p class="text-xs text-txtsoft mt-1">para ir al fondo de un vínculo, una ruptura o un patrón que se repite. 11 cartas, 20 min.</p>
+              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿por qué repito esta historia? ¿qué viene para mi vida amorosa?</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-center text-txtsoft italic text-xs">cualquiera que elijas será la correcta — confía en lo que resuena contigo hoy 🤍</p>
+      </div>
+      <div class="text-center">
+        <button onclick="hideLecturasGuide()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">Entendido</button>
       </div>
     </div>
   </div>
