@@ -3,6 +3,7 @@ const readingNames = {
   general_corta: 'Lectura General corta',
   amor_corta: 'Amor & Relaciones corta',
   trabajo_corta: 'Trabajo & Dinero corta',
+  trabajo_extensa: 'Trabajo & Dinero extensa',
   general_extensa: 'Lectura General extensa',
   especial_anio: 'Lectura Radiografía De Amor extensa'
 };
