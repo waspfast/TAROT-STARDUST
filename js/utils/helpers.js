@@ -14,8 +14,13 @@ function updateDateRestrictions() {
   today.setHours(0, 0, 0, 0);
   const minDate = new Date(today);
   minDate.setDate(today.getDate() + (state.emergency ? 0 : 2));
-  input.min = formatDateValue(minDate);
-  if (input.value && input.value < input.min) input.value = '';
+  const minIso = formatDateValue(minDate);
+  input.min = minIso;
+  if (input.value && input.value < minIso) {
+    input.value = '';
+    state.fecha = '';
+  }
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 function calcTotal() {

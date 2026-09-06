@@ -132,8 +132,20 @@
         <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
         <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p>
         <label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label>
-        <input id="inpDate" type="date" onchange="updateDateRestrictions()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-accent transition">
-        <p class="text-xs text-txtsoft mb-4">Si quieres la lectura para el día de hoy o mañana, recuerda seleccionar "lectura de emergencia" 🤍</p>
+        <button type="button" id="datePickerTrigger" class="date-trigger" onclick="toggleCalendar()" aria-expanded="false">
+          <span class="flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 trigger-icon"></i>
+            <span id="dateTriggerLabel">elegir fecha</span>
+          </span>
+          <i data-lucide="chevron-down" class="w-4 h-4 chevron"></i>
+        </button>
+        <div id="calendarCollapse" class="calendar-collapse">
+          <div id="calendarShell" class="calendar-shell bg-surface border border-gray-200 rounded-2xl p-3 sm:p-4">
+            <div id="customCalendar"></div>
+            <input id="inpDate" type="hidden">
+          </div>
+        </div>
+        <p class="text-xs text-txtsoft mb-4 mt-2">disponible de lunes a viernes · para el día de hoy o mañana activa "lectura de emergencia" 🤍</p>
         <label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
         <div class="grid grid-cols-2 gap-2 mb-4">
           <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
@@ -346,6 +358,7 @@
   <script src="js/ui/readings-ui.js"></script>
   <script src="js/ui/payment-ui.js"></script>
   <script src="js/ui/receipt-ui.js"></script>
+  <script src="js/ui/calendar-ui.js"></script>
   <script src="js/actions/sharing.js"></script>
   <script src="js/actions/download.js"></script>
   <script src="js/actions/notify.js"></script>
