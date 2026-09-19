@@ -315,3 +315,123 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 1;
   margin-top: 0.5rem;
 }
+
+/* Quiz - ¿Qué lectura necesitas hoy? */
+.quiz-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e7dde0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-family: inherit;
+  line-height: 1.35;
+  color: #3a3535;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-bottom: 8px;
+}
+.quiz-option:hover {
+  border-color: #c4a0ac;
+  background: rgba(196, 160, 172, 0.06);
+  transform: translateX(2px);
+}
+.quiz-option.active {
+  border-color: #c4a0ac;
+  background: #c4a0ac;
+  color: #fff;
+}
+.quiz-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.quiz-progress-dot {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: #ece3e5;
+  transition: background 0.25s ease;
+}
+.quiz-progress-dot.done {
+  background: #c4a0ac;
+}
+/* Fluidez del quiz */
+.quiz-fade {
+  animation: quizFade 0.22s ease;
+}
+@keyframes quizFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.quiz-option {
+  will-change: transform;
+}
+.quiz-option.active {
+  transform: scale(1.02);
+  box-shadow: 0 3px 10px rgba(196, 160, 172, 0.3);
+}
+/* Boton de cierre de overlays */
+.overlay-card-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid #e7dde0;
+  background: #fff;
+  color: #9a8a8f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.overlay-card-close:hover {
+  border-color: #c4a0ac;
+  color: #c4a0ac;
+  background: rgba(196, 160, 172, 0.08);
+}
+
+/* Apertura y cierre suaves de overlays */
+#quizOverlay:not(.hidden):not(.overlay-closing),
+#lecturasGuideOverlay:not(.hidden):not(.overlay-closing),
+#politicasOverlay:not(.hidden):not(.overlay-closing) {
+  animation: overlayFadeIn 0.16s ease;
+}
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.overlay-closing {
+  animation: overlayFadeOut 0.16s ease forwards;
+}
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.overlay-closing > div {
+  animation: overlayCardOut 0.16s ease forwards;
+}
+@keyframes overlayCardOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+/* Transiciones mas agiles de los overlays (mantiene el flujo) */
+.politicas-card.fade-in,
+.lecturas-guide-card.fade-in,
+.quiz-card.fade-in {
+  animation-duration: 0.2s;
+}
+/* Boton primario con mas presencia (mismo lenguaje que los chips) */
+button.bg-accent {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+button.bg-accent:hover:not(:active) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(196, 160, 172, 0.35);
+}

@@ -12,7 +12,7 @@ function renderReadingsForCategory(category) {
             <div class="font-medium">${r.title}</div>
             <div class="text-xs opacity-70">${r.detail}</div>
           </div>
-          ${r.paraTi ? `<button type="button" class="reading-expand-btn" data-expand="${r.id}" aria-label="Ver descripción"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>` : ''}
+          ${r.paraTi ? `<button type="button" class="reading-expand-btn" data-expand="${r.id}" aria-label="ver descripción"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>` : ''}
         </div>
       </div>
       ${r.paraTi ? `
@@ -69,7 +69,7 @@ function updateSelectedReadingsSummary() {
   list.innerHTML = keys.map(key => `
     <span class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2.5 py-1 text-xs">
       ${readingNames[key]}
-      <button type="button" class="text-txtsoft hover:text-accent transition" data-remove="${key}" aria-label="Quitar lectura">×</button>
+      <button type="button" class="text-txtsoft hover:text-accent transition" data-remove="${key}" aria-label="quitar lectura">×</button>
     </span>
   `).join('');
   list.querySelectorAll('[data-remove]').forEach(btn => {
@@ -88,7 +88,7 @@ function showReadingCategory(category) {
   document.getElementById('lecturasGuideLink').classList.add('hidden');
   document.getElementById('readingsPanel').classList.remove('hidden');
   document.getElementById('selectedCategoryLabel').textContent = categoryLabels[category];
-  document.getElementById('readingStepHint').textContent = 'Selecciona una o varias lecturas de esta categoría';
+  document.getElementById('readingStepHint').textContent = 'selecciona una o varias lecturas de esta categoría';
   renderReadingsForCategory(category);
   setTimeout(() => lucide.createIcons(), 50);
 }
@@ -98,7 +98,7 @@ function backToCategories() {
   document.getElementById('readingsPanel').classList.add('hidden');
   document.getElementById('lecturasGuideLink').classList.remove('hidden');
   document.getElementById('categoryMenu').classList.remove('hidden');
-  document.getElementById('readingStepHint').textContent = 'Elige una categoría para ver las lecturas disponibles';
+  document.getElementById('readingStepHint').textContent = 'elige una categoría para ver las lecturas disponibles';
   document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
 }
 
@@ -141,4 +141,13 @@ function renderLecturasGuide() {
     html += '</div>';
   });
   list.innerHTML = html;
+}
+// Selecciona una lectura por su id (usado por el test de recomendación)
+function selectReadingById(id) {
+  const reading = readingsCatalog.find(function (r) { return r.id === id; });
+  if (!reading) return;
+  state.readings[id] = reading.price;
+  updateSelectedReadingsSummary();
+  backToCategories();
+  if (typeof showNotification === 'function') showNotification('lectura agregada: ' + reading.title);
 }

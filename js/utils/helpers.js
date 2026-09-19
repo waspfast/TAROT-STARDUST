@@ -57,8 +57,7 @@ function showPoliticas() {
 
 function hidePoliticas(e) {
   if (e) e.stopPropagation();
-  const overlay = document.getElementById('politicasOverlay');
-  if (overlay) overlay.classList.add('hidden');
+  smoothHideOverlay('politicasOverlay');
 }
 
 function showLecturasGuide() {
@@ -76,6 +75,42 @@ function showLecturasGuide() {
 
 function hideLecturasGuide(e) {
   if (e) e.stopPropagation();
-  const overlay = document.getElementById('lecturasGuideOverlay');
-  if (overlay) overlay.classList.add('hidden');
+  smoothHideOverlay('lecturasGuideOverlay');
 }
+
+function showQuiz() {
+  const overlay = document.getElementById('quizOverlay');
+  if (!overlay) return;
+  if (typeof startQuiz === 'function') startQuiz();
+  overlay.classList.remove('hidden');
+  const card = overlay.querySelector('.quiz-card');
+  if (card) {
+    card.classList.remove('fade-in');
+    void card.offsetWidth;
+    card.classList.add('fade-in');
+  }
+}
+
+function hideQuiz(e) {
+  if (e) e.stopPropagation();
+  smoothHideOverlay('quizOverlay');
+}
+
+// Cierre suave de overlays con animacion
+function smoothHideOverlay(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay || overlay.classList.contains('hidden') || overlay.classList.contains('overlay-closing')) return;
+  overlay.classList.add('overlay-closing');
+  setTimeout(function () {
+    overlay.classList.add('hidden');
+    overlay.classList.remove('overlay-closing');
+  }, 160);
+}
+
+// Cerrar cualquier overlay abierto con la tecla Escape
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  smoothHideOverlay('quizOverlay');
+  smoothHideOverlay('lecturasGuideOverlay');
+  smoothHideOverlay('politicasOverlay');
+});

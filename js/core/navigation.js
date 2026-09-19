@@ -34,7 +34,7 @@ function goStep(n) {
       subtitle.textContent = 'para identificar tu reserva necesito tu nombre y cómo contactarte';
     } else {
       inputGroup.classList.remove('hidden');
-      subtitle.textContent = '¿Cómo puedo comunicarme contigo?';
+      subtitle.textContent = '¿cómo puedo comunicarme contigo?';
     }
   }
 
@@ -42,9 +42,9 @@ function goStep(n) {
   if (n === 2 && !validateReadings()) return; // step2 = contacto: asegurar lecturas seleccionadas antes de entrar
   if (n === 3 && !validateContact()) return;  // step3 = fecha/pago: asegurar contacto antes de entrar
   if (n === 4) {
-    if (!state.fecha) return showNotification('Selecciona una fecha');
-    if (!state.horario) return showNotification('Selecciona un horario');
-    if (!state.pago) return showNotification('Selecciona un método de pago');
+    if (!state.fecha) return showNotification('selecciona una fecha');
+    if (!state.horario) return showNotification('selecciona un horario');
+    if (!state.pago) return showNotification('selecciona un método de pago');
     if (!validateStep4Payment()) return;
     buildReceipt();
   }

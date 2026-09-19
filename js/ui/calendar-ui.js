@@ -77,9 +77,9 @@ function renderCalendar() {
   const canGoBack = new Date(year, month, 1) > minMonthStart;
 
   let html = '<div class="flex items-center justify-between mb-2">';
-  html += '<button type="button" id="calPrevBtn" class="cal-nav"' + (canGoBack ? '' : ' disabled') + ' aria-label="Mes anterior"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>';
-  html += '<div class="font-title text-lg italic text-txt select-none">' + _capWord(CAL_MONTHS[month]) + ' ' + year + '</div>';
-  html += '<button type="button" id="calNextBtn" class="cal-nav" aria-label="Mes siguiente"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>';
+  html += '<button type="button" id="calPrevBtn" class="cal-nav"' + (canGoBack ? '' : ' disabled') + ' aria-label="mes anterior"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>';
+  html += '<div class="font-title text-lg italic text-txt select-none">' + CAL_MONTHS[month] + ' ' + year + '</div>';
+  html += '<button type="button" id="calNextBtn" class="cal-nav" aria-label="mes siguiente"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>';
   html += '</div>';
 
   html += '<div class="calendar-grid">';
@@ -119,7 +119,7 @@ function renderCalendar() {
 
   const lbl = document.getElementById('dateTriggerLabel');
   if (lbl) {
-    lbl.textContent = state.fecha ? '\u2726 ' + _capWord(formatPrettyDate(state.fecha)) : 'elegir fecha';
+    lbl.textContent = state.fecha ? '\u2726 ' + formatPrettyDate(state.fecha) : 'elegir fecha';
   }
   if (window.lucide) setTimeout(function () { lucide.createIcons(); }, 0);
 }

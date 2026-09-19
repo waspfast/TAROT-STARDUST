@@ -72,66 +72,65 @@
           <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
         </div>
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+        <p class="text-center mt-2"><button type="button" onclick="showLecturasGuide()" class="text-xs text-accent font-medium hover:underline underline-offset-2 transition">todas las lecturas disponibles</button></p>
       </div>
 
       <!-- STEP 1 - Lectura -->
       <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden">
-        <h2 class="font-title text-2xl font-semibold mb-1">Tipo de Lectura</h2>
-        <p id="readingStepHint" class="text-txtsoft text-sm mb-5">Elige una categoría para ver las lecturas disponibles</p>
+        <h2 class="font-title text-2xl font-semibold mb-1">tipo de lectura</h2>
+        <p id="readingStepHint" class="text-txtsoft text-sm mb-5">elige una categoría para ver las lecturas disponibles</p>
         <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>Amor & Relaciones</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>Trabajo</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>General</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="rapidas"><i data-lucide="zap" class="w-5 h-5 mx-auto mb-1.5"></i>Respuestas rápidas</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>amor & relaciones</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>trabajo</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>general</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="rapidas"><i data-lucide="zap" class="w-5 h-5 mx-auto mb-1.5"></i>respuestas rápidas</button>
         </div>
-        <button type="button" id="lecturasGuideLink" onclick="showLecturasGuide()" class="w-full text-center text-xs text-txtsoft hover:text-accent transition italic underline underline-offset-2 mb-4 py-2.5 border border-dashed border-accent/30 rounded-xl bg-accent/5 hover:bg-accent/10">¿no sabes cuál elegir? te ayudo a decidir ✦</button>
+        <button type="button" id="lecturasGuideLink" onclick="showQuiz()" class="w-full flex items-center justify-center gap-2 mb-4 py-3 rounded-xl border border-accent/40 bg-accent/15 hover:bg-accent/25 text-accent text-sm font-semibold transition"><i data-lucide="sparkles" class="w-4 h-4"></i><span>¿No sabes qué lectura elegir? Haz el test ✦</span></button>
         <div id="readingsPanel" class="hidden reading-panel mb-4">
-          <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span id="selectedCategoryLabel">Volver a categorías</span></button>
+          <button type="button" id="backToCategories" class="flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span id="selectedCategoryLabel">volver a categorías</span></button>
           <div class="flex flex-col gap-2" id="readingsContainer"></div>
         </div>
         <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
-          <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">Lecturas seleccionadas</p>
+          <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">lecturas seleccionadas</p>
           <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
         </div>
         <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-          <div><p class="text-sm font-medium">¿Lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
+          <div><p class="text-sm font-medium">¿lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
           <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
         </div>
-        <label class="block text-sm font-medium text-txtsec mb-1">Detalle de tu consulta</label>
-        <textarea id="inpDetalle" rows="3" placeholder="Cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
-        <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
-        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+        <label class="block text-sm font-medium text-txtsec mb-1">detalle de tu consulta</label>
+        <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+        <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
       <!-- STEP 2 - Contacto -->
       <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
-        <h2 class="font-title text-2xl font-semibold mb-1">Datos de Contacto</h2>
-        <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿Cómo puedo comunicarme contigo?</p>
-        <label class="block text-sm font-medium text-txtsec mb-1">Nombre y Apellido</label>
-        <input id="inpName" type="text" placeholder="Tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition">
+        <h2 class="font-title text-2xl font-semibold mb-1">datos de contacto</h2>
+        <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿cómo puedo comunicarme contigo?</p>
+        <label class="block text-sm font-medium text-txtsec mb-1">nombre y apellido</label>
+        <input id="inpName" type="text" placeholder="tu nombre completo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:border-accent transition">
           <div id="contactExtras">
-            <label class="block text-sm font-medium text-txtsec mb-2">Plataforma de contacto</label>
+            <label class="block text-sm font-medium text-txtsec mb-2">plataforma de contacto</label>
             <div class="grid grid-cols-2 gap-2 mb-3">
               <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="whatsapp"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> WhatsApp</div>
               <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="telegram"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7Z"></path></svg> Telegram</div>
-              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> Correo</div>
+              <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="correo"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 6 8 6 8-6"></path></svg> correo</div>
               <div class="chip border border-gray-200 rounded-xl px-3 py-2 text-sm text-center flex items-center justify-center gap-1.5" data-platform="discord"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3v18"></path><path d="M14 3v18"></path></svg> Discord</div>
             </div>
             <div id="contactInputGroup">
               <p id="platformHint" class="text-xs text-txtsoft mb-3 h-4"></p>
-              <label class="block text-sm font-medium text-txtsec mb-1">Usuario, correo o número</label>
-              <input id="inpContact" type="text" placeholder="Selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
+              <label class="block text-sm font-medium text-txtsec mb-1">usuario, correo o número</label>
+              <input id="inpContact" type="text" placeholder="selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
             </div>
           </div>
-        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
-        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
       <!-- STEP 3 - Fecha, Horario y Pago -->
       <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
-        <h2 class="font-title text-2xl font-semibold mb-1">Fecha, Horario y Pago</h2>
-        <p class="text-txtsoft text-sm mb-5">Elige cuándo y cómo pagar</p>
-        <label class="block text-sm font-medium text-txtsec mb-1">Fecha de la lectura</label>
+        <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
+        <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
+        <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
         <button type="button" id="datePickerTrigger" class="date-trigger" onclick="toggleCalendar()" aria-expanded="false">
           <span class="flex items-center gap-2">
             <i data-lucide="calendar" class="w-4 h-4 trigger-icon"></i>
@@ -146,12 +145,12 @@
           </div>
         </div>
         <p class="text-xs text-txtsoft mb-4 mt-2">disponible de lunes a viernes · para el día de hoy o mañana activa "lectura de emergencia" 🤍</p>
-        <label class="block text-sm font-medium text-txtsec mb-2">Horario</label>
+        <label class="block text-sm font-medium text-txtsec mb-2">horario</label>
         <div class="grid grid-cols-2 gap-2 mb-4">
-          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> Tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
-          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="Noche (7pm–9pm)"><i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> Noche<br><span class="text-xs opacity-70">7pm – 10pm</span></div>
+          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
+          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="noche (7pm–9pm)"><i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> noche<br><span class="text-xs opacity-70">7pm – 10pm</span></div>
         </div>
-        <label class="block text-sm font-medium text-txtsec mb-2">Método de pago</label>
+        <label class="block text-sm font-medium text-txtsec mb-2">método de pago</label>
         <div class="grid grid-cols-2 gap-2 mb-5">
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">Binance <br>USDT 💵</div>
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span></div>
@@ -162,85 +161,85 @@
         <div id="paymentDetailsPanel" class="hidden mb-5 fade-in">
           <div id="detalleBinance" class="payment-detail hidden">
             <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
-              <p class="text-sm font-medium text-txtsec">🧾 Transferencia por Binance Pay</p>
-              <p class="text-xs text-txtsoft">Transfiere el monto exacto a este correo de Binance:</p>
+              <p class="text-sm font-medium text-txtsec">🧾 transferencia por Binance Pay</p>
+              <p class="text-xs text-txtsoft">transfiere el monto exacto a este correo de Binance:</p>
               <div class="bg-white rounded-lg px-3 py-2 text-sm font-mono text-accent border border-gray-200 select-all">andreagonzalez2218@gmail.com</div>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefBinance" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Correo electrónico (de quien pagó)</label><input id="payEmailBinance" type="email" placeholder="tucorreo@ejemplo.com" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">número de referencia</label><input id="payRefBinance" type="text" placeholder="ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">correo electrónico (de quien pagó)</label><input id="payEmailBinance" type="email" placeholder="tucorreo@ejemplo.com" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
             </div>
           </div>
           <div id="detallePagoMovil" class="payment-detail hidden">
             <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
-              <p class="text-sm font-medium text-txtsec">📱 Pago Móvil (tasa BCV)</p>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Banco destino</label>
+              <p class="text-sm font-medium text-txtsec">📱 pago móvil (tasa BCV)</p>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">banco destino</label>
                 <select id="payBancoDestino" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition bg-white">
-                  <option value="">Selecciona un banco</option>
+                  <option value="">selecciona un banco</option>
                   <option value="Banco de Venezuela">Banco de Venezuela</option><option value="Banesco">Banesco</option><option value="Mercantil">Mercantil</option><option value="Provincial">Provincial</option><option value="BOD">BOD</option><option value="Bancaribe">Bancaribe</option>
                   <option value="Banco Nacional de Crédito">Banco Nacional de Crédito (BNC)</option><option value="Banplus">Banplus</option><option value="Banco Plaza">Banco Plaza</option><option value="Banco Exterior">Banco Exterior</option>
                   <option value="Banco Occidental de Descuento">Banco Occidental de Descuento (BOD)</option><option value="Banco del Tesoro">Banco del Tesoro</option><option value="Banco Venezolano de Crédito">Banco Venezolano de Crédito</option>
                   <option value="Banco Sofitasa">Banco Sofitasa</option><option value="Banco Activo">Banco Activo</option>
                 </select>
               </div>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de teléfono (de quien pagó)</label><input id="payTelefono" type="tel" placeholder="0412 123 4567" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefPM" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">número de teléfono (de quien pagó)</label><input id="payTelefono" type="tel" placeholder="0412 123 4567" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">número de referencia</label><input id="payRefPM" type="text" placeholder="ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
             </div>
           </div>
           <div id="detallePayPal" class="payment-detail hidden">
             <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
               <p class="text-sm font-medium text-txtsec">💳 PayPal (+$2.50 comisión)</p>
-              <p class="text-xs text-txtsoft">Se añaden $2.50 por comisión de PayPal al total. Haz clic en el botón para pagar:</p>
-              <a href="https://paypal.me/aggrx" target="_blank" rel="noopener noreferrer" class="block w-full bg-[#0070ba] text-white rounded-xl py-2.5 text-sm font-medium text-center hover:opacity-90 transition">Pagar con PayPal →</a>
-              <div><label class="block text-xs font-medium text-txtsec mb-1">Número de referencia</label><input id="payRefPayPal" type="text" placeholder="Ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
+              <p class="text-xs text-txtsoft">se añaden $2.50 por comisión de PayPal al total. haz clic en el botón para pagar:</p>
+              <a href="https://paypal.me/aggrx" target="_blank" rel="noopener noreferrer" class="block w-full bg-[#0070ba] text-white rounded-xl py-2.5 text-sm font-medium text-center hover:opacity-90 transition">pagar con PayPal →</a>
+              <div><label class="block text-xs font-medium text-txtsec mb-1">número de referencia</label><input id="payRefPayPal" type="text" placeholder="ej: 123456789" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition"></div>
             </div>
           </div>
           <div id="detalleTarjeta" class="payment-detail hidden">
-            <div class="bg-surface rounded-xl px-4 py-4 text-center"><p class="text-sm font-medium text-txtsec">💳 Tarjeta Internacional</p><p class="text-xs text-txtsoft mt-2">Próximamente disponible</p></div>
+            <div class="bg-surface rounded-xl px-4 py-4 text-center"><p class="text-sm font-medium text-txtsec">💳 tarjeta internacional</p><p class="text-xs text-txtsoft mt-2">próximamente disponible</p></div>
           </div>
         </div>
-        <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">Ver Recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
-        <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+        <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">ver recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
       <!-- STEP 4 - Recibo -->
       <div id="step4" class="card-shadow bg-white rounded-2xl p-6 hidden">
-        <h2 class="font-title text-2xl font-semibold mb-1">Recibo y Confirmación</h2>
-        <p class="text-txtsoft text-sm mb-4">Revisa los datos antes de confirmar</p>
+        <h2 class="font-title text-2xl font-semibold mb-1">recibo y confirmación</h2>
+        <p class="text-txtsoft text-sm mb-4">revisa los datos antes de confirmar</p>
         <div class="flex items-start gap-2 mb-4 bg-surface rounded-xl px-4 py-3">
           <input type="checkbox" id="consentCheck" class="mt-1 accent-[#c4a0ac]">
-          <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">Confirmo que los datos proporcionados son correctos y acepto las <button onclick="showPoliticas()" class="font-bold underline underline-offset-2 hover:text-accent transition inline">políticas y condiciones</button> del servicio de lectura de tarot.</label>
+          <label for="consentCheck" class="text-xs text-txtsec leading-relaxed">confirmo que los datos proporcionados son correctos y acepto las <button onclick="showPoliticas()" class="font-bold underline underline-offset-2 hover:text-accent transition inline">políticas y condiciones</button> del servicio de lectura de tarot.</label>
         </div>
         <div id="receiptCard" class="border border-gray-100 rounded-xl p-5 mb-4 bg-surface/50">
           <div class="text-center mb-3">
             <p class="text-accentSoft text-sm">⊹ ୨ᰔ୧ ⊹</p>
             <p class="font-title text-lg font-semibold">Stardust Tarot</p>
-            <p class="text-xs text-txtsoft">Comprobante de Lectura</p>
+            <p class="text-xs text-txtsoft">comprobante de lectura</p>
           </div>
           <div class="border-t border-dashed border-gray-200 my-3"></div>
           <div id="receiptBody" class="text-sm space-y-2"></div>
           <div class="border-t border-dashed border-gray-200 my-3"></div>
           <div class="text-center"><p class="text-xs text-txtsoft">TOTAL</p><p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p></div>
         </div>
-        <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">Hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
-        <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button><button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button></div>
-        <div id="loadingPanel" class="hidden mt-4 fade-in text-center"><div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-accent rounded-full animate-spin mb-4"></div><p class="text-sm text-txtsoft">Enviando confirmación…</p></div>
+        <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+        <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> confirmar</button></div>
+        <div id="loadingPanel" class="hidden mt-4 fade-in text-center"><div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-accent rounded-full animate-spin mb-4"></div><p class="text-sm text-txtsoft">enviando confirmación…</p></div>
         <div id="optionsPanel" class="hidden mt-4 fade-in">
           <div class="flex flex-col gap-2">
-            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
-            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
-            <button onclick="goStep(3)" class="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Atrás</button>
+            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> descargar imagen</button>
+            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> enviar a @thestardust.tarot</button>
+            <button onclick="goStep(3)" class="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button>
           </div>
         </div>
         <div id="successPanel" class="hidden mt-4 fade-in text-center">
           <div class="text-4xl mb-2">✨</div>
-          <p class="font-title text-xl font-semibold mb-1">¡Listo!</p>
-          <p class="text-sm text-txtsoft mb-4">Tu recibo ha sido creado exitosamente</p>
+          <p class="font-title text-xl font-semibold mb-1">¡listo!</p>
+          <p class="text-sm text-txtsoft mb-4">tu recibo ha sido creado exitosamente</p>
           <div class="flex flex-col gap-2 mt-2">
-            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> Descargar imagen</button>
-            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> Enviar a @thestardust.tarot</button>
+            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> descargar imagen</button>
+            <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> enviar a @thestardust.tarot</button>
           </div>
-          <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">Volver a comprobantes</button><button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">Agendar otra</button></div>
+          <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">volver a comprobantes</button><button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">agendar otra</button></div>
         </div>
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
+        <p class="text-center mt-2"><button type="button" onclick="showLecturasGuide()" class="text-xs text-accent font-medium hover:underline underline-offset-2 transition">todas las lecturas disponibles</button></p>
       </div>
 
     </div><!-- /Steps Container -->
@@ -252,7 +251,8 @@
 
   <!-- Políticas y Condiciones Overlay -->
   <div id="politicasOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hidePoliticas(event)" style="background: rgba(0,0,0,0.4);">
-    <div class="politicas-card card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+    <div class="politicas-card relative card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+      <button type="button" class="overlay-card-close" onclick="hidePoliticas()" aria-label="cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
       <div class="text-center mb-6">
         <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
         <h1 class="font-title text-3xl md:text-4xl italic font-normal text-txt">términos y condiciones<br>de las lecturas ✦</h1>
@@ -286,14 +286,15 @@
         <p class="text-center">si tienes alguna duda antes de reservar, escríbeme — estoy aquí para aclararte lo que necesites ✦</p>
       </div>
       <div class="text-center">
-        <button onclick="hidePoliticas()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">Cerrar</button>
+        <button onclick="hidePoliticas()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">cerrar</button>
       </div>
     </div>
   </div>
 
   <!-- Guía de Lecturas Overlay -->
   <div id="lecturasGuideOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hideLecturasGuide(event)" style="background: rgba(0,0,0,0.4);">
-    <div class="lecturas-guide-card card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+    <div class="lecturas-guide-card relative card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+      <button type="button" class="overlay-card-close" onclick="hideLecturasGuide()" aria-label="cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
       <div class="text-center mb-6">
         <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
         <h1 class="font-title text-3xl md:text-4xl italic font-normal text-txt">encontrar tu lectura ✦</h1>
@@ -309,22 +310,36 @@
         <p class="text-center text-txtsoft italic text-xs">cualquiera que elijas será la correcta — confía en lo que resuena contigo hoy 🤍</p>
       </div>
       <div class="text-center">
-        <button onclick="hideLecturasGuide()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">Entendido</button>
+        <button onclick="hideLecturasGuide()" class="bg-accent text-white rounded-xl py-2.5 px-6 text-sm font-medium hover:opacity-90 transition">entendido</button>
       </div>
     </div>
   </div>
 
+  <!-- Quiz Overlay - Qué lectura necesitas hoy -->
+  <div id="quizOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hideQuiz(event)" style="background: rgba(0,0,0,0.4);">
+    <div class="quiz-card relative card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
+      <button type="button" class="overlay-card-close" onclick="hideQuiz()" aria-label="cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <div class="text-center mb-6">
+        <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
+        <h2 class="font-title text-2xl italic font-normal text-txt mb-1">¿qué lectura necesitas hoy?</h2>
+        <p class="text-txtsoft text-xs">4 preguntas · 1 minuto ✦</p>
+      </div>
+      <div id="quizBody"></div>
+    </div>
+  </div>
   <!-- JS Modules (order: dependencies first) -->
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
   <script src="js/data/platforms.js"></script>
   <script src="js/data/readings.js"></script>
+  <script src="js/data/quiz.js"></script>
   <script src="js/utils/helpers.js"></script>
   <script src="js/utils/toast.js"></script>
   <script src="js/core/validation.js"></script>
   <script src="js/core/navigation.js"></script>
   <script src="js/core/router.js"></script>
   <script src="js/ui/readings-ui.js"></script>
+  <script src="js/ui/quiz-ui.js"></script>
   <script src="js/ui/payment-ui.js"></script>
   <script src="js/ui/receipt-ui.js"></script>
   <script src="js/ui/calendar-ui.js"></script>

@@ -3,6 +3,14 @@ html, body { height: 100%; margin: 0; }
 body { box-sizing: border-box; }
 .card-shadow { box-shadow: 0 0 30px rgba(196,160,172,0.15); }
 
+/* Fondo con mas profundidad: gradiente sutil sobre el beige */
+body {
+  background-color: #f5f0eb;
+  background-image: linear-gradient(180deg, #f9f5f2 0%, #f5f0eb 45%, #f0e7e5 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
 /* Input focus glow */
 input:focus, textarea:focus, select:focus {
   border-color: #c4a0ac;

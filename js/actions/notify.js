@@ -52,7 +52,7 @@ async function enviarNotificacionRecibo() {
 
 async function confirmReceipt() {
   if (!document.getElementById('consentCheck').checked) {
-    return showNotification('Acepta las condiciones para continuar');
+    return showNotification('acepta las condiciones para continuar');
   }
   document.getElementById('preConfirmBtns').classList.add('hidden');
   document.getElementById('loadingPanel').classList.remove('hidden');
@@ -60,7 +60,7 @@ async function confirmReceipt() {
   document.getElementById('loadingPanel').classList.add('hidden');
   if (!ok) {
     document.getElementById('preConfirmBtns').classList.remove('hidden');
-    return showNotification('No se pudo enviar la confirmación. Intenta de nuevo.');
+    return showNotification('no se pudo enviar la confirmación. intenta de nuevo.');
   }
   document.getElementById('confirmHint').classList.remove('hidden');
   document.getElementById('successPanel').classList.remove('hidden');
