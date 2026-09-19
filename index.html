@@ -82,7 +82,7 @@
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>Amor & Relaciones</button>
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>Trabajo</button>
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="general"><i data-lucide="sparkles" class="w-5 h-5 mx-auto mb-1.5"></i>General</button>
-          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="extensa"><i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5"></i>Lectura extensa</button>
+          <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="rapidas"><i data-lucide="zap" class="w-5 h-5 mx-auto mb-1.5"></i>Respuestas rápidas</button>
         </div>
         <button type="button" id="lecturasGuideLink" onclick="showLecturasGuide()" class="w-full text-center text-xs text-txtsoft hover:text-accent transition italic underline underline-offset-2 mb-4 py-2.5 border border-dashed border-accent/30 rounded-xl bg-accent/5 hover:bg-accent/10">¿no sabes cuál elegir? te ayudo a decidir ✦</button>
         <div id="readingsPanel" class="hidden reading-panel mb-4">
@@ -303,38 +303,7 @@
 
         <div>
           <h2 class="font-title text-lg font-semibold italic text-txt">tipo de lecturas disponibles</h2>
-          <div class="mt-2 space-y-3">
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Lectura General corta <span class="text-txtsoft font-normal">— $7.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">para cuando necesitas claridad rápida diferentes áreas de tu vida de manera breve. 6 cartas, 10 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿este cambio es para mí? ¿qué energía me rodea ahora?</p>
-            </div>
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Amor & Relaciones corta <span class="text-txtsoft font-normal">— $7.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">para ver con nuevos ojos lo que siente alguien por ti, o qué sientes por ti misma. 6 cartas, 10 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿qué hay entre nosotros? ¿es momento de soltar o de acercarme? ¿cómo puedo mejorar esta relación? ¿en qué debo enfocarme para fortalecer mi amor propio?</p>
-            </div>
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Trabajo & Dinero corta <span class="text-txtsoft font-normal">— $7.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">cuando el trabajo o el dinero te tienen dando vueltas y necesitas una brújula. 6 cartas, 10 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿sigo en este trabajo? ¿se abre una puerta para mí?</p>
-            </div>
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Trabajo & Dinero extensa <span class="text-txtsoft font-normal">— $12.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">para una mirada más profunda sobre dinámicas laborales, decisiones y oportunidades de crecimiento. 12 cartas, 20 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿qué oportunidades hay para mí en mi carrera? ¿cómo puedo mejorar mi relación con el dinero?</p>
-            </div>
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Lectura General extensa <span class="text-txtsoft font-normal">— $12.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">cuando quieres ver el bosque completo y no solo el árbol. 11 cartas, 20 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿hacia dónde voy? ¿qué necesito soltar para avanzar?</p>
-            </div>
-            <div class="bg-surface rounded-xl px-4 py-3">
-              <p class="font-medium">✧ Lectura Radiografía De Amor extensa <span class="text-txtsoft font-normal">— $12.50</span></p>
-              <p class="text-xs text-txtsoft mt-1">para ir al fondo de un vínculo, una ruptura o un patrón que se repite. 11 cartas, 20 min.</p>
-              <p class="text-xs italic text-txtsoft/80 mt-1">ej. ¿por qué repito esta historia? ¿qué viene para mi vida amorosa?</p>
-            </div>
-          </div>
+          <div id="lecturasGuideList" class="mt-2"></div>
         </div>
 
         <p class="text-center text-txtsoft italic text-xs">cualquiera que elijas será la correcta — confía en lo que resuena contigo hoy 🤍</p>

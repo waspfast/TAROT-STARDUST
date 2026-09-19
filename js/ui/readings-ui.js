@@ -18,7 +18,7 @@ function renderReadingsForCategory(category) {
       ${r.paraTi ? `
         <div class="reading-expand" data-expand-content="${r.id}">
           <div class="text-xs leading-relaxed text-txtsoft bg-surface rounded-xl px-4 py-3 mt-1">
-            <p>${r.paraTi}</p>
+            <p>${formatReadingText(r.paraTi)}</p>
             ${r.ejemplo ? `<p class="mt-1.5 italic opacity-90">ej. ${r.ejemplo}</p>` : ''}
           </div>
         </div>
@@ -112,4 +112,33 @@ function renderCategorySubtitles() {
       btn.appendChild(sub);
     }
   });
+}
+
+// Convierte saltos de línea en <br> para descripciones de varios párrafos
+function formatReadingText(text) {
+  return String(text).split('\n').map(function (s) { return s.trim(); }).filter(Boolean).join('<br>');
+}
+
+// Genera la guía de lecturas desde el catálogo, agrupada por categoría
+function renderLecturasGuide() {
+  const list = document.getElementById('lecturasGuideList');
+  if (!list) return;
+  const order = ['amor', 'trabajo', 'general', 'rapidas'];
+  let html = '';
+  order.forEach(function (cat) {
+    const items = readingsCatalog.filter(function (r) { return r.categories.includes(cat); });
+    if (!items.length) return;
+    html += '<p class="font-title text-base font-semibold italic text-accent mt-4">' + categoryLabels[cat] + '</p>';
+    html += '<div class="mt-1.5 space-y-3">';
+    items.forEach(function (r) {
+      const firstPara = String(r.paraTi).split('\n')[0];
+      html += '<div class="bg-surface rounded-xl px-4 py-3">';
+      html += '<p class="font-medium">✧ ' + r.title + ' <span class="text-txtsoft font-normal">— $' + r.price.toFixed(2) + '</span></p>';
+      html += '<p class="text-xs text-txtsoft mt-1">' + firstPara + ' ' + r.meta + '</p>';
+      html += '<p class="text-xs italic text-txtsoft/80 mt-1">ej. ' + r.ejemplo + '</p>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  list.innerHTML = html;
 }

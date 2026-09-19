@@ -64,6 +64,7 @@ function hidePoliticas(e) {
 function showLecturasGuide() {
   const overlay = document.getElementById('lecturasGuideOverlay');
   if (!overlay) return;
+  if (typeof renderLecturasGuide === 'function') renderLecturasGuide();
   overlay.classList.remove('hidden');
   const card = overlay.querySelector('.lecturas-guide-card');
   if (card) {
