@@ -67,9 +67,9 @@ function updateSelectedReadingsSummary() {
   }
   summary.classList.remove('hidden');
   list.innerHTML = keys.map(key => `
-    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2.5 py-1 text-xs">
+    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full pl-3 pr-1 py-1 text-sm">
       ${readingNames[key]}
-      <button type="button" class="text-txtsoft hover:text-accent transition" data-remove="${key}" aria-label="quitar lectura">×</button>
+      <button type="button" class="flex items-center justify-center w-7 h-7 rounded-full text-txtsoft hover:text-accent hover:bg-accent/10 transition shrink-0" data-remove="${key}" aria-label="quitar lectura">×</button>
     </span>
   `).join('');
   list.querySelectorAll('[data-remove]').forEach(btn => {
