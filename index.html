@@ -80,7 +80,7 @@
         <h2 class="font-title text-2xl font-semibold mb-1">tipo de lectura</h2>
         <p id="readingStepHint" class="text-txtsoft text-sm mb-5">elige una categoría para ver las lecturas disponibles</p>
         <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-          <div><p class="text-sm font-medium">¿lectura de emergencia?</p><p class="text-xs text-txtsoft">si necesitas tu lectura para YA y no puedes esperar ♥ (+$7.00)</p></div>
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (+$7.00)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
           <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
         </div>
         <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
@@ -359,6 +359,13 @@
       <h3 class="fdate-title" id="fdateTitle">agenda llena ✨</h3>
       <p class="fdate-text" id="fdateText">esa fecha ya no tiene cupo. elige otro día disponible ✨</p>
       <button type="button" class="fdate-btn" id="fdateBtn" onclick="fdateAction()">entendido</button>
+      <div class="fdate-emergency" id="fdateEmergency" hidden>
+        <div class="fdate-toggle-row">
+          <span class="fdate-toggle-label">activar emergencia</span>
+          <div id="fdateToggle" class="toggle-track off" onclick="fdateToggleEmergency()"></div>
+        </div>
+        <button type="button" class="fdate-nothanks" onclick="closeFullDateModal()">no, gracias</button>
+      </div>
     </div>
   </div>
 </body>

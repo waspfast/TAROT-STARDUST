@@ -187,32 +187,41 @@ function toggleCalendar() {
   setCalendarOpen(!isCalendarOpen());
 }
 
-let _fdateMode = 'full';
-
 function showFullDateModal(mode) {
-  _fdateMode = mode === 'emergency' ? 'emergency' : 'full';
+  const isEmergency = mode === 'emergency';
   const title = document.getElementById('fdateTitle');
   const text = document.getElementById('fdateText');
   const btn = document.getElementById('fdateBtn');
-  if (_fdateMode === 'emergency') {
+  const emergencyBox = document.getElementById('fdateEmergency');
+  const toggle = document.getElementById('fdateToggle');
+
+  if (isEmergency) {
     if (title) title.textContent = 'solo emergencia ✨';
     if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$7.00). actívala para reservar este día ♥';
-    if (btn) btn.textContent = 'activar emergencia';
+    if (btn) btn.hidden = true;
+    if (emergencyBox) emergencyBox.hidden = false;
+    if (toggle) { toggle.classList.remove('on'); toggle.classList.add('off'); }
   } else {
     if (title) title.textContent = 'agenda llena ✨';
     if (text) text.textContent = 'esa fecha ya no tiene cupo. elige otro día disponible ✨';
-    if (btn) btn.textContent = 'entendido';
+    if (btn) btn.hidden = false;
+    if (emergencyBox) emergencyBox.hidden = true;
   }
   const m = document.getElementById('fullDateModal');
   if (m) m.classList.add('open');
 }
 
-// Accion del boton del modal: si es "solo emergencia", activa el modo emergencia.
+// Interruptor del modal: activa el modo emergencia y cierra.
+function fdateToggleEmergency() {
+  const toggle = document.getElementById('fdateToggle');
+  if (toggle) { toggle.classList.remove('off'); toggle.classList.add('on'); }
+  if (!state.emergency) toggleEmergency();
+  closeFullDateModal();
+}
+
+// Boton "entendido" (solo modo agenda llena).
 function fdateAction() {
   closeFullDateModal();
-  if (_fdateMode === 'emergency' && !state.emergency) {
-    toggleEmergency();
-  }
 }
 
 function closeFullDateModal() {

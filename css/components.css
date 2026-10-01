@@ -469,6 +469,11 @@ button.bg-accent:hover:not(:active) {
 .fdate-text { font-size: 13px; line-height: 1.55; color: #8f7f84; margin-bottom: 18px; }
 .fdate-btn { width: 100%; border: none; background: #c4a0ac; color: #fff; border-radius: 12px; padding: 11px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s ease; }
 .fdate-btn:hover { background: #b8919e; }
+.fdate-btn[hidden], .fdate-emergency[hidden] { display: none; }
+.fdate-emergency { margin-top: 2px; }
+.fdate-toggle-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
+.fdate-toggle-label { font-size: 14px; font-weight: 500; color: #3a3535; }
+.fdate-nothanks { display: block; margin: 0 auto; border: none; background: transparent; color: #8f7f84; font-size: 13px; text-decoration: underline; cursor: pointer; font-family: inherit; }
 
 /* Aviso bajo el calendario */
 .date-note { display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 16px; padding: 10px 12px; background: rgba(196, 160, 172, 0.10); border: 1px solid rgba(196, 160, 172, 0.28); border-radius: 12px; font-size: 12px; line-height: 1.5; color: #8f7f84; }
