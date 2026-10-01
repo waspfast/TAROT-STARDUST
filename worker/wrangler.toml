@@ -1,0 +1,7 @@
+name = "stardustworker"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "BOOKINGS"
+id = "70a81faafbc14e7e9ac2010b0cda4d92"

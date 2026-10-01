@@ -25,6 +25,7 @@ function getReceiptDataForNotification() {
     total: `$${calcTotal().toFixed(2)}`,
     lecturas, detalle: state.detalle || 'Sin detalle',
     emergencia: state.emergency ? 'Sí' : 'No',
+    es_emergencia: !!state.emergency,
     ...pagoInfo
   };
 }
@@ -62,6 +63,7 @@ async function confirmReceipt() {
     document.getElementById('preConfirmBtns').classList.remove('hidden');
     return showNotification('no se pudo enviar la confirmación. intenta de nuevo.');
   }
+  if (typeof markBooked === 'function') markBooked(state.fecha, !!state.emergency);
   document.getElementById('confirmHint').classList.remove('hidden');
   document.getElementById('successPanel').classList.remove('hidden');
   document.getElementById('successPanel').classList.add('fade-in');

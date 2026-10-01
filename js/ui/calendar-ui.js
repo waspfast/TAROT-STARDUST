@@ -7,9 +7,20 @@ const CAL_DAYNAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'vie
 
 let _calYear = null;
 let _calMonth = null;
+let _availLoaded = {};
 
 function _capWord(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+async function _loadMonthAvailability(year, month) {
+  const key = year + '-' + String(month + 1).padStart(2, '0');
+  if (_availLoaded[key]) return;
+  _availLoaded[key] = true;
+  const from = formatDateValue(new Date(year, month, 1));
+  const to = formatDateValue(new Date(year, month + 1, 0));
+  await fetchAvailability(from, to);
+  renderCalendar();
 }
 
 // Fecha minima permitida: hoy + 2 dias normal, hoy mismo si es emergencia
@@ -38,6 +49,8 @@ function selectCalendarDate(iso) {
   if (dow === 0 || dow === 6) return; // sabado o domingo: no permitido
   const minIso = formatDateValue(getCalendarMinDate());
   if (iso < minIso) return; // dia ya pasado o no disponible
+  const avail = getDayAvailability(iso);
+  if (state.emergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0) return; // sin cupo del tipo elegido
   state.fecha = iso;
   const input = document.getElementById('inpDate');
   if (input) input.value = iso;
@@ -95,17 +108,26 @@ function renderCalendar() {
     const isPast = !isWeekend && iso < minIso;
     const isToday = iso === todayIso;
     const isSelected = state.fecha === iso;
+    const avail = getDayAvailability(iso);
+    // Sin cupo del tipo elegido (normal o emergencia)
+    const isFull = !isWeekend && !isPast && (state.emergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0);
 
     let cls = 'cal-day';
     if (isWeekend) cls += ' is-weekend';
     if (isPast) cls += ' is-past';
+    if (isFull) cls += ' is-full';
     if (isToday && !isPast && !isWeekend) cls += ' is-today';
     if (isSelected) cls += ' selected';
 
-    html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isWeekend || isPast ? ' disabled' : '') + '>' + d + '</button>';
+    let inner = '<span class="cal-num">' + d + '</span>';
+    if (!isWeekend && !isPast) {
+      inner += '<span class="cal-dot' + (isFull ? ' is-full' : '') + '"></span>';
+    }
+
+    html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isWeekend || isPast ? ' disabled' : '') + '>' + inner + '</button>';
   }
   html += '</div>';
-  html += '<div class="calendar-note">sábados y domingos no disponibles</div>';
+  html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
 
   container.innerHTML = html;
 
@@ -114,7 +136,10 @@ function renderCalendar() {
   if (prevBtn) prevBtn.addEventListener('click', function () { changeCalendarMonth(-1); });
   if (nextBtn) nextBtn.addEventListener('click', function () { changeCalendarMonth(1); });
   container.querySelectorAll('.cal-day:not(:disabled)').forEach(function (btn) {
-    btn.addEventListener('click', function () { selectCalendarDate(btn.dataset.iso); });
+    btn.addEventListener('click', function () {
+        if (btn.classList.contains('is-full')) showFullDateModal();
+        else selectCalendarDate(btn.dataset.iso);
+      });
   });
 
   const lbl = document.getElementById('dateTriggerLabel');
@@ -122,6 +147,7 @@ function renderCalendar() {
     lbl.textContent = state.fecha ? '\u2726 ' + formatPrettyDate(state.fecha) : 'elegir fecha';
   }
   if (window.lucide) setTimeout(function () { lucide.createIcons(); }, 0);
+  _loadMonthAvailability(year, month);
 }
 
 function isCalendarOpen() {
@@ -142,4 +168,14 @@ function setCalendarOpen(open) {
 
 function toggleCalendar() {
   setCalendarOpen(!isCalendarOpen());
+}
+
+function showFullDateModal() {
+  const m = document.getElementById('fullDateModal');
+  if (m) m.classList.add('open');
+}
+
+function closeFullDateModal() {
+  const m = document.getElementById('fullDateModal');
+  if (m) m.classList.remove('open');
 }

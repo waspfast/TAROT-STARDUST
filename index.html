@@ -79,6 +79,10 @@
       <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">tipo de lectura</h2>
         <p id="readingStepHint" class="text-txtsoft text-sm mb-5">elige una categoría para ver las lecturas disponibles</p>
+        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
+          <div><p class="text-sm font-medium">¿lectura de emergencia?</p><p class="text-xs text-txtsoft">si necesitas tu lectura para YA y no puedes esperar ♥ (+$7.00)</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
         <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>amor & relaciones</button>
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>trabajo</button>
@@ -93,10 +97,6 @@
         <div id="selectedReadingsSummary" class="hidden mb-4 bg-surface rounded-xl px-4 py-3">
           <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">lecturas seleccionadas</p>
           <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
-        </div>
-        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-          <div><p class="text-sm font-medium">¿lectura de emergencia?</p><p class="text-xs text-txtsoft">+$7.00 adicional</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
         </div>
         <label class="block text-sm font-medium text-txtsec mb-1">detalle de tu consulta</label>
         <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
@@ -333,6 +333,7 @@
   <script src="js/data/platforms.js"></script>
   <script src="js/data/readings.js"></script>
   <script src="js/data/quiz.js"></script>
+  <script src="js/data/availability.js"></script>
   <script src="js/utils/helpers.js"></script>
   <script src="js/utils/toast.js"></script>
   <script src="js/core/validation.js"></script>
@@ -349,5 +350,16 @@
   <script src="js/element-sdk.js"></script>
   <script src="js/events.js"></script>
   <script src="js/app.js"></script>
+  
+  <!-- Modal: fecha agotada -->
+  <div id="fullDateModal" class="fdate-overlay">
+    <div class="fdate-card">
+      <button type="button" class="fdate-close" onclick="closeFullDateModal()" aria-label="cerrar">✕</button>
+      <p class="fdate-emoji">✦</p>
+      <h3 class="fdate-title">agenda llena ✨</h3>
+      <p class="fdate-text">esa fecha ya está agendada y no tengo cupo. si necesitas tu lectura para YA, vuelve al paso "tipo de lectura" y activa "lectura de emergencia" ♥</p>
+      <button type="button" class="fdate-btn" onclick="closeFullDateModal()">entendido</button>
+    </div>
+  </div>
 </body>
 </html>
