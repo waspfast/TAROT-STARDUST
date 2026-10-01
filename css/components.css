@@ -467,3 +467,7 @@ button.bg-accent:hover:not(:active) {
 .fdate-text { font-size: 13px; line-height: 1.55; color: #8f7f84; margin-bottom: 18px; }
 .fdate-btn { width: 100%; border: none; background: #c4a0ac; color: #fff; border-radius: 12px; padding: 11px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s ease; }
 .fdate-btn:hover { background: #b8919e; }
+
+/* Aviso bajo el calendario */
+.date-note { display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 16px; padding: 10px 12px; background: rgba(196, 160, 172, 0.10); border: 1px solid rgba(196, 160, 172, 0.28); border-radius: 12px; font-size: 12px; line-height: 1.5; color: #8f7f84; }
+.date-note .date-note-icon { flex: 0 0 auto; width: 15px; height: 15px; color: #c4a0ac; }

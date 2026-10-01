@@ -25,8 +25,8 @@ function goStep(n) {
     progressBar.classList.add('hidden');
   }
 
-  // ── Step 2: adapt for returning users (contacto) ──
-  if (n === 2) {
+  // ── Step 3: adapt for returning users (contacto) ──
+  if (n === 3) {
     const inputGroup = document.getElementById('contactInputGroup');
     const subtitle = document.getElementById('contactSubtitle');
     if (state.esConsultanteNueva === false) {
@@ -39,12 +39,14 @@ function goStep(n) {
   }
 
   // ── Validations (must happen before animation) ──
-  if (n === 2 && !validateReadings()) return; // step2 = contacto: asegurar lecturas seleccionadas antes de entrar
-  if (n === 3 && !validateContact()) return;  // step3 = fecha/pago: asegurar contacto antes de entrar
-  if (n === 4) {
+  if (n === 2 && !validateReadings()) return; // step2 = fecha/pago: asegurar lecturas seleccionadas antes de entrar
+  if (n === 3) {                              // step3 = contacto: asegurar fecha, horario y pago antes de entrar
     if (!state.fecha) return showNotification('selecciona una fecha');
     if (!state.horario) return showNotification('selecciona un horario');
     if (!state.pago) return showNotification('selecciona un método de pago');
+  }
+  if (n === 4) {                              // step4 = recibo: asegurar contacto antes de entrar
+    if (!validateContact()) return;
     if (!validateStep4Payment()) return;
     buildReceipt();
   }

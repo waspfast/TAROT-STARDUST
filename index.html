@@ -103,8 +103,8 @@
         <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
-      <!-- STEP 2 - Contacto -->
-      <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
+      <!-- STEP 3 - Contacto -->
+      <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden fade-in">
         <h2 class="font-title text-2xl font-semibold mb-1">datos de contacto</h2>
         <p id="contactSubtitle" class="text-txtsoft text-sm mb-5">¿cómo puedo comunicarme contigo?</p>
         <label class="block text-sm font-medium text-txtsec mb-1">nombre y apellido</label>
@@ -123,11 +123,11 @@
               <input id="inpContact" type="text" placeholder="selecciona una plataforma arriba" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition">
             </div>
           </div>
-        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
-      <!-- STEP 3 - Fecha, Horario y Pago -->
-      <div id="step3" class="card-shadow bg-white rounded-2xl p-6 hidden">
+      <!-- STEP 2 - Fecha, Horario y Pago -->
+      <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
         <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
         <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
@@ -144,7 +144,7 @@
             <input id="inpDate" type="hidden">
           </div>
         </div>
-        <p class="text-xs text-txtsoft mb-4 mt-2">disponible de lunes a viernes · para el día de hoy o mañana activa "lectura de emergencia" 🤍</p>
+        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si necesitas la lectura hoy o mañana, activa "lectura de emergencia"</span></div>
         <label class="block text-sm font-medium text-txtsec mb-2">horario</label>
         <div class="grid grid-cols-2 gap-2 mb-4">
           <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
@@ -196,7 +196,7 @@
             <div class="bg-surface rounded-xl px-4 py-4 text-center"><p class="text-sm font-medium text-txtsec">💳 tarjeta internacional</p><p class="text-xs text-txtsoft mt-2">próximamente disponible</p></div>
           </div>
         </div>
-        <div class="flex gap-3"><button onclick="goStep(2)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(4)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">ver recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+        <div class="flex gap-3"><button onclick="goStep(1)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(3)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">ver recibo <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
       <!-- STEP 4 - Recibo -->
