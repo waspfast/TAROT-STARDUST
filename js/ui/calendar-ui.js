@@ -211,12 +211,12 @@ function showFullDateModal(mode) {
   if (m) m.classList.add('open');
 }
 
-// Interruptor del modal: activa el modo emergencia y cierra.
+// Interruptor del modal: activa el modo emergencia y cierra tras ver la animacion.
 function fdateToggleEmergency() {
   const toggle = document.getElementById('fdateToggle');
   if (toggle) { toggle.classList.remove('off'); toggle.classList.add('on'); }
   if (!state.emergency) toggleEmergency();
-  closeFullDateModal();
+  setTimeout(closeFullDateModal, 300);
 }
 
 // Boton "entendido" (solo modo agenda llena).
