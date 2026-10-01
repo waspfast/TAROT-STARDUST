@@ -109,25 +109,41 @@ function renderCalendar() {
     const isToday = iso === todayIso;
     const isSelected = state.fecha === iso;
     const avail = getDayAvailability(iso);
-    // Sin cupo del tipo elegido (normal o emergencia)
-    const isFull = !isWeekend && !isPast && (state.emergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0);
+    // Estado del dia segun el modo activo:
+    //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = ambos llenos
+    let status = 'open';
+    if (!isWeekend && !isPast) {
+      if (state.emergency) {
+        status = avail.emergenciaLeft <= 0 ? 'full' : 'open';
+      } else if (avail.normalLeft <= 0 && avail.emergenciaLeft <= 0) {
+        status = 'full';
+      } else if (avail.normalLeft <= 0) {
+        status = 'only-emergency';
+      }
+    }
+    const isFull = status === 'full';
+    const isOnlyEmergency = status === 'only-emergency';
 
     let cls = 'cal-day';
     if (isWeekend) cls += ' is-weekend';
     if (isPast) cls += ' is-past';
     if (isFull) cls += ' is-full';
+    if (isOnlyEmergency) cls += ' is-only-emergency';
     if (isToday && !isPast && !isWeekend) cls += ' is-today';
     if (isSelected) cls += ' selected';
 
     let inner = '<span class="cal-num">' + d + '</span>';
     if (!isWeekend && !isPast) {
-      inner += '<span class="cal-dot' + (isFull ? ' is-full' : '') + '"></span>';
+      let dotCls = 'cal-dot';
+      if (isFull) dotCls += ' is-full';
+      else if (isOnlyEmergency) dotCls += ' is-only-emergency';
+      inner += '<span class="' + dotCls + '"></span>';
     }
 
     html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isWeekend || isPast ? ' disabled' : '') + '>' + inner + '</button>';
   }
   html += '</div>';
-  html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
+  html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-gold"></i>solo emergencia</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
 
   container.innerHTML = html;
 
@@ -137,7 +153,8 @@ function renderCalendar() {
   if (nextBtn) nextBtn.addEventListener('click', function () { changeCalendarMonth(1); });
   container.querySelectorAll('.cal-day:not(:disabled)').forEach(function (btn) {
     btn.addEventListener('click', function () {
-        if (btn.classList.contains('is-full')) showFullDateModal();
+        if (btn.classList.contains('is-full')) showFullDateModal('full');
+        else if (btn.classList.contains('is-only-emergency')) showFullDateModal('emergency');
         else selectCalendarDate(btn.dataset.iso);
       });
   });
@@ -170,9 +187,32 @@ function toggleCalendar() {
   setCalendarOpen(!isCalendarOpen());
 }
 
-function showFullDateModal() {
+let _fdateMode = 'full';
+
+function showFullDateModal(mode) {
+  _fdateMode = mode === 'emergency' ? 'emergency' : 'full';
+  const title = document.getElementById('fdateTitle');
+  const text = document.getElementById('fdateText');
+  const btn = document.getElementById('fdateBtn');
+  if (_fdateMode === 'emergency') {
+    if (title) title.textContent = 'solo emergencia ✨';
+    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$7.00). actívala para reservar este día ♥';
+    if (btn) btn.textContent = 'activar emergencia';
+  } else {
+    if (title) title.textContent = 'agenda llena ✨';
+    if (text) text.textContent = 'esa fecha ya no tiene cupo. elige otro día disponible ✨';
+    if (btn) btn.textContent = 'entendido';
+  }
   const m = document.getElementById('fullDateModal');
   if (m) m.classList.add('open');
+}
+
+// Accion del boton del modal: si es "solo emergencia", activa el modo emergencia.
+function fdateAction() {
+  closeFullDateModal();
+  if (_fdateMode === 'emergency' && !state.emergency) {
+    toggleEmergency();
+  }
 }
 
 function closeFullDateModal() {

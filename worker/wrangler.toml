@@ -5,3 +5,16 @@ compatibility_date = "2025-01-01"
 [[kv_namespaces]]
 binding = "BOOKINGS"
 id = "70a81faafbc14e7e9ac2010b0cda4d92"
+
+# --- Cupo atomico (D1) -----------------------------------------------
+# 1) npx wrangler d1 create stardust-db      (copia el database_id)
+# 2) descomenta el bloque de abajo y pon tu id
+# 3) npx wrangler d1 execute stardust-db --remote --file=./schema.sql
+# 4) npx wrangler deploy
+#
+# Mientras este comentado, el worker usa el respaldo KV (NO atomico).
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "stardust-db"
+# database_id = "REEMPLAZA-CON-TU-ID"

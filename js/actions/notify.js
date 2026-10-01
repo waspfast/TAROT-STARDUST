@@ -43,11 +43,14 @@ async function enviarNotificacionRecibo() {
     console.log('Respuesta del worker:', text);
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch (e) {}
-    if (!response.ok) { console.error('Worker respondió con error:', data); return false; }
-    return true;
+    if (!response.ok) {
+      if (data.error !== 'AGENDA_LLENA') console.error('Worker respondió con error:', data);
+      return { ok: false, error: data.error };
+    }
+    return { ok: true };
   } catch (err) {
     console.error('Error enviando notificación:', err);
-    return false;
+    return { ok: false };
   }
 }
 
@@ -57,10 +60,13 @@ async function confirmReceipt() {
   }
   document.getElementById('preConfirmBtns').classList.add('hidden');
   document.getElementById('loadingPanel').classList.remove('hidden');
-  const ok = await enviarNotificacionRecibo();
+  const resultado = await enviarNotificacionRecibo();
   document.getElementById('loadingPanel').classList.add('hidden');
-  if (!ok) {
+  if (!resultado.ok) {
     document.getElementById('preConfirmBtns').classList.remove('hidden');
+    if (resultado.error === 'AGENDA_LLENA') {
+      return showNotification('La agenda ya está llena para la fecha que elegiste esta semana. Elige otro día disponible.');
+    }
     return showNotification('no se pudo enviar la confirmación. intenta de nuevo.');
   }
   if (typeof markBooked === 'function') markBooked(state.fecha, !!state.emergency);

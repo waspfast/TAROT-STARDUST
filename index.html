@@ -356,9 +356,9 @@
     <div class="fdate-card">
       <button type="button" class="fdate-close" onclick="closeFullDateModal()" aria-label="cerrar">✕</button>
       <p class="fdate-emoji">✦</p>
-      <h3 class="fdate-title">agenda llena ✨</h3>
-      <p class="fdate-text">esa fecha ya está agendada y no tengo cupo. si necesitas tu lectura para YA, vuelve al paso "tipo de lectura" y activa "lectura de emergencia" ♥</p>
-      <button type="button" class="fdate-btn" onclick="closeFullDateModal()">entendido</button>
+      <h3 class="fdate-title" id="fdateTitle">agenda llena ✨</h3>
+      <p class="fdate-text" id="fdateText">esa fecha ya no tiene cupo. elige otro día disponible ✨</p>
+      <button type="button" class="fdate-btn" id="fdateBtn" onclick="fdateAction()">entendido</button>
     </div>
   </div>
 </body>

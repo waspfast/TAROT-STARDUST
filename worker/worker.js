@@ -1,6 +1,9 @@
 // ===== Stardust Tarot Worker =====
-// - GET /disponibilidad?from=YYYY-MM-DD&to=YYYY-MM-DD : consulta disponibilidad en el KV
-// - POST / : guarda el cupo en el KV y notifica a Telegram
+// - GET /disponibilidad?from&to : consulta disponibilidad
+// - POST / : reserva cupo ATOMICO y notifica a Telegram
+//
+// Cupo: usa D1 (SQLite) para reservar SIN Durable Objects.
+// Si el binding "DB" aun no existe, cae a KV (NO atomico) para no romper el deploy.
 
 const MAX_NORMAL = 6;
 const MAX_EMERGENCIA = 6;
@@ -22,15 +25,57 @@ function dateKey(iso) {
   return "booking:" + iso;
 }
 
+function useD1(env) {
+  return !!env.DB;
+}
+
+const COLS = { normal: "normal", emergencia: "emergencia" };
+
 async function getCounts(env, iso) {
+  if (useD1(env)) {
+    const row = await env.DB.prepare(
+      "SELECT normal, emergencia FROM reservas WHERE fecha = ?"
+    ).bind(iso).first();
+    return row || { normal: 0, emergencia: 0 };
+  }
   if (!env.BOOKINGS) return { normal: 0, emergencia: 0 };
   const raw = await env.BOOKINGS.get(dateKey(iso));
   return raw ? JSON.parse(raw) : { normal: 0, emergencia: 0 };
 }
 
-async function setCounts(env, iso, counts) {
-  if (!env.BOOKINGS) return;
-  await env.BOOKINGS.put(dateKey(iso), JSON.stringify(counts));
+// Reserva el cupo de forma atomica (D1) o con respaldo KV.
+// Devuelve true si hay cupo, false si AGENDA_LLENA.
+async function reservarCupo(env, fecha, tipo) {
+  const col = COLS[tipo];
+  const limite = tipo === "emergencia" ? MAX_EMERGENCIA : MAX_NORMAL;
+
+  if (useD1(env)) {
+    // Una sola sentencia: inserta o incrementa SOLO si aun hay cupo.
+    // SQLite serializa las escrituras, asi que dos reservas simultaneas
+    // no pueden pasar ambas el guard "col < limite".
+    for (let i = 0; i < 3; i++) {
+      try {
+        const res = await env.DB.prepare(`
+          INSERT INTO reservas (fecha, ${col}) VALUES (?, 1)
+          ON CONFLICT(fecha) DO UPDATE SET ${col} = ${col} + 1
+          WHERE ${col} < ?
+        `).bind(fecha, limite).run();
+        return (res.meta && res.meta.changes) > 0;
+      } catch (err) {
+        // "database is locked" (SQLITE_BUSY) -> reintenta
+        if (i === 2) throw err;
+        await new Promise((r) => setTimeout(r, 25 * (i + 1)));
+      }
+    }
+  }
+
+  // Respaldo KV (NO atomico): logica anterior.
+  const counts = await getCounts(env, fecha);
+  const ocupados = Number(counts[tipo]) || 0;
+  if (ocupados >= limite) return false;
+  counts[tipo] = ocupados + 1;
+  await env.BOOKINGS.put(dateKey(fecha), JSON.stringify(counts));
+  return true;
 }
 
 async function handleDisponibilidad(env, url) {
@@ -56,7 +101,7 @@ async function handleDisponibilidad(env, url) {
   });
 }
 
-async function enviarTelegram(env, data) {
+async function enviarTelegram(env, data, esEmergencia) {
   const token = env.TELEGRAM_BOT_TOKEN;
   const chatId = env.TELEGRAM_CHAT_ID;
 
@@ -79,7 +124,7 @@ async function enviarTelegram(env, data) {
     `💫  total        ·  ${data.total || "-"}`,
     "",
     "- - - - - - - - - - - - - - - - - - ",
-    data.emergencia || data.es_emergencia ? `⚡  emergencia   ·  ${data.emergencia || "Sí"}` : "",
+    esEmergencia ? `⚡  emergencia   ·  Sí` : "",
     data.detalle ? `✉️  detalle      ·  ${data.detalle}` : "",
     data.banco ? `🏦  banco        ·  ${data.banco}` : "",
     data.telefono ? `📞  teléfono     ·  ${data.telefono}` : "",
@@ -117,21 +162,25 @@ async function handleReserva(env, request) {
   } catch (e) {}
 
   const fecha = data.fecha;
-  const esEmergencia = data.es_emergencia === true || Boolean(data.emergencia);
+  const esEmergencia = data.es_emergencia === true;
 
-  // Actualiza los cupos en KV si la fecha es válida
-  if (fecha && typeof fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    const counts = await getCounts(env, fecha);
-    if (esEmergencia) {
-      counts.emergencia = (counts.emergencia || 0) + 1;
-    } else {
-      counts.normal = (counts.normal || 0) + 1;
-    }
-    await setCounts(env, fecha, counts);
+  if (!fecha || typeof fecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return json({ error: "FECHA_INVALIDA" }, 400);
+  }
+
+  const tipo = esEmergencia ? "emergencia" : "normal";
+
+  const reservado = await reservarCupo(env, fecha, tipo);
+  if (!reservado) {
+    return json({
+      error: "AGENDA_LLENA",
+      tipo: tipo,
+      fecha: fecha,
+    }, 409);
   }
 
   // Envía el mensaje detallado a Telegram
-  await enviarTelegram(env, data);
+  await enviarTelegram(env, data, esEmergencia);
 
   return json({ success: true, ok: true });
 }
