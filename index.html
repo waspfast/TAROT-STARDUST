@@ -79,10 +79,6 @@
       <div id="step1" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">tipo de lectura</h2>
         <p id="readingStepHint" class="text-txtsoft text-sm mb-5">elige una categoría para ver las lecturas disponibles</p>
-        <div class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3">
-          <div><p class="text-sm font-medium">¿lectura de emergencia? (+$7.00)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-        </div>
         <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4">
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>amor & relaciones</button>
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="trabajo"><i data-lucide="briefcase" class="w-5 h-5 mx-auto mb-1.5"></i>trabajo</button>
@@ -144,7 +140,11 @@
             <input id="inpDate" type="hidden">
           </div>
         </div>
-        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si necesitas la lectura hoy o mañana, activa "lectura de emergencia"</span></div>
+        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si necesitas la lectura esta semana, activa "lectura de emergencia"</span></div>
+        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$7.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
         <label class="block text-sm font-medium text-txtsec mb-2">horario</label>
         <div class="grid grid-cols-2 gap-2 mb-4">
           <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
@@ -153,7 +153,7 @@
         <label class="block text-sm font-medium text-txtsec mb-2">método de pago</label>
         <div class="grid grid-cols-2 gap-2 mb-5">
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">Binance <br>USDT 💵</div>
-          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">Pago Móvil<br><span class="text-xs opacity-70">tasa BCV</span></div>
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">Pago Móvil</div>
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">PayPal<br><span class="text-xs opacity-70">+$2.5 comisión</span></div>
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">Tarjeta<br>Internacional</div>
         </div>
@@ -170,7 +170,7 @@
           </div>
           <div id="detallePagoMovil" class="payment-detail hidden">
             <div class="bg-surface rounded-xl px-4 py-4 space-y-3">
-              <p class="text-sm font-medium text-txtsec">📱 pago móvil (tasa BCV)</p>
+              <p class="text-sm font-medium text-txtsec">📱 pago móvil</p>
               <div><label class="block text-xs font-medium text-txtsec mb-1">banco destino</label>
                 <select id="payBancoDestino" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent transition bg-white">
                   <option value="">selecciona un banco</option>
@@ -276,7 +276,7 @@
         <p>tu espacio queda confirmado una vez que se recibe el comprobante de pago por mensaje directo. los pagos no son reembolsables una vez confirmada la lectura. si necesitas cambiar tu fecha u horario, escríbeme con al menos 24 horas de anticipación y lo coordinamos.</p>
 
         <h2 class="font-title text-xl font-semibold italic text-txt pt-2">lecturas de emergencia</h2>
-        <p>las lecturas marcadas como emergencia tienen un costo adicional y se atienden en un plazo menor. este servicio está disponible sujeto a mi disponibilidad del momento.</p>
+        <p>las lecturas de emergencia tienen un costo adicional según la duración de tu lectura y se atienden en un plazo menor. están disponibles únicamente para fechas de esta semana (hoy hasta el domingo) y sujetas a mi disponibilidad del momento.</p>
 
         <h2 class="font-title text-xl font-semibold italic text-txt pt-2">uso del servicio</h2>
         <p>las lecturas de Stardust Tarot son con fines de entretenimiento y reflexión personal. al reservar tu lectura confirmas que entiendes la naturaleza del servicio y que la decisión sobre cualquier acción en tu vida es completamente tuya.</p>

@@ -44,6 +44,8 @@ function resetForm() {
   backToCategories();
   updateSelectedReadingsSummary();
   const t = document.getElementById('emergencyToggle');
-  t.classList.remove('on'); t.classList.add('off');
+  if (t) { t.classList.remove('on'); t.classList.add('off'); }
+  const wrap = document.getElementById('emergencyToggleWrap');
+  if (wrap) wrap.classList.add('hidden');
   goStep(0);
 }

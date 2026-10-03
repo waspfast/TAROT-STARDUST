@@ -13,7 +13,7 @@ function buildReceipt() {
   for (const [key, price] of Object.entries(state.readings)) {
     html += row(readingNames[key], '$' + price.toFixed(2));
   }
-  if (state.emergency) html += row('emergencia', '+$7.00');
+  if (state.emergency) html += row('emergencia', '+$' + getEmergencySurcharge().toFixed(2));
   if (state.pago === 'PayPal') html += row('comisión PayPal', '+$2.50');
   html += '<div class="border-t border-dashed border-gray-200 my-2"></div>';
   html += row('método de pago', state.pago);
@@ -41,7 +41,7 @@ function generateReceiptText() {
   for (const [key, price] of Object.entries(state.readings)) {
     t += `  • ${readingNames[key]} — $${price.toFixed(2)}\n`;
   }
-  if (state.emergency) t += `  • emergencia — +$7.00\n`;
+  if (state.emergency) t += `  • emergencia — +$${getEmergencySurcharge().toFixed(2)}\n`;
   if (state.pago === 'PayPal') t += `  • comisión PayPal — +$2.50\n`;
   t += line + '\n';
   t += `método de pago: ${state.pago}\n`;

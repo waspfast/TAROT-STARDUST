@@ -23,9 +23,43 @@ function updateDateRestrictions() {
   if (typeof renderCalendar === 'function') renderCalendar();
 }
 
+// ── Emergencia ──
+// Ventana de emergencia: hoy hasta el domingo de la semana actual.
+function getEmergencyWindowEndIso() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dow = today.getDay(); // 0 = domingo
+  const end = new Date(today);
+  if (dow !== 0) end.setDate(today.getDate() + (7 - dow));
+  return formatDateValue(end);
+}
+
+// ¿La fecha cae dentro de la semana actual (hoy → domingo)?
+function isEmergencyWindow(iso) {
+  if (!iso) return false;
+  const todayIso = formatDateValue(new Date());
+  return iso >= todayIso && iso <= getEmergencyWindowEndIso();
+}
+
+// Recargo de emergencia según la duración total de las lecturas elegidas.
+// Devuelve 0 cuando la emergencia no aplica (nada elegido o alguna lectura sin prioridad).
+// < 20 min => +$7 | >= 20 min => +$10
+function getEmergencySurcharge() {
+  const keys = Object.keys(state.readings);
+  if (keys.length === 0) return 0;
+  let totalMin = 0;
+  for (const key of keys) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    if (!r) continue;
+    if (r.emergencyEligible === false) return 0; // una lectura sin prioridad bloquea la emergencia
+    totalMin += r.durationMin || 0;
+  }
+  return totalMin >= 20 ? 10 : 7;
+}
+
 function calcTotal() {
   let total = Object.values(state.readings).reduce((a, b) => a + b, 0);
-  if (state.emergency) total += 7;
+  if (state.emergency) total += getEmergencySurcharge();
   if (state.pago === 'PayPal') total += 2.5;
   return total;
 }
@@ -33,9 +67,42 @@ function calcTotal() {
 function toggleEmergency() {
   state.emergency = !state.emergency;
   const t = document.getElementById('emergencyToggle');
-  t.classList.toggle('on', state.emergency);
-  t.classList.toggle('off', !state.emergency);
+  if (t) {
+    t.classList.toggle('on', state.emergency);
+    t.classList.toggle('off', !state.emergency);
+  }
   updateDateRestrictions();
+  if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
+}
+
+// Muestra/oculta el interruptor de emergencia. Visible solo si:
+//  - la lectura elegida califica (recargo > 0)
+//  - la fecha elegida está dentro de la semana actual (si ya hay fecha)
+//  - ese día todavía tiene cupo de emergencia disponible
+// Si deja de ser válido y estaba activo, lo apaga.
+function updateEmergencyToggle() {
+  const wrap = document.getElementById('emergencyToggleWrap');
+  if (!wrap) return;
+
+  const surcharge = getEmergencySurcharge();
+  let available = surcharge > 0;
+
+  if (available && state.fecha) {
+    const avail = getDayAvailability(state.fecha);
+    available = isEmergencyWindow(state.fecha) && avail.emergenciaLeft > 0;
+  }
+
+  const label = document.getElementById('emergencySurcharge');
+  if (label && surcharge > 0) label.textContent = '+$' + surcharge.toFixed(2);
+
+  wrap.classList.toggle('hidden', !available);
+
+  if (!available && state.emergency) {
+    state.emergency = false;
+    const t = document.getElementById('emergencyToggle');
+    if (t) { t.classList.remove('on'); t.classList.add('off'); }
+    updateDateRestrictions();
+  }
 }
 
 function showAbout() {

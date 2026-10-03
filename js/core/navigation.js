@@ -20,6 +20,7 @@ function goStep(n) {
     state.detalle = document.getElementById('inpDetalle').value.trim();
     state.fecha = document.getElementById('inpDate').value;
     updateDateRestrictions();
+    if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
   } else {
     brandHeader.classList.add('hidden');
     progressBar.classList.add('hidden');
@@ -57,6 +58,11 @@ function goStep(n) {
   const targetEl = document.getElementById('step' + n);
 
   if (current === n) return; // same step, no animation
+
+  // Volver atrás a la pantalla de fecha: deseleccionar y mostrar "elegir fecha"
+  if (n === 2 && current > n && typeof resetCalendarDate === 'function') {
+    resetCalendarDate();
+  }
 
   function showTarget() {
     // Hide all steps

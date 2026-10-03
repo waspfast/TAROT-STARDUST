@@ -54,6 +54,7 @@ function toggleReading(chip) {
   }
   backToCategories();
   updateSelectedReadingsSummary();
+  updateEmergencyToggle();
 }
 
 function updateSelectedReadingsSummary() {
@@ -63,6 +64,7 @@ function updateSelectedReadingsSummary() {
   if (keys.length === 0) {
     summary.classList.add('hidden');
     list.innerHTML = '';
+    updateEmergencyToggle();
     return;
   }
   summary.classList.remove('hidden');
@@ -80,6 +82,7 @@ function updateSelectedReadingsSummary() {
       updateSelectedReadingsSummary();
     });
   });
+  updateEmergencyToggle();
 }
 
 function showReadingCategory(category) {
@@ -135,7 +138,7 @@ function renderLecturasGuide() {
       html += '<div class="bg-surface rounded-xl px-4 py-3">';
       html += '<p class="font-medium">✧ ' + r.title + ' <span class="text-txtsoft font-normal">— $' + r.price.toFixed(2) + '</span></p>';
       html += '<p class="text-xs text-txtsoft mt-1">' + firstPara + ' ' + r.meta + '</p>';
-      html += '<p class="text-xs italic text-txtsoft/80 mt-1">ej. ' + r.ejemplo + '</p>';
+      if (r.ejemplo) html += '<p class="text-xs italic text-txtsoft/80 mt-1">ej. ' + r.ejemplo + '</p>';
       html += '</div>';
     });
     html += '</div>';

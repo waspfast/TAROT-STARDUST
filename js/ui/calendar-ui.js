@@ -50,12 +50,15 @@ function selectCalendarDate(iso) {
   const minIso = formatDateValue(getCalendarMinDate());
   if (iso < minIso) return; // dia ya pasado o no disponible
   const avail = getDayAvailability(iso);
-  if (state.emergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0) return; // sin cupo del tipo elegido
+  const useEmergency = state.emergency && isEmergencyWindow(iso)
+    && getEmergencySurcharge() > 0 && avail.emergenciaLeft > 0;
+  if (useEmergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0) return; // sin cupo del tipo elegido
   state.fecha = iso;
   const input = document.getElementById('inpDate');
   if (input) input.value = iso;
   setCalendarOpen(false);
   renderCalendar();
+  if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
 }
 
 function changeCalendarMonth(dir) {
@@ -88,6 +91,7 @@ function renderCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const minMonthStart = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   const canGoBack = new Date(year, month, 1) > minMonthStart;
+  const canEmergencyReading = getEmergencySurcharge() > 0; // la lectura elegida permite emergencia
 
   let html = '<div class="flex items-center justify-between mb-2">';
   html += '<button type="button" id="calPrevBtn" class="cal-nav"' + (canGoBack ? '' : ' disabled') + ' aria-label="mes anterior"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>';
@@ -110,15 +114,15 @@ function renderCalendar() {
     const isSelected = state.fecha === iso;
     const avail = getDayAvailability(iso);
     // Estado del dia segun el modo activo:
-    //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = ambos llenos
+    //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = sin cupo
+    // La emergencia solo aplica dentro de la semana actual (hoy → domingo) y si la lectura califica.
     let status = 'open';
     if (!isWeekend && !isPast) {
-      if (state.emergency) {
-        status = avail.emergenciaLeft <= 0 ? 'full' : 'open';
-      } else if (avail.normalLeft <= 0 && avail.emergenciaLeft <= 0) {
-        status = 'full';
+      const emergencyOk = isEmergencyWindow(iso) && canEmergencyReading && avail.emergenciaLeft > 0;
+      if (state.emergency && emergencyOk) {
+        status = 'open';
       } else if (avail.normalLeft <= 0) {
-        status = 'only-emergency';
+        status = emergencyOk ? 'only-emergency' : 'full';
       }
     }
     const isFull = status === 'full';
@@ -167,6 +171,15 @@ function renderCalendar() {
   _loadMonthAvailability(year, month);
 }
 
+// Deselecciona la fecha y vuelve a mostrar "elegir fecha"
+function resetCalendarDate() {
+  state.fecha = '';
+  const input = document.getElementById('inpDate');
+  if (input) input.value = '';
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
+}
+
 function isCalendarOpen() {
   const wrap = document.getElementById('calendarCollapse');
   return wrap ? wrap.classList.contains('open') : false;
@@ -197,7 +210,7 @@ function showFullDateModal(mode) {
 
   if (isEmergency) {
     if (title) title.textContent = 'solo emergencia ✨';
-    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$7.00). actívala para reservar este día ♥';
+    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$' + getEmergencySurcharge().toFixed(2) + '). actívala para reservar este día ♥';
     if (btn) btn.hidden = true;
     if (emergencyBox) emergencyBox.hidden = false;
     if (toggle) { toggle.classList.remove('on'); toggle.classList.add('off'); }
