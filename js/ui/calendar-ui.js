@@ -115,7 +115,7 @@ function renderCalendar() {
     const avail = getDayAvailability(iso);
     // Estado del dia segun el modo activo:
     //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = sin cupo
-    // La emergencia solo aplica dentro de la semana actual (hoy → domingo) y si la lectura califica.
+    // La emergencia aplica dentro de la ventana (hoy → domingo de la semana que viene) si la lectura califica.
     let status = 'open';
     if (!isWeekend && !isPast) {
       const emergencyOk = isEmergencyWindow(iso) && canEmergencyReading && avail.emergenciaLeft > 0;

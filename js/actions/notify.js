@@ -65,7 +65,7 @@ async function confirmReceipt() {
   if (!resultado.ok) {
     document.getElementById('preConfirmBtns').classList.remove('hidden');
     if (resultado.error === 'AGENDA_LLENA') {
-      return showNotification('La agenda ya está llena para la fecha que elegiste esta semana. Elige otro día disponible.');
+      return showNotification('La agenda ya está llena para la fecha que elegiste. Elige otro día disponible.');
     }
     return showNotification('no se pudo enviar la confirmación. intenta de nuevo.');
   }

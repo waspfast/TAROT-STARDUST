@@ -24,17 +24,23 @@ function updateDateRestrictions() {
 }
 
 // ── Emergencia ──
-// Ventana de emergencia: hoy hasta el domingo de la semana actual.
+// Dias extra de agenda que cubre la emergencia despues de la semana actual.
+//   7 = hoy → domingo de la semana que viene (incluye la proxima semana)
+//   0 = solo la semana actual (hoy → domingo)
+const EMERGENCY_EXTRA_DAYS = 7;
+
+// Ventana de emergencia: hoy hasta el domingo de la semana que viene.
 function getEmergencyWindowEndIso() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dow = today.getDay(); // 0 = domingo
+  const daysToSunday = dow === 0 ? 0 : 7 - dow; // domingo de la semana actual
   const end = new Date(today);
-  if (dow !== 0) end.setDate(today.getDate() + (7 - dow));
+  end.setDate(today.getDate() + daysToSunday + EMERGENCY_EXTRA_DAYS);
   return formatDateValue(end);
 }
 
-// ¿La fecha cae dentro de la semana actual (hoy → domingo)?
+// ¿La fecha cae dentro de la ventana de emergencia (hoy → domingo de la semana que viene)?
 function isEmergencyWindow(iso) {
   if (!iso) return false;
   const todayIso = formatDateValue(new Date());
@@ -77,7 +83,7 @@ function toggleEmergency() {
 
 // Muestra/oculta el interruptor de emergencia. Visible solo si:
 //  - la lectura elegida califica (recargo > 0)
-//  - la fecha elegida está dentro de la semana actual (si ya hay fecha)
+//  - la fecha elegida está dentro de la ventana de emergencia (si ya hay fecha)
 //  - ese día todavía tiene cupo de emergencia disponible
 // Si deja de ser válido y estaba activo, lo apaga.
 function updateEmergencyToggle() {
