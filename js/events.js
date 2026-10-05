@@ -36,5 +36,7 @@ document.querySelectorAll('.pago-chip').forEach(c => {
     document.querySelectorAll('.pago-chip').forEach(x => x.classList.remove('active'));
     c.classList.add('active');
     state.pago = c.dataset.pago;
+    if (typeof togglePaymentDetail === 'function') togglePaymentDetail(c.dataset.pago);
+    if (typeof syncPaymentDetailsFromForm === 'function') syncPaymentDetailsFromForm();
   });
 });

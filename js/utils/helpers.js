@@ -47,20 +47,17 @@ function isEmergencyWindow(iso) {
   return iso >= todayIso && iso <= getEmergencyWindowEndIso();
 }
 
-// Recargo de emergencia según la duración total de las lecturas elegidas.
+// Recargo de emergencia según la cantidad de lecturas elegidas.
 // Devuelve 0 cuando la emergencia no aplica (nada elegido o alguna lectura sin prioridad).
-// < 20 min => +$7 | >= 20 min => +$10
+// $10 base + $5 por cada lectura adicional (1 lectura => $10 | 2 lecturas => $15 | 3 => $20)
 function getEmergencySurcharge() {
   const keys = Object.keys(state.readings);
   if (keys.length === 0) return 0;
-  let totalMin = 0;
   for (const key of keys) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    if (!r) continue;
-    if (r.emergencyEligible === false) return 0; // una lectura sin prioridad bloquea la emergencia
-    totalMin += r.durationMin || 0;
+    if (r && r.emergencyEligible === false) return 0; // una lectura sin prioridad bloquea la emergencia
   }
-  return totalMin >= 20 ? 10 : 7;
+  return 10 + 5 * (keys.length - 1);
 }
 
 function calcTotal() {

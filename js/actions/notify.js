@@ -4,6 +4,19 @@ function getReceiptDataForNotification() {
   const lecturas = Object.keys(state.readings).length
     ? Object.keys(state.readings).map(key => readingNames[key] || key).join(', ')
     : 'Sin lectura seleccionada';
+
+  const payRefInput = document.getElementById('payRefBinance') || document.getElementById('payRefPM') || document.getElementById('payRefPayPal');
+  const payEmailInput = document.getElementById('payEmailBinance');
+  const payBancoInput = document.getElementById('payBancoDestino');
+  const payTelefonoInput = document.getElementById('payTelefono');
+  const payRefPayPalInput = document.getElementById('payRefPayPal');
+
+  if (payRefInput && payRefInput.value.trim()) state.payRef = payRefInput.value.trim();
+  if (payEmailInput && payEmailInput.value.trim()) state.payEmail = payEmailInput.value.trim();
+  if (payBancoInput && payBancoInput.value.trim()) state.payBanco = payBancoInput.value.trim();
+  if (payTelefonoInput && payTelefonoInput.value.trim()) state.payTelefono = payTelefonoInput.value.trim();
+  if (payRefPayPalInput && payRefPayPalInput.value.trim()) state.payRefPayPal = payRefPayPalInput.value.trim();
+
   const pagoInfo = {};
   if (state.pago === 'Binance USDT') {
     pagoInfo.ref_binance = state.payRef;
