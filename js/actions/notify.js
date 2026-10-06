@@ -5,6 +5,12 @@ function getReceiptDataForNotification() {
     ? Object.keys(state.readings).map(key => readingNames[key] || key).join(', ')
     : 'Sin lectura seleccionada';
 
+  let cortas = 0, extensas = 0;
+  Object.keys(state.readings).forEach(function (key) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    if (r) { if (r.durationMin >= 20) extensas++; else cortas++; }
+  });
+
   const payRefInput = document.getElementById('payRefBinance') || document.getElementById('payRefPM') || document.getElementById('payRefPayPal');
   const payEmailInput = document.getElementById('payEmailBinance');
   const payBancoInput = document.getElementById('payBancoDestino');
@@ -39,6 +45,7 @@ function getReceiptDataForNotification() {
     lecturas, detalle: state.detalle || 'Sin detalle',
     emergencia: state.emergency ? 'Sí' : 'No',
     es_emergencia: !!state.emergency,
+    cortas: cortas, extensas: extensas,
     ...pagoInfo
   };
 }

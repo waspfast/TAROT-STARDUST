@@ -1,12 +1,28 @@
 // ===== Stardust Tarot Worker =====
-// - GET /disponibilidad?from&to : consulta disponibilidad
+// - GET /disponibilidad?from&to : consulta disponibilidad (4 contadores)
 // - POST / : reserva cupo ATOMICO y notifica a Telegram
 //
 // Cupo: usa D1 (SQLite) para reservar SIN Durable Objects.
-// Si el binding "DB" aun no existe, cae a KV (NO atomico) para no romper el deploy.
+// Si el binding "DB" aun no existe, cae a KV (NO atomico).
+//
+// Modelo de cupos (4 contadores por dia):
+//   corta_normal / corta_emergencia / extensa_normal / extensa_emergencia
+// Desde 2026-10-12:
+//   cortas:   6 normal + 5 emergencia por dia
+//   extensas: 3 normal + 1 emergencia por dia
+// Antes de 2026-10-12 (transicion): normal <= 6, emergencia <= 6 (extensa bloqueada)
 
-const MAX_NORMAL = 6;
-const MAX_EMERGENCIA = 6;
+const TRANSICION_FECHA = "2026-10-12";
+
+const LIMITES_NUEVO = {
+  normal:     { corta: 6, extensa: 3 },
+  emergencia: { corta: 5, extensa: 1 },
+};
+
+const LIMITES_ANTERIOR = {
+  normal:     { corta: 6, extensa: 0 },
+  emergencia: { corta: 6, extensa: 0 },
+};
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -29,37 +45,53 @@ function useD1(env) {
   return !!env.DB;
 }
 
-const COLS = { normal: "normal", emergencia: "emergencia" };
+// Columnas que toca una reserva segun su modalidad.
+function columnas(esEmergencia) {
+  if (esEmergencia) return { corta: "corta_emergencia", extensa: "extensa_emergencia" };
+  return { corta: "corta_normal", extensa: "extensa_normal" };
+}
+
+// Limites vigentes segun la fecha de la reserva.
+function limitesPara(fecha) {
+  return fecha >= TRANSICION_FECHA ? LIMITES_NUEVO : LIMITES_ANTERIOR;
+}
+
+const CONTEO_VACIO = { corta_normal: 0, corta_emergencia: 0, extensa_normal: 0, extensa_emergencia: 0 };
 
 async function getCounts(env, iso) {
   if (useD1(env)) {
     const row = await env.DB.prepare(
-      "SELECT normal, emergencia FROM reservas WHERE fecha = ?"
+      "SELECT corta_normal, corta_emergencia, extensa_normal, extensa_emergencia FROM reservas WHERE fecha = ?"
     ).bind(iso).first();
-    return row || { normal: 0, emergencia: 0 };
+    return row || Object.assign({}, CONTEO_VACIO);
   }
-  if (!env.BOOKINGS) return { normal: 0, emergencia: 0 };
+  if (!env.BOOKINGS) return Object.assign({}, CONTEO_VACIO);
   const raw = await env.BOOKINGS.get(dateKey(iso));
-  return raw ? JSON.parse(raw) : { normal: 0, emergencia: 0 };
+  return raw ? JSON.parse(raw) : Object.assign({}, CONTEO_VACIO);
 }
 
-// Reserva el cupo de forma atomica (D1) o con respaldo KV.
+// Reserva el cupo (corta y/o extensa) de forma atomica.
 // Devuelve true si hay cupo, false si AGENDA_LLENA.
-async function reservarCupo(env, fecha, tipo) {
-  const col = COLS[tipo];
-  const limite = tipo === "emergencia" ? MAX_EMERGENCIA : MAX_NORMAL;
+async function reservarCupo(env, fecha, esEmergencia, cortas, extensas) {
+  const cols = columnas(esEmergencia);
+  const lim = limitesPara(fecha)[esEmergencia ? "emergencia" : "normal"];
+
+  // Una sola reserva no puede exceder el limite de su tipo.
+  if (cortas > lim.corta || extensas > lim.extensa) return false;
 
   if (useD1(env)) {
-    // Una sola sentencia: inserta o incrementa SOLO si aun hay cupo.
-    // SQLite serializa las escrituras, asi que dos reservas simultaneas
-    // no pueden pasar ambas el guard "col < limite".
+    const colCorta = cols.corta;
+    const colExtensa = cols.extensa;
     for (let i = 0; i < 3; i++) {
       try {
         const res = await env.DB.prepare(`
-          INSERT INTO reservas (fecha, ${col}) VALUES (?, 1)
-          ON CONFLICT(fecha) DO UPDATE SET ${col} = ${col} + 1
-          WHERE ${col} < ?
-        `).bind(fecha, limite).run();
+          INSERT INTO reservas (fecha, ${colCorta}, ${colExtensa}) VALUES (?, ?, ?)
+          ON CONFLICT(fecha) DO UPDATE SET
+            ${colCorta} = ${colCorta} + excluded.${colCorta},
+            ${colExtensa} = ${colExtensa} + excluded.${colExtensa}
+          WHERE ${colCorta} + excluded.${colCorta} <= ?
+            AND ${colExtensa} + excluded.${colExtensa} <= ?
+        `).bind(fecha, cortas, extensas, lim.corta, lim.extensa).run();
         return (res.meta && res.meta.changes) > 0;
       } catch (err) {
         // "database is locked" (SQLITE_BUSY) -> reintenta
@@ -67,13 +99,16 @@ async function reservarCupo(env, fecha, tipo) {
         await new Promise((r) => setTimeout(r, 25 * (i + 1)));
       }
     }
+    return false;
   }
 
-  // Respaldo KV (NO atomico): logica anterior.
+  // Respaldo KV (NO atomico).
   const counts = await getCounts(env, fecha);
-  const ocupados = Number(counts[tipo]) || 0;
-  if (ocupados >= limite) return false;
-  counts[tipo] = ocupados + 1;
+  const cCorta = Number(counts[cols.corta]) || 0;
+  const cExtensa = Number(counts[cols.extensa]) || 0;
+  if (cCorta + cortas > lim.corta || cExtensa + extensas > lim.extensa) return false;
+  counts[cols.corta] = cCorta + cortas;
+  counts[cols.extensa] = cExtensa + extensas;
   await env.BOOKINGS.put(dateKey(fecha), JSON.stringify(counts));
   return true;
 }
@@ -96,7 +131,11 @@ async function handleDisponibilidad(env, url) {
   }
 
   return json({
-    limites: { normal: MAX_NORMAL, emergencia: MAX_EMERGENCIA },
+    limites: {
+      nuevo: LIMITES_NUEVO,
+      anterior: LIMITES_ANTERIOR,
+      transicion: TRANSICION_FECHA,
+    },
     dias: dias,
   });
 }
@@ -145,10 +184,7 @@ async function enviarTelegram(env, data, esEmergencia) {
     await fetch(telegramUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: mensaje,
-      }),
+      body: JSON.stringify({ chat_id: chatId, text: mensaje }),
     });
   } catch (err) {
     console.error("Error enviando a Telegram:", err);
@@ -168,13 +204,18 @@ async function handleReserva(env, request) {
     return json({ error: "FECHA_INVALIDA" }, 400);
   }
 
-  const tipo = esEmergencia ? "emergencia" : "normal";
+  // Cantidad de lecturas cortas y extensas de la reserva (por defecto: 1 corta).
+  let cortas = Number(data.cortas);
+  let extensas = Number(data.extensas);
+  if (!Number.isFinite(cortas) || cortas < 0) cortas = 1;
+  if (!Number.isFinite(extensas) || extensas < 0) extensas = 0;
+  if (cortas === 0 && extensas === 0) cortas = 1;
 
-  const reservado = await reservarCupo(env, fecha, tipo);
+  const reservado = await reservarCupo(env, fecha, esEmergencia, cortas, extensas);
   if (!reservado) {
     return json({
       error: "AGENDA_LLENA",
-      tipo: tipo,
+      tipo: esEmergencia ? "emergencia" : "normal",
       fecha: fecha,
     }, 409);
   }

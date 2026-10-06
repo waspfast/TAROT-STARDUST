@@ -3,17 +3,14 @@
 function renderReadingsForCategory(category) {
   const container = document.getElementById('readingsContainer');
   const readings = readingsCatalog.filter(r => r.categories.includes(category));
-  const blockExtensive = isExtensiveBlockActive();
-  container.innerHTML = readings.map(r => {
-    const blocked = isExtensiveReading(r) && blockExtensive;
-    return `
+  container.innerHTML = readings.map(r => `
     <div class="reading-chip-wrap">
-      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm${state.readings[r.id] ? ' active' : ''}${blocked ? ' opacity-40 cursor-not-allowed' : ''}"
-           data-reading="${r.id}" data-price="${r.price}"${blocked ? ' data-blocked="1" aria-disabled="true"' : ''}>
+      <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm${state.readings[r.id] ? ' active' : ''}"
+           data-reading="${r.id}" data-price="${r.price}">
         <div class="flex items-center justify-between gap-2">
           <div>
             <div class="font-medium">${r.title}</div>
-            <div class="text-xs opacity-70">${blocked ? 'no disponible esta semana' : r.detail}</div>
+            <div class="text-xs opacity-70">${r.detail}</div>
           </div>
           ${r.paraTi ? `<button type="button" class="reading-expand-btn" data-expand="${r.id}" aria-label="ver descripción"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>` : ''}
         </div>
@@ -27,8 +24,7 @@ function renderReadingsForCategory(category) {
         </div>
       ` : ''}
     </div>
-  `;
-  }).join('');
+  `).join('');
 
   // Selección
   container.querySelectorAll('.reading-chip').forEach(c => {
@@ -49,10 +45,7 @@ function renderReadingsForCategory(category) {
 }
 
 function toggleReading(chip) {
-  if (chip.dataset.blocked === '1') {
-    if (typeof showNotification === 'function') showNotification('esta lectura no está disponible esta semana ✨');
-    return;
-  }
+
   chip.classList.toggle('active');
   const key = chip.dataset.reading;
   if (state.readings[key]) {
@@ -157,10 +150,7 @@ function renderLecturasGuide() {
 function selectReadingById(id) {
   const reading = readingsCatalog.find(function (r) { return r.id === id; });
   if (!reading) return;
-  if (isExtensiveReading(reading) && isExtensiveBlockActive()) {
-    if (typeof showNotification === 'function') showNotification('esa lectura no está disponible esta semana ✨');
-    return;
-  }
+
   state.readings[id] = reading.price;
   updateSelectedReadingsSummary();
   backToCategories();

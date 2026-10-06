@@ -29,6 +29,10 @@ function getCalendarMinDate() {
   today.setHours(0, 0, 0, 0);
   const min = new Date(today);
   min.setDate(today.getDate() + (state.emergency ? 0 : 2));
+  if (typeof hasExtensiveSelection === 'function' && hasExtensiveSelection()) {
+    const extensaMin = new Date(EXTENSIVE_MIN_FECHA + 'T00:00:00');
+    if (extensaMin > min) return extensaMin;
+  }
   return min;
 }
 

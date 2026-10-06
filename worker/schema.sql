@@ -1,18 +1,15 @@
--- ===== Stardust Tarot -- esquema D1 (cupo diario) =====
--- Respalda la reserva ATOMICA del cupo diario (sin Durable Objects).
---
--- Crear la tabla (una sola vez):
---   npx wrangler d1 execute stardust-db --remote --file=./schema.sql
---
--- Que hace la atomicidad: el worker ejecuta
---   INSERT INTO reservas (fecha, <tipo>) VALUES (?, 1)
---   ON CONFLICT(fecha) DO UPDATE SET <tipo> = <tipo> + 1
---   WHERE <tipo> < <limite>;
--- SQLite serializa las escrituras, asi que dos reservas simultaneas no
--- pueden pasar ambas el guard y el cupo nunca se excede.
+-- ===== Stardust Tarot -- esquema D1 (cupo diario, 4 contadores) =====
+-- Limites (desde 2026-10-12):
+--   cortas:   4 normal + 5 emergencia por dia
+--   extensas: 3 normal + 1 emergencia por dia
+-- Antes de 2026-10-12: normal <= 6, emergencia <= 6 (extensa bloqueada).
 
-CREATE TABLE IF NOT EXISTS reservas (
-  fecha      TEXT    PRIMARY KEY,            -- YYYY-MM-DD
-  normal     INTEGER NOT NULL DEFAULT 0,     -- reservas normales  (max 6)
-  emergencia INTEGER NOT NULL DEFAULT 0      -- reservas emergencia (max 6)
+DROP TABLE IF EXISTS reservas;
+
+CREATE TABLE reservas (
+  fecha              TEXT    PRIMARY KEY,   -- YYYY-MM-DD
+  corta_normal       INTEGER NOT NULL DEFAULT 0,
+  corta_emergencia   INTEGER NOT NULL DEFAULT 0,
+  extensa_normal     INTEGER NOT NULL DEFAULT 0,
+  extensa_emergencia INTEGER NOT NULL DEFAULT 0
 );

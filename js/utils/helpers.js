@@ -10,11 +10,9 @@ function formatDateValue(date) {
 function updateDateRestrictions() {
   const input = document.getElementById('inpDate');
   if (!input) return;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const minDate = new Date(today);
-  minDate.setDate(today.getDate() + (state.emergency ? 0 : 2));
-  const minIso = formatDateValue(minDate);
+  const minIso = typeof getCalendarMinDate === 'function'
+    ? formatDateValue(getCalendarMinDate())
+    : formatDateValue(new Date());
   input.min = minIso;
   if (input.value && input.value < minIso) {
     input.value = '';
@@ -61,19 +59,20 @@ function getEmergencySurcharge() {
 }
 
 // ── Lecturas extensas (20 min o más) ──
-// No aplican a emergencia (ver emergencyEligible en el catálogo) y, durante el
-// bloqueo temporal de la semana actual, no se pueden seleccionar.
+// Las extensas se pueden elegir, pero no se pueden reservar para "esta semana":
+// el calendario no permite fechas anteriores a EXTENSIVE_MIN_FECHA.
+const EXTENSIVE_MIN_FECHA = '2026-10-12';
+
 function isExtensiveReading(r) {
   return !!(r && r.durationMin >= 20);
 }
 
-// Fin del bloqueo temporal de lecturas extensas (domingo de la semana actual).
-// Hasta esta fecha no se pueden elegir lecturas extensas. Cambia esta fecha
-// para extender o acortar el bloqueo.
-const EXTENSIVE_BLOCK_UNTIL = '2026-10-11';
-
-function isExtensiveBlockActive() {
-  return formatDateValue(new Date()) <= EXTENSIVE_BLOCK_UNTIL;
+// ¿La selección actual incluye al menos una lectura extensa?
+function hasExtensiveSelection() {
+  return Object.keys(state.readings || {}).some(function (key) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    return r && r.durationMin >= 20;
+  });
 }
 
 function calcTotal() {

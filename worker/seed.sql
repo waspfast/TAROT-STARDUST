@@ -1,20 +1,16 @@
--- ===== Stardust Tarot -- migracion de citas ya hechas (KV -> D1) =====
--- El contador de D1 arranca en 0 al conectar la base. Este archivo carga las
--- reservas que ya existian para no perderlas.
---
--- Ejecutar DESPUES de crear la tabla (schema.sql):
---   npx wrangler d1 execute stardust-db --remote --file=./seed.sql
---
--- Notas:
---  - La mayoria de las reservas guardadas como "emergencia" en KV eran
---    normales; para el 2026-10-05 se confirmaron 8 emergencias y 1 normal.
---  - El 2026-10-05 excede el tope de 6 emergencias; queda lleno para ese tipo.
---  - Las fechas 2030-01-01 / 2030-01-02 se omiten (datos de prueba).
---  - Se usa INSERT OR IGNORE para poder re-ejecutar sin duplicar ni sobrescribir.
+-- ===== Stardust Tarot -- migracion de citas ya hechas (4 contadores) =====
+-- Conteos reales de reservas existentes. Los conteos "normal"/"emergencia"
+-- historicos se asignaron a las columnas "corta_*" (lecturas cortas). Si hubo
+-- extensas reales en alguna fecha, se corrigen luego.
 
-INSERT OR IGNORE INTO reservas (fecha, normal, emergencia) VALUES
-  ('2026-10-02', 1, 0),
-  ('2026-10-05', 1, 8),
-  ('2026-10-06', 4, 0),
-  ('2026-10-09', 1, 0),
-  ('2026-10-12', 1, 0);
+INSERT OR IGNORE INTO reservas (fecha, corta_normal, corta_emergencia, extensa_normal, extensa_emergencia) VALUES
+  ('2026-10-02', 1, 0, 0, 0),
+  ('2026-10-05', 9, 6, 0, 0),
+  ('2026-10-06', 6, 1, 0, 0),
+  ('2026-10-07', 6, 0, 0, 0),
+  ('2026-10-08', 6, 0, 0, 0),
+  ('2026-10-09', 6, 0, 0, 0),
+  ('2026-10-12', 6, 0, 0, 0),
+  ('2026-10-13', 6, 0, 0, 0),
+  ('2026-10-14', 1, 0, 0, 0),
+  ('2026-10-16', 2, 0, 0, 0);
