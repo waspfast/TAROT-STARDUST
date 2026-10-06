@@ -60,6 +60,22 @@ function getEmergencySurcharge() {
   return 10 + 5 * (keys.length - 1);
 }
 
+// ── Lecturas extensas (20 min o más) ──
+// No aplican a emergencia (ver emergencyEligible en el catálogo) y, durante el
+// bloqueo temporal de la semana actual, no se pueden seleccionar.
+function isExtensiveReading(r) {
+  return !!(r && r.durationMin >= 20);
+}
+
+// Fin del bloqueo temporal de lecturas extensas (domingo de la semana actual).
+// Hasta esta fecha no se pueden elegir lecturas extensas. Cambia esta fecha
+// para extender o acortar el bloqueo.
+const EXTENSIVE_BLOCK_UNTIL = '2026-10-11';
+
+function isExtensiveBlockActive() {
+  return formatDateValue(new Date()) <= EXTENSIVE_BLOCK_UNTIL;
+}
+
 function calcTotal() {
   let total = Object.values(state.readings).reduce((a, b) => a + b, 0);
   if (state.emergency) total += getEmergencySurcharge();

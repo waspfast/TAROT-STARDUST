@@ -74,13 +74,20 @@ function renderQuizResult() {
   const reading = readingsCatalog.find(function (r) { return r.id === id; });
   if (!reading) return;
 
+  const blocked = isExtensiveReading(reading) && isExtensiveBlockActive();
+
   let html = '<div class="quiz-fade">';
   html += '<div class="text-center">';
   html += '<p class="text-xs uppercase tracking-wide text-txtsoft mb-2">tu lectura es</p>';
   html += '<p class="font-title text-2xl italic font-normal text-txt mb-2">' + reading.title + '</p>';
   html += '<p class="text-sm text-txtsoft leading-relaxed mb-3">' + getQuizReason(id) + '</p>';
-  html += '<p class="text-xs text-accent mb-5">' + reading.detail + '</p>';
-  html += '<button type="button" id="quizBookBtn" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition mb-2">reservar esta lectura</button>';
+  if (blocked) {
+    html += '<p class="text-xs text-accent mb-4">esta lectura no está disponible esta semana ✨</p>';
+    html += '<button type="button" id="quizBlockedAllBtn" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition mb-2">ver lecturas disponibles</button>';
+  } else {
+    html += '<p class="text-xs text-accent mb-5">' + reading.detail + '</p>';
+    html += '<button type="button" id="quizBookBtn" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition mb-2">reservar esta lectura</button>';
+  }
   html += '<button type="button" id="quizRestartBtn" class="block mx-auto text-xs text-txtsoft hover:text-accent transition underline underline-offset-2 mt-1">volver a empezar</button>';
   html += '</div>';
   html += '<div class="border-t border-dashed border-gray-200 my-5"></div>';
@@ -96,6 +103,11 @@ function renderQuizResult() {
   if (bookBtn) bookBtn.addEventListener('click', function () {
     if (typeof selectReadingById === 'function') selectReadingById(id);
     hideQuiz();
+  });
+  const blockedAllBtn = document.getElementById('quizBlockedAllBtn');
+  if (blockedAllBtn) blockedAllBtn.addEventListener('click', function () {
+    hideQuiz();
+    if (typeof showLecturasGuide === 'function') showLecturasGuide();
   });
   const restartBtn = document.getElementById('quizRestartBtn');
   if (restartBtn) restartBtn.addEventListener('click', function () {
