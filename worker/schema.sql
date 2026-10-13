@@ -1,7 +1,7 @@
 -- ===== Stardust Tarot -- esquema D1 (cupo diario, 4 contadores) =====
 -- Limites (desde 2026-10-12):
---   cortas:   4 normal + 5 emergencia por dia
---   extensas: 3 normal + 1 emergencia por dia
+--   cortas:   6 normal + 5 emergencia por dia
+--   extensas: 3 normal + 0 emergencia por dia
 -- Antes de 2026-10-12: normal <= 6, emergencia <= 6 (extensa bloqueada).
 
 DROP TABLE IF EXISTS reservas;

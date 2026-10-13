@@ -53,7 +53,7 @@ function getEmergencySurcharge() {
   if (keys.length === 0) return 0;
   for (const key of keys) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    if (r && r.emergencyEligible === false) return 0; // una lectura sin prioridad bloquea la emergencia
+    if (r && (r.emergencyEligible === false || r.durationMin >= 20)) return 0; // sin prioridad o extensa bloquea la emergencia
   }
   return 10 + 5 * (keys.length - 1);
 }

@@ -3,7 +3,7 @@
 // Limites del nuevo modelo (desde 2026-10-12)
 var BOOKING_LIMITS = {
   corta_normal: 6, corta_emergencia: 5,
-  extensa_normal: 3, extensa_emergencia: 1
+  extensa_normal: 3, extensa_emergencia: 0
 };
 // Limites del modelo anterior (antes de 2026-10-12): normal <= 6, emergencia <= 6
 var OLD_LIMITS = { normal: 6, emergencia: 6 };

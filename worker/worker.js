@@ -9,14 +9,14 @@
 //   corta_normal / corta_emergencia / extensa_normal / extensa_emergencia
 // Desde 2026-10-12:
 //   cortas:   6 normal + 5 emergencia por dia
-//   extensas: 3 normal + 1 emergencia por dia
+//   extensas: 3 normal + 0 emergencia por dia
 // Antes de 2026-10-12 (transicion): normal <= 6, emergencia <= 6 (extensa bloqueada)
 
 const TRANSICION_FECHA = "2026-10-12";
 
 const LIMITES_NUEVO = {
   normal:     { corta: 6, extensa: 3 },
-  emergencia: { corta: 5, extensa: 1 },
+  emergencia: { corta: 5, extensa: 0 },
 };
 
 const LIMITES_ANTERIOR = {

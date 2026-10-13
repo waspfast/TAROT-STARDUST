@@ -1,3 +1,6 @@
 node_modules/
 .wrangler/
 *.log
+
+# Config local de wrangler (contiene los ids de KV/D1 de tu cuenta)
+worker/wrangler.toml
