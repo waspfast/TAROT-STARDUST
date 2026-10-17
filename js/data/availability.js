@@ -39,7 +39,7 @@ function _tiposSeleccion() {
   var keys = state && state.readings ? Object.keys(state.readings) : [];
   keys.forEach(function (k) {
     var r = readingsCatalog.find(function (x) { return x.id === k; });
-    if (r) { if (r.durationMin >= 20) extensa = true; else corta = true; }
+    if (r) { if (r.type === 'extensa') extensa = true; else corta = true; }
   });
   if (!corta && !extensa) corta = true; // sin seleccion -> asume corta
   return { corta: corta, extensa: extensa };
@@ -92,7 +92,7 @@ function markBooked(iso, isEmergency) {
   var keys = state && state.readings ? Object.keys(state.readings) : [];
   keys.forEach(function (k) {
     var r = readingsCatalog.find(function (x) { return x.id === k; });
-    if (r) { if (r.durationMin >= 20) extensas++; else cortas++; }
+    if (r) { if (r.type === 'extensa') extensas++; else cortas++; }
   });
   if (isEmergency) {
     c.corta_emergencia = (c.corta_emergencia || 0) + cortas;

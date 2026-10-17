@@ -8,7 +8,7 @@ function getReceiptDataForNotification() {
   let cortas = 0, extensas = 0;
   Object.keys(state.readings).forEach(function (key) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    if (r) { if (r.durationMin >= 20) extensas++; else cortas++; }
+    if (r) { if (r.type === 'extensa') extensas++; else cortas++; }
   });
 
   const payRefInput = document.getElementById('payRefBinance') || document.getElementById('payRefPM') || document.getElementById('payRefPayPal');

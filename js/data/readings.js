@@ -33,6 +33,7 @@ const readingsCatalog = [
   // ── AMOR ──
   {
     id: 'amor_corta',
+    type: 'corta',
     categories: ['amor'],
     title: 'Amor & Relaciones Corta',
     price: 8.50,
@@ -45,6 +46,7 @@ const readingsCatalog = [
   },
   {
     id: 'amor_radiografia',
+    type: 'extensa',
     categories: ['amor'],
     title: 'Radiografía de Amor',
     price: 15,
@@ -57,6 +59,7 @@ const readingsCatalog = [
   },
   {
     id: 'amor_que_somos',
+    type: 'extensa',
     categories: ['amor'],
     title: '¿Qué Somos Tú y Yo?',
     price: 14,
@@ -70,6 +73,7 @@ const readingsCatalog = [
   // ── TRABAJO ──
   {
     id: 'trabajo_corta',
+    type: 'corta',
     categories: ['trabajo'],
     title: 'Trabajo & Dinero Corta',
     price: 7.50,
@@ -82,6 +86,7 @@ const readingsCatalog = [
   },
   {
     id: 'trabajo_extensa',
+    type: 'extensa',
     categories: ['trabajo'],
     title: 'Trabajo & Dinero Extensa',
     price: 12.50,
@@ -94,6 +99,7 @@ const readingsCatalog = [
   },
   {
     id: 'trabajo_negocio',
+    type: 'extensa',
     categories: ['trabajo'],
     title: 'Tu Negocio en Cartas',
     price: 12.50,
@@ -107,6 +113,7 @@ const readingsCatalog = [
   // ── GENERAL ──
   {
     id: 'general_corta',
+    type: 'corta',
     categories: ['general'],
     title: 'Lectura General Corta',
     price: 7.50,
@@ -119,6 +126,7 @@ const readingsCatalog = [
   },
   {
     id: 'general_extensa',
+    type: 'extensa',
     categories: ['general'],
     title: 'Lectura General Extensa',
     price: 14,
@@ -131,6 +139,7 @@ const readingsCatalog = [
   },
   {
     id: 'general_caminos',
+    type: 'extensa',
     categories: ['general'],
     title: 'Caminos y Señales',
     price: 12.50,
@@ -143,6 +152,7 @@ const readingsCatalog = [
   },
   {
     id: 'general_nuevo_ciclo',
+    type: 'extensa',
     categories: ['general'],
     title: 'Nuevo Ciclo, Nueva Piel',
     price: 12.50,
@@ -155,6 +165,7 @@ const readingsCatalog = [
   },
   {
     id: 'general_proposito',
+    type: 'extensa',
     categories: ['general'],
     title: '¿Para Qué Estoy Aquí?',
     price: 18,
@@ -168,6 +179,7 @@ const readingsCatalog = [
   // ── RESPUESTAS RÁPIDAS ──
   {
     id: 'rapidas_si_no',
+    type: 'corta',
     categories: ['rapidas'],
     title: 'Sí o No',
     price: 5,
@@ -180,6 +192,7 @@ const readingsCatalog = [
   },
   {
     id: 'rapidas_carta_mes',
+    type: 'corta',
     categories: ['rapidas'],
     title: 'Carta del Mes',
     price: 5,

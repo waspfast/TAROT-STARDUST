@@ -53,7 +53,7 @@ function getEmergencySurcharge() {
   if (keys.length === 0) return 0;
   for (const key of keys) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    if (r && (r.emergencyEligible === false || r.durationMin >= 20)) return 0; // sin prioridad o extensa bloquea la emergencia
+    if (r && (r.emergencyEligible === false || r.type === 'extensa')) return 0; // sin prioridad o extensa bloquea la emergencia
   }
   return 10 + 5 * (keys.length - 1);
 }
@@ -64,14 +64,14 @@ function getEmergencySurcharge() {
 const EXTENSIVE_MIN_FECHA = '2026-10-12';
 
 function isExtensiveReading(r) {
-  return !!(r && r.durationMin >= 20);
+  return !!(r && r.type === 'extensa');
 }
 
 // ¿La selección actual incluye al menos una lectura extensa?
 function hasExtensiveSelection() {
   return Object.keys(state.readings || {}).some(function (key) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    return r && r.durationMin >= 20;
+    return r && r.type === 'extensa';
   });
 }
 
