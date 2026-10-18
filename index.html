@@ -69,8 +69,9 @@
         <p class="font-title text-lg italic text-txtsoft mb-8">luz para lo que ya sabes, pero aún no ves</p>
         <div class="flex flex-col gap-3 max-w-xs mx-auto">
           <button onclick="welcomeAction('nueva')" class="w-full bg-accent text-white rounded-xl py-3 text-sm font-medium hover:opacity-90 transition">primera vez ♡</button>
-          <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">ya he tenido una lectura</button>
+          <button onclick="welcomeAction('frecuente')" class="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium hover:bg-surface transition">soy consultante frecuente</button>
         </div>
+        <p class="text-[11px] text-txtsoft mt-3 leading-relaxed">si nunca te has consultado conmigo antes, elige "primera vez ♡"</p>
         <p class="about-link text-center mt-6 italic"><button onclick="showAbout()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">¿qué es Stardust Tarot?</button> <span class="text-txtsoft">·</span> <button onclick="showPoliticas()" class="text-xs text-txtsoft hover:text-accent transition underline underline-offset-2">políticas y condiciones</button></p>
         <p class="text-center mt-2"><button type="button" onclick="showLecturasGuide()" class="text-xs text-accent font-medium hover:underline underline-offset-2 transition">todas las lecturas disponibles</button></p>
       </div>
@@ -95,7 +96,8 @@
           <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
         </div>
         <label class="block text-sm font-medium text-txtsec mb-1">detalle de tu consulta</label>
-        <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+        <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." oninput="clearDetalleError()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
+        <p id="detalleError" class="hidden -mt-4 mb-5 text-xs text-red-500 font-medium">por favor, escribe el contexto de lo que quieres preguntar ✦</p>
         <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
@@ -126,6 +128,32 @@
       <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
         <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
+        <h3 class="font-title text-lg sm:text-xl font-semibold text-txt mb-2">modalidad y dinámica</h3>
+        <div class="mb-5 bg-surface border border-accent/20 rounded-2xl px-4 py-2 divide-y divide-gray-200/70">
+          <div class="py-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">¿qué incluye tu lectura?</p>
+            <div id="bookingReadingList" class="space-y-1 text-sm text-txt"></div>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">🎧</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu lectura, en nota de voz</span><br><span class="text-txtsoft text-xs">te llega en audio por la plataforma que prefieras. escúchala cuando quieras ✨</span></p>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">💫</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">pagas el día de tu lectura</span><br><span class="text-txtsoft text-xs">no pagas al agendar. te escribo ese día y confirmas tu pago.</span></p>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">🌙</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu fecha puede moverse</span><br><span class="text-txtsoft text-xs">si necesito reagendar, te aviso y propongo otra fecha pronto 🤍</span></p>
+          </div>
+          <div class="py-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">un poquito más..</p>
+            <ul class="text-xs text-txtsoft space-y-1">
+              <li>🔒 lo que compartes aquí se queda aquí</li>
+              <li>⚡ ¿hoy mismo? atención inmediata en cortas (+$10)</li>
+            </ul>
+          </div>
+        </div>
         <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
         <button type="button" id="datePickerTrigger" class="date-trigger" onclick="toggleCalendar()" aria-expanded="false">
           <span class="flex items-center gap-2">
@@ -155,7 +183,7 @@
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">Binance <br>USDT 💵</div>
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Pago Móvil">Pago Móvil</div>
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="PayPal">PayPal<br><span class="text-xs opacity-70">+$2.5 comisión</span></div>
-          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">Tarjeta<br>Internacional</div>
+          <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Tarjeta Internacional">Tarjeta<br>Internacional<br><span class="text-xs opacity-70">+$2.5 comisión</span></div>
         </div>
         <!-- Payment Details Panels -->
         <div id="paymentDetailsPanel" class="hidden mb-5 fade-in">

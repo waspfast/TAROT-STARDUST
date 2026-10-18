@@ -75,10 +75,15 @@ function hasExtensiveSelection() {
   });
 }
 
+// Comisión añadida por métodos de pago con recargo (PayPal y tarjeta internacional)
+function paymentFee() {
+  return (state.pago === 'PayPal' || state.pago === 'Tarjeta Internacional') ? 2.5 : 0;
+}
+
 function calcTotal() {
   let total = Object.values(state.readings).reduce((a, b) => a + b, 0);
   if (state.emergency) total += getEmergencySurcharge();
-  if (state.pago === 'PayPal') total += 2.5;
+  total += paymentFee();
   return total;
 }
 

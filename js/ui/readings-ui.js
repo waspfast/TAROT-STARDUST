@@ -146,6 +146,26 @@ function renderLecturasGuide() {
   });
   list.innerHTML = html;
 }
+// Lista de lecturas elegidas para el bloque "modalidad y dinámica" (paso fecha/horario)
+function renderBookingReadingList() {
+  const list = document.getElementById('bookingReadingList');
+  if (!list) return;
+  const keys = Object.keys(state.readings);
+  if (keys.length === 0) {
+    list.innerHTML = '<p class="text-txtsoft text-xs">aún no has elegido lecturas</p>';
+    return;
+  }
+  list.innerHTML = keys.map(function (key) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    if (!r) return '';
+    return '<div class="flex items-start gap-2">'
+      + '<span class="text-accent shrink-0">✧</span>'
+      + '<span><span class="font-medium text-txt">' + r.title + '</span> '
+      + '<span class="text-txtsoft text-xs">— ' + r.meta + ' · $' + r.price.toFixed(2) + '</span></span>'
+      + '</div>';
+  }).join('');
+}
+
 // Selecciona una lectura por su id (usado por el test de recomendación)
 function selectReadingById(id) {
   const reading = readingsCatalog.find(function (r) { return r.id === id; });

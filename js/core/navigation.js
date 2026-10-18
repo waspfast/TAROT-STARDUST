@@ -39,8 +39,11 @@ function goStep(n) {
     }
   }
 
+  // ── Step 2: bloque "modalidad y dinámica" adaptado a las lecturas elegidas ──
+  if (n === 2 && typeof renderBookingReadingList === 'function') renderBookingReadingList();
+
   // ── Validations (must happen before animation) ──
-  if (n === 2 && !validateReadings()) return; // step2 = fecha/pago: asegurar lecturas seleccionadas antes de entrar
+  if (n === 2 && (!validateReadings() || !validateDetail())) return; // step2 = fecha/pago: lecturas + detalle obligatorios antes de entrar
   if (n === 3) {                              // step3 = contacto: asegurar fecha, horario y pago antes de entrar
     if (!state.fecha) return showNotification('selecciona una fecha');
     if (!state.horario) return showNotification('selecciona un horario');
