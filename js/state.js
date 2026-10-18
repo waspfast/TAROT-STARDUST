@@ -3,6 +3,6 @@ const state = {
   esConsultanteNueva: null,
   platform: '', contacto: '', nombre: '', readings: {},
   emergency: false, fecha: '', horario: '', pago: '', detalle: '',
-  readingCategory: '',
+  readingType: '', readingCategory: '',
   payRef: '', payEmail: '', payBanco: '', payTelefono: '', payRefPayPal: ''
 };

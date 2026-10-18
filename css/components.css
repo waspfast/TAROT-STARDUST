@@ -67,6 +67,26 @@
   border-color: #c4a0ac;
 }
 
+/* Type selector (lecturas cortas / extensas) */
+.type-btn {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+.type-btn:hover {
+  border-color: #c4a0ac;
+  background: rgba(196,160,172,0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(196, 160, 172, 0.12);
+}
+.type-subtitle {
+  font-weight: 400;
+  opacity: 0.6;
+}
+.type-btn:hover .type-subtitle {
+  opacity: 0.8;
+}
+
 .reading-panel {
   animation: fadeIn 0.35s ease;
 }

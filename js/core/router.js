@@ -17,6 +17,7 @@ function resetForm() {
   state.readings = {}; state.emergency = false;
   state.fecha = ''; state.horario = ''; state.pago = ''; state.detalle = '';
   state.readingCategory = '';
+  state.readingType = '';
   state.payRef = ''; state.payEmail = ''; state.payBanco = ''; state.payTelefono = ''; state.payRefPayPal = '';
 
   document.getElementById('inpName').value = '';
@@ -41,7 +42,7 @@ function resetForm() {
 
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   document.querySelectorAll('.category-btn').forEach(c => c.classList.remove('active'));
-  backToCategories();
+  backToTypes();
   updateSelectedReadingsSummary();
   const t = document.getElementById('emergencyToggle');
   if (t) { t.classList.remove('on'); t.classList.add('off'); }

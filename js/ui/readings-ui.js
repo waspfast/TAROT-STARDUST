@@ -2,7 +2,7 @@
 
 function renderReadingsForCategory(category) {
   const container = document.getElementById('readingsContainer');
-  const readings = readingsCatalog.filter(r => r.categories.includes(category));
+  const readings = readingsCatalog.filter(r => r.categories.includes(category) && (!state.readingType || r.type === state.readingType));
   container.innerHTML = readings.map(r => `
     <div class="reading-chip-wrap">
       <div class="chip reading-chip border border-gray-200 rounded-xl px-4 py-3 text-sm${state.readings[r.id] ? ' active' : ''}"
@@ -90,6 +90,7 @@ function showReadingCategory(category) {
   state.readingCategory = category;
   document.getElementById('categoryMenu').classList.add('hidden');
   document.getElementById('lecturasGuideLink').classList.add('hidden');
+  document.getElementById('backToTypes').classList.add('hidden');
   document.getElementById('readingsPanel').classList.remove('hidden');
   document.getElementById('selectedCategoryLabel').textContent = categoryLabels[category];
   document.getElementById('readingStepHint').textContent = 'selecciona una o varias lecturas de esta categoría';
@@ -98,12 +99,48 @@ function showReadingCategory(category) {
 }
 
 function backToCategories() {
+  if (!state.readingType) { backToTypes(); return; }
   state.readingCategory = '';
   document.getElementById('readingsPanel').classList.add('hidden');
-  document.getElementById('lecturasGuideLink').classList.remove('hidden');
+  document.getElementById('categoryMenu').classList.remove('hidden');
+  document.getElementById('backToTypes').classList.remove('hidden');
+  document.getElementById('readingStepHint').textContent = 'elige una categoría para ver las lecturas disponibles';
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ── Paso 1: elegir corta / extensa antes de las categorías ──
+function selectReadingType(type) {
+  state.readingType = type;
+  state.readingCategory = '';
+  document.getElementById('readingTypeMenu').classList.add('hidden');
+  document.getElementById('lecturasGuideLink').classList.add('hidden');
+  document.getElementById('readingsPanel').classList.add('hidden');
+  document.getElementById('backToTypes').classList.remove('hidden');
   document.getElementById('categoryMenu').classList.remove('hidden');
   document.getElementById('readingStepHint').textContent = 'elige una categoría para ver las lecturas disponibles';
   document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+  filterCategoriesForType(type);
+}
+
+function backToTypes() {
+  state.readingType = '';
+  state.readingCategory = '';
+  document.getElementById('readingsPanel').classList.add('hidden');
+  document.getElementById('categoryMenu').classList.add('hidden');
+  document.getElementById('backToTypes').classList.add('hidden');
+  document.getElementById('readingTypeMenu').classList.remove('hidden');
+  document.getElementById('lecturasGuideLink').classList.remove('hidden');
+  document.getElementById('readingStepHint').textContent = '¿qué tipo de lectura necesitas hoy?';
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+}
+
+// Muestra solo las categorías con al menos una lectura del tipo elegido
+function filterCategoriesForType(type) {
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    const cat = btn.dataset.category;
+    const available = readingsCatalog.some(r => r.categories.includes(cat) && r.type === type);
+    btn.classList.toggle('hidden', !available);
+  });
 }
 
 function renderCategorySubtitles() {
@@ -173,6 +210,7 @@ function selectReadingById(id) {
 
   state.readings[id] = reading.price;
   updateSelectedReadingsSummary();
-  backToCategories();
+  selectReadingType(reading.type);
+  if (reading.categories.length) showReadingCategory(reading.categories[0]);
   if (typeof showNotification === 'function') showNotification('lectura agregada: ' + reading.title);
 }

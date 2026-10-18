@@ -10,6 +10,12 @@ document.querySelectorAll('.category-btn').forEach(btn => {
 });
 document.getElementById('backToCategories').addEventListener('click', backToCategories);
 
+// Tipo de lectura (corta / extensa)
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectReadingType(btn.dataset.type));
+});
+document.getElementById('backToTypes').addEventListener('click', backToTypes);
+
 // Platform chips
 document.querySelectorAll('[data-platform]').forEach(c => {
   c.addEventListener('click', () => {
