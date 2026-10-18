@@ -24,6 +24,12 @@ const LIMITES_ANTERIOR = {
   emergencia: { corta: 6, extensa: 0 },
 };
 
+// Dias sin cupo (agotados): fechas que el backend rechaza aunque llegue un POST directo.
+const DIAS_AGOTADOS = [
+  "2026-09-30", "2026-10-01", "2026-10-02",
+  "2026-10-23", "2026-10-26", "2026-10-30",
+];
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -202,6 +208,10 @@ async function handleReserva(env, request) {
 
   if (!fecha || typeof fecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
     return json({ error: "FECHA_INVALIDA" }, 400);
+  }
+
+  if (DIAS_AGOTADOS.includes(fecha)) {
+    return json({ error: "AGENDA_LLENA", fecha: fecha, bloqueado: true }, 409);
   }
 
   // Cantidad de lecturas cortas y extensas de la reserva (por defecto: 1 corta).

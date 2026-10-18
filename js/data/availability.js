@@ -10,7 +10,10 @@ var OLD_LIMITS = { normal: 6, emergencia: 6 };
 var TRANSICION_FECHA = '2026-10-12';
 
 // Dias sin cupo (agotados): fechas "YYYY-MM-DD" que quieras bloquear.
-var DIAS_AGOTADOS = ['2026-09-30', '2026-10-01', '2026-10-02'];
+var DIAS_AGOTADOS = [
+  '2026-09-30', '2026-10-01', '2026-10-02',
+  '2026-10-23', '2026-10-26', '2026-10-30'
+];
 var _availability = {};
 
 async function fetchAvailability(fromIso, toIso) {
