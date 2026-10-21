@@ -106,10 +106,6 @@
           <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">lecturas seleccionadas</p>
           <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
         </div>
-        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
-          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-        </div>
         <h3 class="font-title text-lg sm:text-xl font-semibold text-txt mb-2">modalidad y dinámica</h3>
         <div class="mb-5 bg-surface border border-accent/20 rounded-2xl px-4 py-2 divide-y divide-gray-200/70">
           <div class="py-2">
@@ -139,6 +135,10 @@
         <label class="block text-sm font-medium text-txtsec mb-1">¿sobre qué te interesa preguntar?</label>
         <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." oninput="clearDetalleError()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
         <p id="detalleError" class="hidden -mt-4 mb-5 text-xs text-red-500 font-medium">por favor, escribe el contexto de lo que quieres preguntar ✦</p>
+        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
         <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
