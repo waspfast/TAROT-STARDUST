@@ -62,6 +62,7 @@ function updateSelectedReadingsSummary() {
   const summary = document.getElementById('selectedReadingsSummary');
   const list = document.getElementById('selectedReadingsList');
   const keys = Object.keys(state.readings);
+  renderBookingReadingList();
   if (keys.length === 0) {
     summary.classList.add('hidden');
     list.innerHTML = '';

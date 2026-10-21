@@ -106,7 +106,37 @@
           <p class="text-xs text-txtsoft font-medium uppercase tracking-wide mb-2">lecturas seleccionadas</p>
           <div id="selectedReadingsList" class="flex flex-wrap gap-1.5"></div>
         </div>
-        <label class="block text-sm font-medium text-txtsec mb-1">detalle de tu consulta</label>
+        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
+        <h3 class="font-title text-lg sm:text-xl font-semibold text-txt mb-2">modalidad y dinámica</h3>
+        <div class="mb-5 bg-surface border border-accent/20 rounded-2xl px-4 py-2 divide-y divide-gray-200/70">
+          <div class="py-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">¿qué incluye tu lectura?</p>
+            <div id="bookingReadingList" class="space-y-1 text-sm text-txt"></div>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">🎧</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu lectura, en nota de voz</span><br><span class="text-txtsoft text-xs">te llega en audio por la plataforma que prefieras. escúchala cuando quieras ✨</span></p>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">💫</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">pagas el día de tu lectura</span><br><span class="text-txtsoft text-xs">no pagas al agendar. te escribo ese día y confirmas tu pago.</span></p>
+          </div>
+          <div class="py-2 flex items-start gap-2.5">
+            <span class="text-base leading-none mt-0.5">🌙</span>
+            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu fecha puede moverse</span><br><span class="text-txtsoft text-xs">si necesito reagendar, te aviso y propongo otra fecha pronto 🤍</span></p>
+          </div>
+          <div class="py-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">un poquito más..</p>
+            <ul class="text-xs text-txtsoft space-y-1">
+              <li>🔒 lo que compartes aquí se queda aquí</li>
+              <li>⚡ ¿hoy mismo? atención inmediata en cortas (+$10)</li>
+            </ul>
+          </div>
+        </div>
+        <label class="block text-sm font-medium text-txtsec mb-1">¿sobre qué te interesa preguntar?</label>
         <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." oninput="clearDetalleError()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
         <p id="detalleError" class="hidden -mt-4 mb-5 text-xs text-red-500 font-medium">por favor, escribe el contexto de lo que quieres preguntar ✦</p>
         <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
@@ -139,32 +169,6 @@
       <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
         <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
-        <h3 class="font-title text-lg sm:text-xl font-semibold text-txt mb-2">modalidad y dinámica</h3>
-        <div class="mb-5 bg-surface border border-accent/20 rounded-2xl px-4 py-2 divide-y divide-gray-200/70">
-          <div class="py-2">
-            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">¿qué incluye tu lectura?</p>
-            <div id="bookingReadingList" class="space-y-1 text-sm text-txt"></div>
-          </div>
-          <div class="py-2 flex items-start gap-2.5">
-            <span class="text-base leading-none mt-0.5">🎧</span>
-            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu lectura, en nota de voz</span><br><span class="text-txtsoft text-xs">te llega en audio por la plataforma que prefieras. escúchala cuando quieras ✨</span></p>
-          </div>
-          <div class="py-2 flex items-start gap-2.5">
-            <span class="text-base leading-none mt-0.5">💫</span>
-            <p class="text-sm text-txt leading-snug"><span class="font-semibold">pagas el día de tu lectura</span><br><span class="text-txtsoft text-xs">no pagas al agendar. te escribo ese día y confirmas tu pago.</span></p>
-          </div>
-          <div class="py-2 flex items-start gap-2.5">
-            <span class="text-base leading-none mt-0.5">🌙</span>
-            <p class="text-sm text-txt leading-snug"><span class="font-semibold">tu fecha puede moverse</span><br><span class="text-txtsoft text-xs">si necesito reagendar, te aviso y propongo otra fecha pronto 🤍</span></p>
-          </div>
-          <div class="py-2">
-            <p class="text-xs font-semibold uppercase tracking-wide text-accent mb-1.5">un poquito más..</p>
-            <ul class="text-xs text-txtsoft space-y-1">
-              <li>🔒 lo que compartes aquí se queda aquí</li>
-              <li>⚡ ¿hoy mismo? atención inmediata en cortas (+$10)</li>
-            </ul>
-          </div>
-        </div>
         <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
         <button type="button" id="datePickerTrigger" class="date-trigger" onclick="toggleCalendar()" aria-expanded="false">
           <span class="flex items-center gap-2">
@@ -179,11 +183,7 @@
             <input id="inpDate" type="hidden">
           </div>
         </div>
-        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si necesitas la lectura esta semana o la próxima, activa "lectura de emergencia"</span></div>
-        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
-          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-        </div>
+        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si activaste la lectura de emergencia, elige una fecha de esta semana o la próxima</span></div>
         <label class="block text-sm font-medium text-txtsec mb-2">horario</label>
         <div class="grid grid-cols-2 gap-2 mb-4">
           <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>

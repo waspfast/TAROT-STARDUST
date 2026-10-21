@@ -2,5 +2,6 @@
 lucide.createIcons();
 updateDateRestrictions();
 renderCategorySubtitles();
+renderBookingReadingList();
 lucide.createIcons();
 goStep(0);

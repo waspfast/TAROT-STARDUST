@@ -98,29 +98,32 @@ function toggleEmergency() {
   if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
 }
 
-// Muestra/oculta el interruptor de emergencia. Visible solo si:
-//  - la lectura elegida califica (recargo > 0)
-//  - la fecha elegida está dentro de la ventana de emergencia (si ya hay fecha)
-//  - ese día todavía tiene cupo de emergencia disponible
-// Si deja de ser válido y estaba activo, lo apaga.
+// Muestra/oculta el interruptor de emergencia (vive en el paso 1).
+// Se muestra en cuanto la lectura elegida califica (recargo > 0).
+// Si ya hay fecha, la emergencia solo se mantiene activa cuando esa fecha cae en la ventana
+// y el día todavía tiene cupo; si deja de ser válido, se apaga sola.
 function updateEmergencyToggle() {
   const wrap = document.getElementById('emergencyToggleWrap');
   if (!wrap) return;
 
   const surcharge = getEmergencySurcharge();
-  let available = surcharge > 0;
-
-  if (available && state.fecha) {
-    const avail = getDayAvailability(state.fecha);
-    available = isEmergencyWindow(state.fecha) && avail.emergenciaLeft > 0;
-  }
+  const readingEligible = surcharge > 0;
 
   const label = document.getElementById('emergencySurcharge');
   if (label && surcharge > 0) label.textContent = '+$' + surcharge.toFixed(2);
 
-  wrap.classList.toggle('hidden', !available);
+  // El interruptor vive en el paso 1: aparece en cuanto hay una lectura corta elegida.
+  wrap.classList.toggle('hidden', !readingEligible);
 
-  if (!available && state.emergency) {
+  // La fecha solo condiciona la emergencia cuando ya fue elegida:
+  // si no cae en la ventana (o el día ya no tiene cupo), se apaga sola.
+  let dateOk = true;
+  if (state.fecha) {
+    const avail = getDayAvailability(state.fecha);
+    dateOk = isEmergencyWindow(state.fecha) && avail.emergenciaLeft > 0;
+  }
+
+  if (!(readingEligible && dateOk) && state.emergency) {
     state.emergency = false;
     const t = document.getElementById('emergencyToggle');
     if (t) { t.classList.remove('on'); t.classList.add('off'); }
