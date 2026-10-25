@@ -27,7 +27,7 @@ const LIMITES_ANTERIOR = {
 // Dias sin cupo (agotados): fechas que el backend rechaza aunque llegue un POST directo.
 const DIAS_AGOTADOS = [
   "2026-09-30", "2026-10-01", "2026-10-02",
-  "2026-10-23", "2026-10-26", "2026-10-30",
+  "2026-10-23", "2026-10-26", "2026-10-29", "2026-10-30",
 ];
 
 const CORS_HEADERS = {
