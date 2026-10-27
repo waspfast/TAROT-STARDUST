@@ -64,11 +64,11 @@ CREATE TABLE IF NOT EXISTS consultas (
   fecha             TEXT    NOT NULL,   -- YYYY-MM-DD
   tipo              TEXT    NOT NULL,   -- 'normal' | 'emergencia'
   inicio            TEXT,               -- HH:MM (NULL en clientes sin rejilla)
-  consultante_nueva INTEGER,            -- 1 = nueva · 0 = frecuente · NULL = sin dato
+  consultante       TEXT,               -- 'nueva' | 'frecuente' | NULL = sin dato
   nombre            TEXT,               -- nombre de la consultante
   telefono          TEXT,               -- = campo "contacto" (normalmente WhatsApp)
   lecturas          TEXT,               -- nombres de lecturas, separados por coma
-  precios           TEXT,               -- JSON: [{"id","nombre","precio"}, ...]
+  precios           TEXT,               -- precios de las lecturas, separados por coma (ej. "7.5, 22")
   total             REAL,               -- total final (lecturas + recargo + comision)
   creado_en         TEXT    NOT NULL DEFAULT (datetime('now'))
 );

@@ -283,27 +283,32 @@ async function registrarConsulta(env, fecha, tipo, inicio, data) {
 
   const nombre = data.nombre || data.usuario || null;
   const telefono = data.contacto || null;
+  // Solo los precios, separados por coma (ej. "7.5" o "7.5, 22").
   let precios = null;
-  if (Array.isArray(data.precios)) {
-    precios = JSON.stringify(data.precios);
-  } else if (typeof data.precios === "string" && data.precios) {
-    precios = data.precios;
+  if (typeof data.precios === "string" && data.precios.trim()) {
+    precios = data.precios.trim();
+  } else if (Array.isArray(data.precios)) {
+    // Compatibilidad con clientes que aun envian [{ id, nombre, precio }].
+    precios = data.precios
+      .map(function (p) { return p && typeof p === "object" ? p.precio : p; })
+      .filter(function (p) { return p !== null && p !== undefined && p !== ""; })
+      .join(", ") || null;
   }
-  const consultanteNueva =
-    data.consultante_nueva === true ? 1
-    : data.consultante_nueva === false ? 0
+  const consultante =
+    data.consultante_nueva === true ? "nueva"
+    : data.consultante_nueva === false ? "frecuente"
     : null;
 
   try {
     await env.DB.prepare(
       `INSERT INTO consultas
-        (fecha, tipo, inicio, consultante_nueva, nombre, telefono, lecturas, precios, total)
+        (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios, total)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       fecha,
       tipo,
       inicio,
-      consultanteNueva,
+      consultante,
       nombre,
       telefono,
       data.lecturas || null,

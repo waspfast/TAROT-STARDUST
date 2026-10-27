@@ -35,11 +35,10 @@ function getReceiptDataForNotification() {
   }
   if (state.pago === 'PayPal') pagoInfo.ref_paypal = state.payRefPayPal;
 
-  // Precios de las lecturas elegidas (una entrada por lectura, con su precio al momento de reservar).
-  const precios = Object.keys(state.readings).map(function (key) {
-    const r = readingsCatalog.find(function (x) { return x.id === key; });
-    return { id: key, nombre: r ? r.title : (readingNames[key] || key), precio: state.readings[key] };
-  });
+  // Precios de las lecturas elegidas, solo el monto (ej. "7.5" o "7.5, 22").
+  const precios = Object.keys(state.readings)
+    .map(function (key) { return state.readings[key]; })
+    .join(', ');
 
   return {
     usuario: state.nombre || 'Sin nombre',
