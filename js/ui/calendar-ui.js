@@ -63,7 +63,10 @@ function selectCalendarDate(iso) {
   if (input) input.value = iso;
   setCalendarOpen(false);
   renderCalendar();
+  // Cambia el día: el horario elegido deja de valer.
+  if (typeof clearSlotSelection === 'function') clearSlotSelection();
   if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
+  if (typeof loadSlotGrid === 'function') loadSlotGrid();
 }
 
 function changeCalendarMonth(dir) {
@@ -181,6 +184,7 @@ function resetCalendarDate() {
   state.fecha = '';
   const input = document.getElementById('inpDate');
   if (input) input.value = '';
+  if (typeof clearSlotSelection === 'function') clearSlotSelection();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
 }

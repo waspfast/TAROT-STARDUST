@@ -100,7 +100,7 @@ function toggleEmergency() {
   if (typeof updateEmergencyToggle === 'function') updateEmergencyToggle();
 }
 
-// Muestra/oculta el interruptor de emergencia (vive en el paso 1).
+// Muestra/oculta el interruptor de emergencia (vive en el paso 2, sobre la fecha).
 // Se muestra en cuanto la lectura elegida califica (recargo > 0).
 // Si ya hay fecha, la emergencia solo se mantiene activa cuando esa fecha cae en la ventana
 // y el día todavía tiene cupo; si deja de ser válido, se apaga sola.
@@ -114,7 +114,7 @@ function updateEmergencyToggle() {
   const label = document.getElementById('emergencySurcharge');
   if (label && surcharge > 0) label.textContent = '+$' + surcharge.toFixed(2);
 
-  // El interruptor vive en el paso 1: aparece en cuanto hay una lectura corta elegida.
+  // El interruptor acompaña a la fecha: aparece en cuanto hay una lectura que califica.
   wrap.classList.toggle('hidden', !readingEligible);
 
   // La fecha solo condiciona la emergencia cuando ya fue elegida:
@@ -131,6 +131,10 @@ function updateEmergencyToggle() {
     if (t) { t.classList.remove('on'); t.classList.add('off'); }
     updateDateRestrictions();
   }
+
+  // La modalidad cambia qué horarios están disponibles (normal / emergencia ⚡).
+  if (typeof syncSlotSelection === 'function') syncSlotSelection();
+  if (typeof renderSlotGrid === 'function') renderSlotGrid();
 }
 
 function showAbout() {

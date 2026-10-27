@@ -135,10 +135,6 @@
         <label class="block text-sm font-medium text-txtsec mb-1">¿sobre qué te interesa preguntar?</label>
         <textarea id="inpDetalle" rows="3" placeholder="cuéntanos qué deseas preguntar o saber..." oninput="clearDetalleError()" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-accent transition resize-none"></textarea>
         <p id="detalleError" class="hidden -mt-4 mb-5 text-xs text-red-500 font-medium">por favor, escribe el contexto de lo que quieres preguntar ✦</p>
-        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
-          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
-          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
-        </div>
         <div class="flex gap-3"><button onclick="goStep(0)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="goStep(2)" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1">siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
       </div>
 
@@ -169,6 +165,10 @@
       <div id="step2" class="card-shadow bg-white rounded-2xl p-6 hidden">
         <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
         <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
+        <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
+          <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
+        </div>
         <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
         <button type="button" id="datePickerTrigger" class="date-trigger" onclick="toggleCalendar()" aria-expanded="false">
           <span class="flex items-center gap-2">
@@ -183,12 +183,10 @@
             <input id="inpDate" type="hidden">
           </div>
         </div>
-        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>horarios de lunes a viernes · si activaste la lectura de emergencia, elige una fecha de esta semana o la próxima</span></div>
+        <div class="date-note"><i data-lucide="sparkles" class="date-note-icon"></i><span>agenda de 10:00 am a 6:00 pm · bloques de 30 min · con la emergencia activa puedes reservar esta semana o la próxima</span></div>
         <label class="block text-sm font-medium text-txtsec mb-2">horario</label>
-        <div class="grid grid-cols-2 gap-2 mb-4">
-          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="tarde (4pm–6pm)"><i data-lucide="sun" class="w-4 h-4 inline mb-0.5"></i> tarde<br><span class="text-xs opacity-70">3pm – 6pm</span></div>
-          <div class="chip horario-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-horario="noche (7pm–9pm)"><i data-lucide="moon" class="w-4 h-4 inline mb-0.5"></i> noche<br><span class="text-xs opacity-70">7pm – 10pm</span></div>
-        </div>
+        <div id="slotGrid" class="slot-grid mb-2"></div>
+        <p id="slotHint" class="slot-hint mb-4">elige una fecha para ver los horarios disponibles</p>
         <label class="block text-sm font-medium text-txtsec mb-2">método de pago</label>
         <div class="grid grid-cols-2 gap-2 mb-5">
           <div class="chip pago-chip border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center" data-pago="Binance USDT">Binance <br>USDT 💵</div>
@@ -383,6 +381,7 @@
   <script src="js/ui/payment-ui.js"></script>
   <script src="js/ui/receipt-ui.js"></script>
   <script src="js/ui/calendar-ui.js"></script>
+  <script src="js/ui/slots-ui.js"></script>
   <script src="js/actions/sharing.js"></script>
   <script src="js/actions/download.js"></script>
   <script src="js/actions/notify.js"></script>

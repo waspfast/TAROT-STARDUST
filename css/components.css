@@ -498,3 +498,102 @@ button.bg-accent:hover:not(:active) {
 /* Aviso bajo el calendario */
 .date-note { display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 16px; padding: 10px 12px; background: rgba(196, 160, 172, 0.10); border: 1px solid rgba(196, 160, 172, 0.28); border-radius: 12px; font-size: 12px; line-height: 1.5; color: #8f7f84; }
 .date-note .date-note-icon { flex: 0 0 auto; width: 15px; height: 15px; color: #c4a0ac; }
+
+/* ── Rejilla de horarios (bloques de 30 min, 10:00 – 18:00) ── */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.slot-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border: 1px solid #e7dde0;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #3a3535;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease,
+              box-shadow 0.15s ease, color 0.15s ease;
+}
+.slot-pill:hover:not(.is-busy) {
+  border-color: #c4a0ac;
+  background: rgba(196, 160, 172, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(196, 160, 172, 0.14);
+}
+.slot-pill.is-selected {
+  background: #c4a0ac;
+  border-color: #c4a0ac;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(196, 160, 172, 0.35);
+}
+/* Ocupado: tachado y no clicable */
+.slot-pill.is-busy {
+  color: #c8bfc2;
+  background: #f1ecea;
+  border-color: #eee6e8;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.slot-pill.is-busy span {
+  opacity: 0.75;
+}
+/* Ocupado por una lectura normal, pero disponible con emergencia (⚡) */
+.slot-pill.is-emergency {
+  color: #a8872f;
+  background: rgba(212, 176, 107, 0.08);
+  border-color: rgba(212, 176, 107, 0.55);
+}
+.slot-pill.is-emergency:hover {
+  border-color: #d4b06b;
+  background: rgba(212, 176, 107, 0.16);
+}
+.slot-pill.is-emergency.is-selected {
+  background: #d4b06b;
+  border-color: #d4b06b;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(212, 176, 107, 0.35);
+}
+.slot-bolt {
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.95;
+}
+.slot-pill:focus-visible {
+  outline: 2px solid rgba(196, 160, 172, 0.6);
+  outline-offset: 1px;
+}
+.slot-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 12px;
+  color: #9a8a8f;
+}
+.slot-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8f7f84;
+}
+.slot-hint-selected {
+  color: #c4a0ac;
+  font-weight: 600;
+}
+
+@media (max-width: 360px) {
+  .slot-pill { font-size: 11.5px; padding: 7px 1px; }
+}
+

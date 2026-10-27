@@ -44,9 +44,11 @@ function goStep(n) {
 
   // ── Validations (must happen before animation) ──
   if (n === 2 && (!validateReadings() || !validateDetail())) return; // step2 = fecha/pago: lecturas + detalle obligatorios antes de entrar
+  // ── Step 2: rejilla de horarios (duración según las lecturas elegidas) ──
+  if (n === 2 && typeof loadSlotGrid === 'function') loadSlotGrid();
   if (n === 3) {                              // step3 = contacto: asegurar fecha, horario y pago antes de entrar
     if (!state.fecha) return showNotification('selecciona una fecha');
-    if (!state.horario) return showNotification('selecciona un horario');
+    if (!state.inicio) return showNotification('selecciona un horario');
     if (!state.pago) return showNotification('selecciona un método de pago');
   }
   if (n === 4) {                              // step4 = recibo: asegurar contacto antes de entrar

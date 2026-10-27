@@ -27,15 +27,6 @@ document.querySelectorAll('[data-platform]').forEach(c => {
   });
 });
 
-// Horario chips
-document.querySelectorAll('.horario-chip').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('.horario-chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    state.horario = c.dataset.horario;
-  });
-});
-
 // Pago chips
 document.querySelectorAll('.pago-chip').forEach(c => {
   c.addEventListener('click', () => {

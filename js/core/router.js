@@ -16,6 +16,7 @@ function resetForm() {
   state.platform = ''; state.contacto = ''; state.nombre = '';
   state.readings = {}; state.emergency = false;
   state.fecha = ''; state.horario = ''; state.pago = ''; state.detalle = '';
+  state.inicio = ''; state.duracion = 0; state.slotTipo = '';
   state.readingCategory = '';
   state.readingType = '';
   state.payRef = ''; state.payEmail = ''; state.payBanco = ''; state.payTelefono = ''; state.payRefPayPal = '';
@@ -48,5 +49,6 @@ function resetForm() {
   if (t) { t.classList.remove('on'); t.classList.add('off'); }
   const wrap = document.getElementById('emergencyToggleWrap');
   if (wrap) wrap.classList.add('hidden');
+  if (typeof renderSlotGrid === 'function') renderSlotGrid();
   goStep(0);
 }

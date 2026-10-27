@@ -68,6 +68,24 @@ async function fetchAvailability(fromIso, toIso) {
   }
 }
 
+// Refresca solo un dia (los bloques ocupados cambian a cada rato).
+// Mantiene los contadores que ya se tenian si la respuesta no los trae.
+async function fetchDaySlots(iso) {
+  if (!iso) return false;
+  try {
+    var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
+    var url = base + '/disponibilidad?from=' + encodeURIComponent(iso) + '&to=' + encodeURIComponent(iso);
+    var res = await fetch(url);
+    if (!res.ok) return false;
+    var data = await res.json();
+    var dia = data && data.dias ? data.dias[iso] : null;
+    if (dia) _availability[iso] = Object.assign({}, _availability[iso] || {}, dia);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function _esNuevoModelo(iso) {
   return iso >= TRANSICION_FECHA;
 }
@@ -131,7 +149,7 @@ function getDayAvailability(iso) {
   };
 }
 
-function markBooked(iso, isEmergency) {
+function markBooked(iso, isEmergency, inicio, duracion) {
   var c = _availability[iso] || { corta_normal: 0, corta_emergencia: 0, extensa_normal: 0, extensa_emergencia: 0 };
   var cortas = 0, extensas = 0;
   var keys = state && state.readings ? Object.keys(state.readings) : [];
@@ -147,4 +165,120 @@ function markBooked(iso, isEmergency) {
     c.extensa_normal = (c.extensa_normal || 0) + extensas;
   }
   _availability[iso] = c;
+  if (inicio) markSlotBooked(iso, inicio, duracion, isEmergency ? 'emergencia' : 'normal');
+}
+
+// ── Rejilla de horarios (bloques de 30 min, 10:00 – 18:00) ──────────
+// corta   = 25 min -> 1 bloque
+// extensa = 35 min -> 2 bloques
+// seleccion mixta (corta + extensa) = extensa -> 2 bloques
+var SLOT_STEP_MIN = 30;
+var SLOT_INICIO_MIN = 10 * 60;   // 10:00
+var SLOT_FIN_MIN = 18 * 60;      // 18:00 (fin de la ultima lectura)
+var DURACION_CORTA_MIN = 25;
+var DURACION_EXTENSA_MIN = 35;
+
+function slotToMinutes(hhmm) {
+  var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
+  if (!m) return NaN;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function slotToHhmm(minutes) {
+  var h = Math.floor(minutes / 60);
+  var m = minutes % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+}
+
+// Todos los inicios posibles de la rejilla: 10:00, 10:30, ... 17:30
+function grillaHorarios() {
+  var out = [];
+  for (var m = SLOT_INICIO_MIN; m < SLOT_FIN_MIN; m += SLOT_STEP_MIN) out.push(slotToHhmm(m));
+  return out;
+}
+
+// Duracion total de la seleccion (mixta cuenta como extensa).
+function totalReadingDuration() {
+  var keys = state && state.readings ? Object.keys(state.readings) : [];
+  if (!keys.length) return DURACION_CORTA_MIN;
+  var extensa = false;
+  keys.forEach(function (k) {
+    var r = readingsCatalog.find(function (x) { return x.id === k; });
+    if (r && r.type === 'extensa') extensa = true;
+  });
+  return extensa ? DURACION_EXTENSA_MIN : DURACION_CORTA_MIN;
+}
+
+// Bloques de 30 min que ocupa una lectura (25 min -> 1, 35 min -> 2)
+function bloquesDeSlot(inicio, duracion) {
+  var inicioMin = slotToMinutes(inicio);
+  if (!isFinite(inicioMin)) return [];
+  var n = Math.max(1, Math.ceil((duracion || DURACION_CORTA_MIN) / SLOT_STEP_MIN));
+  var out = [];
+  for (var i = 0; i < n; i++) out.push(slotToHhmm(inicioMin + i * SLOT_STEP_MIN));
+  return out;
+}
+
+// Bloques ocupados de un dia segun el backend: { normal: [], emergencia: [] }
+function getOcupadosDia(iso) {
+  var c = (iso && _availability[iso]) || {};
+  var s = c.slots || {};
+  return {
+    normal: Array.isArray(s.normal) ? s.normal : [],
+    emergencia: Array.isArray(s.emergencia) ? s.emergencia : []
+  };
+}
+
+// ¿La hora ya paso? (solo aplica al dia de hoy)
+function _slotEsPasado(fecha, inicioMin) {
+  var hoy = typeof formatDateValue === 'function' ? formatDateValue(new Date()) : '';
+  if (!hoy || fecha !== hoy) return false;
+  var ahora = new Date();
+  return inicioMin <= ahora.getHours() * 60 + ahora.getMinutes();
+}
+
+// Rejilla completa de la fecha con el estado de cada bloque:
+//   'libre'      -> se puede elegir
+//   'normal'     -> ocupado por una lectura normal (con emergencia: ⚡ disponible)
+//   'emergencia' -> ocupado por una emergencia (siempre bloqueado)
+//   'pasado'     -> hora ya pasada (hoy)
+//   'no-cabe'    -> la lectura no termina antes de las 18:00
+function horariosDisponibles(fecha, duracion, ocupados) {
+  var dur = duracion || totalReadingDuration();
+  var occ = ocupados || getOcupadosDia(fecha);
+  var lista = [];
+
+  grillaHorarios().forEach(function (inicio) {
+    var inicioMin = slotToMinutes(inicio);
+    var estado = 'libre';
+
+    if (inicioMin + dur > SLOT_FIN_MIN) {
+      estado = 'no-cabe';
+    } else if (_slotEsPasado(fecha, inicioMin)) {
+      estado = 'pasado';
+    } else {
+      var bloques = bloquesDeSlot(inicio, dur);
+      var chocaEmergencia = bloques.some(function (b) { return occ.emergencia.indexOf(b) !== -1; });
+      var chocaNormal = bloques.some(function (b) { return occ.normal.indexOf(b) !== -1; });
+      if (chocaEmergencia) estado = 'emergencia';
+      else if (chocaNormal) estado = 'normal';
+    }
+
+    lista.push({ inicio: inicio, estado: estado });
+  });
+
+  return lista;
+}
+
+// Marca el horario recien reservado para no volver a ofrecerlo en esta sesion.
+function markSlotBooked(iso, inicio, duracion, tipo) {
+  if (!iso || !inicio) return;
+  var c = _availability[iso] || (_availability[iso] = {});
+  var s = c.slots || (c.slots = { normal: [], emergencia: [] });
+  var clave = tipo === 'emergencia' ? 'emergencia' : 'normal';
+  if (!Array.isArray(s.normal)) s.normal = [];
+  if (!Array.isArray(s.emergencia)) s.emergencia = [];
+  bloquesDeSlot(inicio, duracion).forEach(function (b) {
+    if (s[clave].indexOf(b) === -1) s[clave].push(b);
+  });
 }

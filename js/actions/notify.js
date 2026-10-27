@@ -39,7 +39,10 @@ function getReceiptDataForNotification() {
     plataforma: state.platform || 'Sin plataforma',
     contacto: state.contacto || 'Sin contacto',
     fecha: state.fecha || 'Sin fecha',
-    horario: state.horario || 'Sin horario',
+    horario: state.horario || (state.inicio ? state.inicio + ' · ' + state.duracion + ' min' : 'Sin horario'),
+    inicio: state.inicio || '',
+    duracion: state.duracion || 0,
+    tipo: state.slotTipo || (state.emergency ? 'emergencia' : 'normal'),
     metodo_pago: state.pago || 'Sin método',
     total: `$${calcTotal().toFixed(2)}`,
     lecturas, detalle: state.detalle || 'Sin detalle',
@@ -64,7 +67,9 @@ async function enviarNotificacionRecibo() {
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch (e) {}
     if (!response.ok) {
-      if (data.error !== 'AGENDA_LLENA') console.error('Worker respondió con error:', data);
+      if (data.error !== 'AGENDA_LLENA' && data.error !== 'HORARIO_OCUPADO') {
+        console.error('Worker respondió con error:', data);
+      }
       return { ok: false, error: data.error };
     }
     return { ok: true };
@@ -87,9 +92,17 @@ async function confirmReceipt() {
     if (resultado.error === 'AGENDA_LLENA') {
       return showNotification('La agenda ya está llena para la fecha que elegiste. Elige otro día disponible.');
     }
+    if (resultado.error === 'HORARIO_OCUPADO') {
+      // Alguien tomó ese horario mientras confirmabas: refresca la rejilla.
+      if (typeof clearSlotSelection === 'function') clearSlotSelection();
+      if (typeof loadSlotGrid === 'function') loadSlotGrid();
+      return showNotification('ese horario acaba de ocuparse ✦ elige otro disponible');
+    }
     return showNotification('no se pudo enviar la confirmación. intenta de nuevo.');
   }
-  if (typeof markBooked === 'function') markBooked(state.fecha, !!state.emergency);
+  if (typeof markBooked === 'function') {
+    markBooked(state.fecha, !!state.emergency, state.inicio, state.duracion);
+  }
   document.getElementById('confirmHint').classList.remove('hidden');
   document.getElementById('successPanel').classList.remove('hidden');
   document.getElementById('successPanel').classList.add('fade-in');
