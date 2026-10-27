@@ -134,7 +134,7 @@ function updateEmergencyToggle() {
 
   // La modalidad cambia qué horarios están disponibles (normal / emergencia ⚡).
   if (typeof syncSlotSelection === 'function') syncSlotSelection();
-  if (typeof renderSlotGrid === 'function') renderSlotGrid();
+  if (typeof renderSlotSelect === 'function') renderSlotSelect();
 }
 
 function showAbout() {

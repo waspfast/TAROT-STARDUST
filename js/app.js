@@ -3,6 +3,6 @@ lucide.createIcons();
 updateDateRestrictions();
 renderCategorySubtitles();
 renderBookingReadingList();
-if (typeof renderSlotGrid === 'function') renderSlotGrid();
+if (typeof renderSlotSelect === 'function') renderSlotSelect();
 lucide.createIcons();
 goStep(0);

@@ -268,6 +268,53 @@ async function liberarSlot(env, fecha, tipo, bloques) {
   }
 }
 
+// ── Detalle de la consulta (tabla consultas) ─────────────────────────
+// Guarda nombre, telefono, lecturas y precios de la reserva. Es solo un
+// registro historico: si la tabla aun no existe, la reserva no se ve afectada.
+function montoNumerico(valor) {
+  if (typeof valor === "number" && Number.isFinite(valor)) return valor;
+  const limpio = String(valor == null ? "" : valor).replace(/[^0-9.]/g, "");
+  const n = parseFloat(limpio);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function registrarConsulta(env, fecha, tipo, inicio, data) {
+  if (!useD1(env)) return;
+
+  const nombre = data.nombre || data.usuario || null;
+  const telefono = data.contacto || null;
+  let precios = null;
+  if (Array.isArray(data.precios)) {
+    precios = JSON.stringify(data.precios);
+  } else if (typeof data.precios === "string" && data.precios) {
+    precios = data.precios;
+  }
+  const consultanteNueva =
+    data.consultante_nueva === true ? 1
+    : data.consultante_nueva === false ? 0
+    : null;
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO consultas
+        (fecha, tipo, inicio, consultante_nueva, nombre, telefono, lecturas, precios, total)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      fecha,
+      tipo,
+      inicio,
+      consultanteNueva,
+      nombre,
+      telefono,
+      data.lecturas || null,
+      precios,
+      montoNumerico(data.total)
+    ).run();
+  } catch (err) {
+    console.error("No se pudo registrar la consulta:", err.message);
+  }
+}
+
 async function handleDisponibilidad(env, url) {
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
@@ -309,7 +356,7 @@ async function enviarTelegram(env, data, esEmergencia) {
     "✦ ·· nueva reserva confirmada ·· ✦",
     "",
     "- - - - - - - - - - - - - - - - - - ",
-    `🤍  consultante  ·  ${data.usuario || "-"}`,
+    `🤍  consultante  ·  ${data.usuario || "-"}${data.consultante_nueva === true ? " (nueva)" : data.consultante_nueva === false ? " (frecuente)" : ""}`,
     `🌙  contacto     ·  ${data.plataforma || "-"} — ${data.contacto || "-"}`,
     "",
     "- - - - - - - - - - - - - - - - - - ",
@@ -411,6 +458,9 @@ async function handleReserva(env, request) {
       fecha: fecha,
     }, 409);
   }
+
+  // 3) Registro historico del detalle (consultante, nombre, telefono, precios).
+  await registrarConsulta(env, fecha, tipo, inicio, data);
 
   // Envía el mensaje detallado a Telegram
   await enviarTelegram(env, data, esEmergencia);

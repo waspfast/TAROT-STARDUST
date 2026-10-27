@@ -5,8 +5,9 @@
 --   npx wrangler d1 execute stardust-db --remote --file=schema.sql
 --
 -- Tablas:
---   1) reservas -> 4 contadores diarios (limite de lecturas por dia)
---   2) slots    -> agenda por bloques de 30 min (10:00 - 18:00)
+--   1) reservas  -> 4 contadores diarios (limite de lecturas por dia)
+--   2) slots     -> agenda por bloques de 30 min (10:00 - 18:00)
+--   3) consultas -> detalle de cada reserva (consultante, nombre, telefono, precios...)
 
 -- ── 1) Contadores diarios ────────────────────────────────────────────
 -- Limites (desde 2026-10-12):
@@ -53,3 +54,23 @@ WHEN NEW.tipo = 'normal'
 BEGIN
   SELECT RAISE(ABORT, 'HORARIO_OCUPADO');
 END;
+
+-- ── 3) Detalle de cada consulta ──────────────────────────────────────
+-- Una fila por reserva confirmada. Es un registro historico para saber quien
+-- reservo, si es consultante nueva o frecuente, que lecturas eligio y cuanto pago.
+-- No afecta los contadores ni la agenda: si esta tabla no existe, la reserva sigue.
+CREATE TABLE IF NOT EXISTS consultas (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  fecha             TEXT    NOT NULL,   -- YYYY-MM-DD
+  tipo              TEXT    NOT NULL,   -- 'normal' | 'emergencia'
+  inicio            TEXT,               -- HH:MM (NULL en clientes sin rejilla)
+  consultante_nueva INTEGER,            -- 1 = nueva · 0 = frecuente · NULL = sin dato
+  nombre            TEXT,               -- nombre de la consultante
+  telefono          TEXT,               -- = campo "contacto" (normalmente WhatsApp)
+  lecturas          TEXT,               -- nombres de lecturas, separados por coma
+  precios           TEXT,               -- JSON: [{"id","nombre","precio"}, ...]
+  total             REAL,               -- total final (lecturas + recargo + comision)
+  creado_en         TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_consultas_fecha ON consultas (fecha);

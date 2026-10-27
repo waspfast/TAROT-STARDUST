@@ -49,6 +49,6 @@ function resetForm() {
   if (t) { t.classList.remove('on'); t.classList.add('off'); }
   const wrap = document.getElementById('emergencyToggleWrap');
   if (wrap) wrap.classList.add('hidden');
-  if (typeof renderSlotGrid === 'function') renderSlotGrid();
+  if (typeof renderSlotSelect === 'function') renderSlotSelect();
   goStep(0);
 }

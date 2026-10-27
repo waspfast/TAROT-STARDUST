@@ -34,12 +34,21 @@ function getReceiptDataForNotification() {
     pagoInfo.ref_pago_movil = state.payRef;
   }
   if (state.pago === 'PayPal') pagoInfo.ref_paypal = state.payRefPayPal;
+
+  // Precios de las lecturas elegidas (una entrada por lectura, con su precio al momento de reservar).
+  const precios = Object.keys(state.readings).map(function (key) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    return { id: key, nombre: r ? r.title : (readingNames[key] || key), precio: state.readings[key] };
+  });
+
   return {
     usuario: state.nombre || 'Sin nombre',
     plataforma: state.platform || 'Sin plataforma',
     contacto: state.contacto || 'Sin contacto',
     fecha: state.fecha || 'Sin fecha',
-    horario: state.horario || (state.inicio ? state.inicio + ' · ' + state.duracion + ' min' : 'Sin horario'),
+    horario: state.horario || (state.inicio
+      ? (typeof formatSlot12h === 'function' ? formatSlot12h(state.inicio) : state.inicio) + ' · ' + state.duracion + ' min'
+      : 'Sin horario'),
     inicio: state.inicio || '',
     duracion: state.duracion || 0,
     tipo: state.slotTipo || (state.emergency ? 'emergencia' : 'normal'),
@@ -48,6 +57,9 @@ function getReceiptDataForNotification() {
     lecturas, detalle: state.detalle || 'Sin detalle',
     emergencia: state.emergency ? 'Sí' : 'No',
     es_emergencia: !!state.emergency,
+    consultante_nueva: state.esConsultanteNueva,
+    nombre: state.nombre || '',
+    precios: precios,
     cortas: cortas, extensas: extensas,
     ...pagoInfo
   };
