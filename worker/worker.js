@@ -28,7 +28,25 @@ const LIMITES_ANTERIOR = {
 const DIAS_AGOTADOS = [
   "2026-09-30", "2026-10-01", "2026-10-02",
   "2026-10-23", "2026-10-26", "2026-10-29", "2026-10-30",
+  "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27",
+  "2026-12-04", "2026-12-09", "2026-12-10", "2026-12-11",
 ];
+
+// Limites por fecha: sobrescriben los limites generales solo en esos dias.
+const LIMITES_ESPECIALES = {
+  // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
+  "2026-11-29": { normal: { corta: 0, extensa: 0 }, emergencia: { corta: 0, extensa: 2 } },
+  // domingo: 3 cortas normal + 3 cortas de emergencia
+  "2026-12-06": { normal: { corta: 3, extensa: 0 }, emergencia: { corta: 3, extensa: 0 } },
+  // lunes: 2 cortas + 1 extensa normal + 3 cortas de emergencia
+  "2026-12-07": { normal: { corta: 2, extensa: 1 }, emergencia: { corta: 3, extensa: 0 } },
+  // martes: 3 cortas normal + 3 cortas de emergencia
+  "2026-12-08": { normal: { corta: 3, extensa: 0 }, emergencia: { corta: 3, extensa: 0 } },
+  // sabado: solo cortas normales
+  "2026-12-12": { normal: { corta: 6, extensa: 0 }, emergencia: { corta: 0, extensa: 0 } },
+  // domingo: solo cortas normales
+  "2026-12-13": { normal: { corta: 6, extensa: 0 }, emergencia: { corta: 0, extensa: 0 } },
+};
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +77,7 @@ function columnas(esEmergencia) {
 
 // Limites vigentes segun la fecha de la reserva.
 function limitesPara(fecha) {
+  if (LIMITES_ESPECIALES[fecha]) return LIMITES_ESPECIALES[fecha];
   return fecha >= TRANSICION_FECHA ? LIMITES_NUEVO : LIMITES_ANTERIOR;
 }
 

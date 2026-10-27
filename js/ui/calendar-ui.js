@@ -1,5 +1,6 @@
 // ui/calendar-ui.js - Calendario de fechas personalizado (lunes a viernes)
-// Reemplaza al input type=date nativo: sabados y domingos no se pueden elegir.
+// Reemplaza al input type=date nativo: sabados y domingos no se pueden elegir,
+// salvo las fechas listadas en DIAS_FINDE_ABIERTOS.
 
 const CAL_WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']; // semana inicia en lunes
 const CAL_MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -50,7 +51,7 @@ function formatPrettyDate(iso) {
 function selectCalendarDate(iso) {
   const p = iso.split('-').map(Number);
   const dow = new Date(p[0], p[1] - 1, p[2]).getDay();
-  if (dow === 0 || dow === 6) return; // sabado o domingo: no permitido
+  if ((dow === 0 || dow === 6) && !(typeof isOpenWeekend === 'function' && isOpenWeekend(iso))) return; // sabado o domingo: no permitido (salvo fines de semana abiertos)
   const minIso = formatDateValue(getCalendarMinDate());
   if (iso < minIso) return; // dia ya pasado o no disponible
   const avail = getDayAvailability(iso);
@@ -112,7 +113,7 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const dow = new Date(year, month, d).getDay();
     const iso = formatDateValue(new Date(year, month, d));
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend = (dow === 0 || dow === 6) && !(typeof isOpenWeekend === 'function' && isOpenWeekend(iso));
     const isPast = !isWeekend && iso < minIso;
     const isToday = iso === todayIso;
     const isSelected = state.fecha === iso;

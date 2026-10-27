@@ -41,6 +41,8 @@ function getEmergencyWindowEndIso() {
 // ¿La fecha cae dentro de la ventana de emergencia (hoy → domingo de la semana que viene)?
 function isEmergencyWindow(iso) {
   if (!iso) return false;
+  // Fechas con cupo de emergencia especial, fuera de la ventana normal.
+  if (typeof isSpecialEmergencyDate === 'function' && isSpecialEmergencyDate(iso)) return true;
   const todayIso = formatDateValue(new Date());
   return iso >= todayIso && iso <= getEmergencyWindowEndIso();
 }
@@ -53,7 +55,7 @@ function getEmergencySurcharge() {
   if (keys.length === 0) return 0;
   for (const key of keys) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
-    if (r && (r.emergencyEligible === false || r.type === 'extensa')) return 0; // sin prioridad o extensa bloquea la emergencia
+    if (r && r.emergencyEligible === false) return 0; // lectura sin prioridad
   }
   return 10 + 5 * (keys.length - 1);
 }

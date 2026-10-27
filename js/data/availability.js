@@ -12,9 +12,45 @@ var TRANSICION_FECHA = '2026-10-12';
 // Dias sin cupo (agotados): fechas "YYYY-MM-DD" que quieras bloquear.
 var DIAS_AGOTADOS = [
   '2026-09-30', '2026-10-01', '2026-10-02',
-  '2026-10-23', '2026-10-26', '2026-10-29', '2026-10-30'
+  '2026-10-23', '2026-10-26', '2026-10-29', '2026-10-30',
+  '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27',
+  '2026-12-04', '2026-12-09', '2026-12-10', '2026-12-11'
 ];
+
+// Fines de semana abiertos: sabados/domingos que SI se pueden reservar.
+var DIAS_FINDE_ABIERTOS = [
+  '2026-11-21', '2026-11-22', '2026-11-29',
+  '2026-12-06', '2026-12-12', '2026-12-13'
+];
+
+// Limites por fecha: sobrescriben BOOKING_LIMITS solo en esos dias.
+var LIMITES_ESPECIALES = {
+  // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
+  '2026-11-29': { corta_normal: 0, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 2 },
+  // domingo: 3 cortas normal + 3 cortas de emergencia
+  '2026-12-06': { corta_normal: 3, extensa_normal: 0, corta_emergencia: 3, extensa_emergencia: 0 },
+  // lunes: 2 cortas + 1 extensa normal + 3 cortas de emergencia
+  '2026-12-07': { corta_normal: 2, extensa_normal: 1, corta_emergencia: 3, extensa_emergencia: 0 },
+  // martes: 3 cortas normal + 3 cortas de emergencia
+  '2026-12-08': { corta_normal: 3, extensa_normal: 0, corta_emergencia: 3, extensa_emergencia: 0 },
+  // sabado: solo cortas normales
+  '2026-12-12': { corta_normal: 6, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 0 },
+  // domingo: solo cortas normales
+  '2026-12-13': { corta_normal: 6, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 0 }
+};
+
 var _availability = {};
+
+// ¿Este sabado/domingo esta abierto para reservar?
+function isOpenWeekend(iso) {
+  return DIAS_FINDE_ABIERTOS.indexOf(iso) !== -1;
+}
+
+// ¿La fecha tiene cupo de emergencia fuera de la ventana normal?
+function isSpecialEmergencyDate(iso) {
+  var lim = LIMITES_ESPECIALES[iso];
+  return !!(lim && (lim.corta_emergencia > 0 || lim.extensa_emergencia > 0));
+}
 
 async function fetchAvailability(fromIso, toIso) {
   try {
@@ -67,10 +103,16 @@ function getDayAvailability(iso) {
   var normalLeft, emergenciaLeft;
 
   if (_esNuevoModelo(iso)) {
-    var nCorta = sel.corta ? Math.max(0, BOOKING_LIMITS.corta_normal - cortaNormal) : Infinity;
-    var nExt = sel.extensa ? Math.max(0, BOOKING_LIMITS.extensa_normal - extensaNormal) : Infinity;
-    var eCorta = sel.corta ? Math.max(0, BOOKING_LIMITS.corta_emergencia - cortaEmerg) : Infinity;
-    var eExt = sel.extensa ? Math.max(0, BOOKING_LIMITS.extensa_emergencia - extensaEmerg) : Infinity;
+    // Limites por defecto o los especiales de esta fecha.
+    var lim = LIMITES_ESPECIALES[iso];
+    var limCortaN = lim ? lim.corta_normal : BOOKING_LIMITS.corta_normal;
+    var limExtN = lim ? lim.extensa_normal : BOOKING_LIMITS.extensa_normal;
+    var limCortaE = lim ? lim.corta_emergencia : BOOKING_LIMITS.corta_emergencia;
+    var limExtE = lim ? lim.extensa_emergencia : BOOKING_LIMITS.extensa_emergencia;
+    var nCorta = sel.corta ? Math.max(0, limCortaN - cortaNormal) : Infinity;
+    var nExt = sel.extensa ? Math.max(0, limExtN - extensaNormal) : Infinity;
+    var eCorta = sel.corta ? Math.max(0, limCortaE - cortaEmerg) : Infinity;
+    var eExt = sel.extensa ? Math.max(0, limExtE - extensaEmerg) : Infinity;
     normalLeft = Math.min(nCorta, nExt);
     emergenciaLeft = Math.min(eCorta, eExt);
     if (!isFinite(normalLeft)) normalLeft = 0;
