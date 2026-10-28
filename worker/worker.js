@@ -28,6 +28,13 @@ const SLOT_FIN_MIN = 18 * 60;      // 18:00 (fin de la ultima lectura)
 const DURACION_CORTA_MIN = 25;
 const DURACION_EXTENSA_MIN = 35;
 
+// Ventanas de horario por fecha: sobrescriben la rejilla general (10:00 - 18:00).
+// "inicio" es el primer bloque valido y la lectura tiene que TERMINAR antes de "fin".
+const HORARIOS_ESPECIALES = {
+  // viernes 30: solo emergencias de 10:30 a 15:00
+  "2026-10-30": { inicio: "10:30", fin: "15:00" },
+};
+
 
 const LIMITES_NUEVO = {
   normal:     { corta: 6, extensa: 3 },
@@ -42,13 +49,16 @@ const LIMITES_ANTERIOR = {
 // Dias sin cupo (agotados): fechas que el backend rechaza aunque llegue un POST directo.
 const DIAS_AGOTADOS = [
   "2026-09-30", "2026-10-01", "2026-10-02",
-  "2026-10-23", "2026-10-26", "2026-10-29", "2026-10-30",
+  "2026-10-23", "2026-10-26", "2026-10-29",
   "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27",
   "2026-12-04", "2026-12-09", "2026-12-10", "2026-12-11",
 ];
 
 // Limites por fecha: sobrescriben los limites generales solo en esos dias.
 const LIMITES_ESPECIALES = {
+  // viernes 30: agenda abierta solo para emergencias, ventana 10:30 - 15:00
+  // (6 cortas de emergencia + 1 extensa de emergencia, sin normales)
+  "2026-10-30": { normal: { corta: 0, extensa: 0 }, emergencia: { corta: 6, extensa: 1 } },
   // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
   "2026-11-29": { normal: { corta: 0, extensa: 0 }, emergencia: { corta: 0, extensa: 2 } },
   // domingo: 3 cortas normal + 3 cortas de emergencia
@@ -111,13 +121,22 @@ function toHhmm(minutes) {
   return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
 }
 
-// Inicios validos de la rejilla: 10:00, 10:30, ... 17:30
-function inicioValido(minutes) {
+// Ventana de horarios vigente para una fecha (por defecto 10:00 - 18:00).
+function ventanaDe(fecha) {
+  const w = HORARIOS_ESPECIALES[fecha];
+  if (!w) return { inicioMin: SLOT_INICIO_MIN, finMin: SLOT_FIN_MIN };
+  return { inicioMin: toMinutes(w.inicio), finMin: toMinutes(w.fin) };
+}
+
+// Inicios validos dentro de la ventana del dia: 10:00, 10:30, ... 17:30
+// (o 10:30, 11:00, ... 14:30 en los dias con ventana especial).
+function inicioValido(minutes, fecha) {
+  const ventana = ventanaDe(fecha);
   return (
     Number.isFinite(minutes) &&
-    minutes >= SLOT_INICIO_MIN &&
-    minutes < SLOT_FIN_MIN &&
-    (minutes - SLOT_INICIO_MIN) % SLOT_STEP_MIN === 0
+    minutes >= ventana.inicioMin &&
+    minutes < ventana.finMin &&
+    (minutes - ventana.inicioMin) % SLOT_STEP_MIN === 0
   );
 }
 
@@ -440,7 +459,8 @@ async function handleReserva(env, request) {
   const sinHorario = data.inicio === undefined || data.inicio === null || data.inicio === "";
   if (!sinHorario) {
     const inicioMin = toMinutes(data.inicio);
-    if (!inicioValido(inicioMin) || inicioMin + duracion > SLOT_FIN_MIN) {
+    const ventana = ventanaDe(fecha);
+    if (!inicioValido(inicioMin, fecha) || inicioMin + duracion > ventana.finMin) {
       return json({ error: "HORARIO_INVALIDO", inicio: data.inicio }, 400);
     }
     inicio = toHhmm(inicioMin);

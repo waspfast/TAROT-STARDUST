@@ -12,7 +12,7 @@ var TRANSICION_FECHA = '2026-10-12';
 // Dias sin cupo (agotados): fechas "YYYY-MM-DD" que quieras bloquear.
 var DIAS_AGOTADOS = [
   '2026-09-30', '2026-10-01', '2026-10-02',
-  '2026-10-23', '2026-10-26', '2026-10-29', '2026-10-30',
+  '2026-10-23', '2026-10-26', '2026-10-29',
   '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27',
   '2026-12-04', '2026-12-09', '2026-12-10', '2026-12-11'
 ];
@@ -25,6 +25,9 @@ var DIAS_FINDE_ABIERTOS = [
 
 // Limites por fecha: sobrescriben BOOKING_LIMITS solo en esos dias.
 var LIMITES_ESPECIALES = {
+  // viernes 30: agenda abierta solo para emergencias, ventana 10:30 - 15:00
+  // (6 cortas de emergencia + 1 extensa de emergencia, sin normales)
+  '2026-10-30': { corta_normal: 0, extensa_normal: 0, corta_emergencia: 6, extensa_emergencia: 1 },
   // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
   '2026-11-29': { corta_normal: 0, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 2 },
   // domingo: 3 cortas normal + 3 cortas de emergencia
@@ -178,6 +181,13 @@ var SLOT_FIN_MIN = 18 * 60;      // 18:00 (fin de la ultima lectura)
 var DURACION_CORTA_MIN = 25;
 var DURACION_EXTENSA_MIN = 35;
 
+// Ventanas de horario por fecha: sobrescriben la rejilla general (10:00 - 18:00).
+// "inicio" es el primer bloque valido y la lectura tiene que TERMINAR antes de "fin".
+var HORARIOS_ESPECIALES = {
+  // viernes 30: solo emergencias de 10:30 a 15:00
+  '2026-10-30': { inicio: '10:30', fin: '15:00' }
+};
+
 function slotToMinutes(hhmm) {
   var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
   if (!m) return NaN;
@@ -190,10 +200,19 @@ function slotToHhmm(minutes) {
   return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
 }
 
+// Ventana de horarios vigente para una fecha (por defecto 10:00 - 18:00).
+function ventanaDe(fecha) {
+  var w = HORARIOS_ESPECIALES[fecha];
+  if (!w) return { inicioMin: SLOT_INICIO_MIN, finMin: SLOT_FIN_MIN };
+  return { inicioMin: slotToMinutes(w.inicio), finMin: slotToMinutes(w.fin) };
+}
+
 // Todos los inicios posibles de la rejilla: 10:00, 10:30, ... 17:30
-function grillaHorarios() {
+// (o los de la ventana especial del dia, ej. 10:30 ... 14:30)
+function grillaHorarios(fecha) {
+  var ventana = ventanaDe(fecha);
   var out = [];
-  for (var m = SLOT_INICIO_MIN; m < SLOT_FIN_MIN; m += SLOT_STEP_MIN) out.push(slotToHhmm(m));
+  for (var m = ventana.inicioMin; m < ventana.finMin; m += SLOT_STEP_MIN) out.push(slotToHhmm(m));
   return out;
 }
 
@@ -242,17 +261,17 @@ function _slotEsPasado(fecha, inicioMin) {
 //   'normal'     -> ocupado por una lectura normal (con emergencia: ⚡ disponible)
 //   'emergencia' -> ocupado por una emergencia (siempre bloqueado)
 //   'pasado'     -> hora ya pasada (hoy)
-//   'no-cabe'    -> la lectura no termina antes de las 18:00
+//   'no-cabe'    -> la lectura no termina dentro de la ventana del dia
 function horariosDisponibles(fecha, duracion, ocupados) {
   var dur = duracion || totalReadingDuration();
   var occ = ocupados || getOcupadosDia(fecha);
   var lista = [];
 
-  grillaHorarios().forEach(function (inicio) {
+  grillaHorarios(fecha).forEach(function (inicio) {
     var inicioMin = slotToMinutes(inicio);
     var estado = 'libre';
 
-    if (inicioMin + dur > SLOT_FIN_MIN) {
+    if (inicioMin + dur > ventanaDe(fecha).finMin) {
       estado = 'no-cabe';
     } else if (_slotEsPasado(fecha, inicioMin)) {
       estado = 'pasado';
