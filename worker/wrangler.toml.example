@@ -15,3 +15,13 @@ binding = "DB"
 database_name = "stardust-db"
 # Reemplaza TU_D1_ID por el database_id real. NO lo subas al repo.
 database_id = "TU_D1_ID"
+
+[assets]
+directory = "../admin"
+binding = "ASSETS"
+run_worker_first = ["/*"]
+
+[vars]
+ACCESS_TEAM_DOMAIN = "TU-EQUIPO.cloudflareaccess.com"
+ACCESS_AUD = "TU-APPLICATION-AUDIENCE-TAG"
+ADMIN_EMAILS = "tu-correo@ejemplo.com"

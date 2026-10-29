@@ -14,64 +14,18 @@
 // Antes de 2026-10-12 (transicion): normal <= 6, emergencia <= 6 (extensa bloqueada)
 //
 // Agenda por horarios (tabla "slots"):
-//   rejilla de bloques de 30 min de 10:00 a 18:00 (inicios 10:00 ... 17:30)
+//   rejilla de bloques de 30 min; la jornada se define en las reglas de D1
 //   corta = 25 min (1 bloque) · extensa = 35 min (2 bloques)
 //   una emergencia puede solaparse con UNA normal; nunca con otra emergencia
 //   una normal no puede entrar si el bloque ya tiene cualquier reserva
 
-const TRANSICION_FECHA = "2026-10-12";
+import { getDayRule, handleAdmin } from "./admin.js";
+import { verifyAccess } from "./access.js";
 
 // ── Rejilla de horarios ──────────────────────────────────────────────
 const SLOT_STEP_MIN = 30;
-const SLOT_INICIO_MIN = 10 * 60;   // 10:00
-const SLOT_FIN_MIN = 18 * 60;      // 18:00 (fin de la ultima lectura)
 const DURACION_CORTA_MIN = 25;
 const DURACION_EXTENSA_MIN = 35;
-
-// Ventanas de horario por fecha: sobrescriben la rejilla general (10:00 - 18:00).
-// "inicio" es el primer bloque valido y la lectura tiene que TERMINAR antes de "fin".
-const HORARIOS_ESPECIALES = {
-  // viernes 30: solo emergencias de 10:30 a 15:00
-  "2026-10-30": { inicio: "10:30", fin: "15:00" },
-};
-
-
-const LIMITES_NUEVO = {
-  normal:     { corta: 6, extensa: 3 },
-  emergencia: { corta: 5, extensa: 0 },
-};
-
-const LIMITES_ANTERIOR = {
-  normal:     { corta: 6, extensa: 0 },
-  emergencia: { corta: 6, extensa: 0 },
-};
-
-// Dias sin cupo (agotados): fechas que el backend rechaza aunque llegue un POST directo.
-const DIAS_AGOTADOS = [
-  "2026-09-30", "2026-10-01", "2026-10-02",
-  "2026-10-23", "2026-10-26", "2026-10-29",
-  "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27",
-  "2026-12-04", "2026-12-09", "2026-12-10", "2026-12-11",
-];
-
-// Limites por fecha: sobrescriben los limites generales solo en esos dias.
-const LIMITES_ESPECIALES = {
-  // viernes 30: agenda abierta solo para emergencias, ventana 10:30 - 15:00
-  // (6 cortas de emergencia + 1 extensa de emergencia, sin normales)
-  "2026-10-30": { normal: { corta: 0, extensa: 0 }, emergencia: { corta: 6, extensa: 1 } },
-  // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
-  "2026-11-29": { normal: { corta: 0, extensa: 0 }, emergencia: { corta: 0, extensa: 2 } },
-  // domingo: 3 cortas normal + 3 cortas de emergencia
-  "2026-12-06": { normal: { corta: 3, extensa: 0 }, emergencia: { corta: 3, extensa: 0 } },
-  // lunes: 2 cortas + 1 extensa normal + 3 cortas de emergencia
-  "2026-12-07": { normal: { corta: 2, extensa: 1 }, emergencia: { corta: 3, extensa: 0 } },
-  // martes: 3 cortas normal + 3 cortas de emergencia
-  "2026-12-08": { normal: { corta: 3, extensa: 0 }, emergencia: { corta: 3, extensa: 0 } },
-  // sabado: solo cortas normales
-  "2026-12-12": { normal: { corta: 6, extensa: 0 }, emergencia: { corta: 0, extensa: 0 } },
-  // domingo: solo cortas normales
-  "2026-12-13": { normal: { corta: 6, extensa: 0 }, emergencia: { corta: 0, extensa: 0 } },
-};
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -100,10 +54,12 @@ function columnas(esEmergencia) {
   return { corta: "corta_normal", extensa: "extensa_normal" };
 }
 
-// Limites vigentes segun la fecha de la reserva.
-function limitesPara(fecha) {
-  if (LIMITES_ESPECIALES[fecha]) return LIMITES_ESPECIALES[fecha];
-  return fecha >= TRANSICION_FECHA ? LIMITES_NUEVO : LIMITES_ANTERIOR;
+// Limites vigentes en la regla semanal o excepcion de la fecha.
+function limitesPara(rule) {
+  return {
+    normal: { corta: rule.corta_normal, extensa: rule.extensa_normal },
+    emergencia: { corta: rule.corta_emergencia, extensa: rule.extensa_emergencia },
+  };
 }
 
 const CONTEO_VACIO = { corta_normal: 0, corta_emergencia: 0, extensa_normal: 0, extensa_emergencia: 0 };
@@ -121,17 +77,15 @@ function toHhmm(minutes) {
   return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
 }
 
-// Ventana de horarios vigente para una fecha (por defecto 10:00 - 18:00).
-function ventanaDe(fecha) {
-  const w = HORARIOS_ESPECIALES[fecha];
-  if (!w) return { inicioMin: SLOT_INICIO_MIN, finMin: SLOT_FIN_MIN };
-  return { inicioMin: toMinutes(w.inicio), finMin: toMinutes(w.fin) };
+// Ventana horaria definida para la fecha.
+function ventanaDe(rule) {
+  return { inicioMin: toMinutes(rule.inicio), finMin: toMinutes(rule.fin) };
 }
 
 // Inicios validos dentro de la ventana del dia: 10:00, 10:30, ... 17:30
 // (o 10:30, 11:00, ... 14:30 en los dias con ventana especial).
-function inicioValido(minutes, fecha) {
-  const ventana = ventanaDe(fecha);
+function inicioValido(minutes, rule) {
+  const ventana = ventanaDe(rule);
   return (
     Number.isFinite(minutes) &&
     minutes >= ventana.inicioMin &&
@@ -169,9 +123,9 @@ async function getCounts(env, iso) {
 
 // Reserva el cupo (corta y/o extensa) de forma atomica.
 // Devuelve true si hay cupo, false si AGENDA_LLENA.
-async function reservarCupo(env, fecha, esEmergencia, cortas, extensas) {
+async function reservarCupo(env, fecha, esEmergencia, cortas, extensas, rule) {
   const cols = columnas(esEmergencia);
-  const lim = limitesPara(fecha)[esEmergencia ? "emergencia" : "normal"];
+  const lim = limitesPara(rule)[esEmergencia ? "emergencia" : "normal"];
 
   // Una sola reserva no puede exceder el limite de su tipo.
   if (cortas > lim.corta || extensas > lim.extensa) return false;
@@ -345,29 +299,39 @@ async function handleDisponibilidad(env, url) {
   const dias = {};
 
   if (from && to) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return json({ error: "Rango de fechas inválido" }, 400);
+    }
     const start = new Date(from + "T00:00:00Z");
     const end = new Date(to + "T00:00:00Z");
     const total = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+    if (!Number.isFinite(total) || total < 1 || total > 62) {
+      return json({ error: "El rango debe contener entre 1 y 62 días" }, 400);
+    }
     const slotsPorDia = await getSlotsByDay(env, from, to);
 
     for (let i = 0; i < total; i++) {
       const d = new Date(start.getTime() + i * 86400000);
       const iso = d.toISOString().slice(0, 10);
       const dia = await getCounts(env, iso);
+      const rule = await getDayRule(env.DB, iso);
       // Bloques ocupados del dia, separados por tipo de reserva.
       dia.slots = slotsPorDia[iso] || { normal: [], emergencia: [] };
+      dia.is_open = rule.is_open;
+      dia.inicio = rule.inicio;
+      dia.fin = rule.fin;
+      dia.emergencia_extendida = rule.emergencia_extendida;
+      dia.limits = {
+        corta_normal: rule.corta_normal,
+        corta_emergencia: rule.corta_emergencia,
+        extensa_normal: rule.extensa_normal,
+        extensa_emergencia: rule.extensa_emergencia,
+      };
       dias[iso] = dia;
     }
   }
 
-  return json({
-    limites: {
-      nuevo: LIMITES_NUEVO,
-      anterior: LIMITES_ANTERIOR,
-      transicion: TRANSICION_FECHA,
-    },
-    dias: dias,
-  });
+  return json({ dias: dias });
 }
 
 async function enviarTelegram(env, data, esEmergencia) {
@@ -431,11 +395,14 @@ async function handleReserva(env, request) {
   const esEmergencia = data.es_emergencia === true || data.tipo === "emergencia";
   const tipo = esEmergencia ? "emergencia" : "normal";
 
-  if (!fecha || typeof fecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+  const parsedDate = typeof fecha === "string" ? new Date(`${fecha}T00:00:00Z`) : null;
+  if (!fecha || typeof fecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
+    || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== fecha) {
     return json({ error: "FECHA_INVALIDA" }, 400);
   }
 
-  if (DIAS_AGOTADOS.includes(fecha)) {
+  const rule = await getDayRule(env.DB, fecha);
+  if (!rule.is_open) {
     return json({ error: "AGENDA_LLENA", fecha: fecha, bloqueado: true }, 409);
   }
 
@@ -459,8 +426,8 @@ async function handleReserva(env, request) {
   const sinHorario = data.inicio === undefined || data.inicio === null || data.inicio === "";
   if (!sinHorario) {
     const inicioMin = toMinutes(data.inicio);
-    const ventana = ventanaDe(fecha);
-    if (!inicioValido(inicioMin, fecha) || inicioMin + duracion > ventana.finMin) {
+    const ventana = ventanaDe(rule);
+    if (!inicioValido(inicioMin, rule) || inicioMin + duracion > ventana.finMin) {
       return json({ error: "HORARIO_INVALIDO", inicio: data.inicio }, 400);
     }
     inicio = toHhmm(inicioMin);
@@ -474,7 +441,7 @@ async function handleReserva(env, request) {
   }
 
   // 2) Cupo diario: si el dia ya llego a su limite, se libera el horario.
-  const reservado = await reservarCupo(env, fecha, esEmergencia, cortas, extensas);
+  const reservado = await reservarCupo(env, fecha, esEmergencia, cortas, extensas, rule);
   if (!reservado) {
     await liberarSlot(env, fecha, tipo, bloques);
     return json({
@@ -501,8 +468,17 @@ export default {
 
     const url = new URL(request.url);
 
+    if (url.pathname.startsWith("/api/admin/")) {
+      return handleAdmin(request, env);
+    }
+
     if (request.method === "GET" && url.pathname === "/disponibilidad") {
-      return handleDisponibilidad(env, url);
+      try {
+        return await handleDisponibilidad(env, url);
+      } catch (err) {
+        console.error("Error leyendo disponibilidad:", err);
+        return json({ error: "No se pudo consultar la disponibilidad" }, 500);
+      }
     }
 
     if (request.method === "POST") {
@@ -511,6 +487,11 @@ export default {
       } catch (err) {
         return json({ error: err.message }, 500);
       }
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && env.ASSETS) {
+      if (!await verifyAccess(request, env)) return json({ error: "No autorizado" }, 401);
+      return env.ASSETS.fetch(request);
     }
 
     return json({ error: "Método no permitido" }, 405);

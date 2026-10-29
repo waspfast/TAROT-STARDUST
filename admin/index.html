@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Stardust Tarot · Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alice&family=Catamaran:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="progressbar" class="progressbar" aria-hidden="true"></div>
+  <svg class="symbol-library" aria-hidden="true">
+    <symbol id="brand-star" viewBox="0 0 100 100">
+      <path d="M50 0C52 34 66 48 100 50C66 52 52 66 50 100C48 66 34 52 0 50C34 48 48 34 50 0Z"></path>
+      <path transform="rotate(45 50 50) translate(50 50) scale(.62) translate(-50 -50)" d="M50 0C52 34 66 48 100 50C66 52 52 66 50 100C48 66 34 52 0 50C34 48 48 34 50 0Z"></path>
+    </symbol>
+  </svg>
+
+  <div class="shell">
+    <svg class="star a" aria-hidden="true"><use href="#brand-star"></use></svg>
+    <svg class="star b" aria-hidden="true"><use href="#brand-star"></use></svg>
+
+    <aside class="side">
+      <div class="logo">
+        <svg class="star" aria-hidden="true"><use href="#brand-star"></use></svg>
+        <span>stardust<br>tarot</span>
+      </div>
+      <a class="nav on" href="#inicio" data-goto-view="inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Inicio</a>
+      <a class="nav" href="#consultas" data-goto-view="consultas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"></path></svg>Consultas</a>
+      <a class="nav" href="#graficos" data-goto-view="graficos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"></path><path d="M14 3.5A9 9 0 0 1 20.5 10H14z"></path></svg>Gráficos</a>
+      <a class="nav" href="#disponibilidad" data-goto-view="disponibilidad"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>Disponibilidad</a>
+      <p class="tagline">Luz para lo que ya sabes, pero aún no ves</p>
+      <a class="nav logout" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M15 8l4 4-4 4M19 12H9"></path></svg>Cerrar sesión</a>
+    </aside>
+
+    <main class="main">
+      <header class="head">
+        <div>
+          <p class="eyebrow">STARDUST TAROT · ESPACIO PRIVADO</p>
+          <h1>Tu agenda, con calma.</h1>
+          <p id="identity" class="lead">Verificando acceso…</p>
+        </div>
+        <div class="head-controls">
+          <div class="clock" aria-label="Hora local">
+            <time id="clock-time">--:--:--</time>
+            <span id="clock-date"></span>
+          </div>
+          <label class="density-control">Densidad
+            <select id="density-toggle" aria-label="Densidad del panel">
+              <option value="comfortable">Cómoda</option>
+              <option value="compact">Compacta</option>
+            </select>
+          </label>
+          <button id="discreet-toggle" class="btn paper" type="button" aria-pressed="false">Modo discreto</button>
+        </div>
+      </header>
+
+      <div id="notice" class="banner soft" role="status" hidden></div>
+      <div id="error" class="banner error" role="alert" hidden></div>
+      <section id="dashboard" class="dashboard" data-view="inicio" data-reveal aria-label="Resumen de tu agenda">
+        <article id="today-tile" class="bento-tile tile-today" data-tile="today">
+          <div class="tile-heading">
+            <div><p class="eyebrow">TU JORNADA</p><h2 class="h2">Hoy</h2></div>
+            <button class="tile-expand" type="button" aria-expanded="false" aria-controls="today-detail">
+              <span class="sr-only">Ver detalle de hoy</span><span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <p id="today-date" class="tile-date"></p>
+          <div class="today-focus">
+            <span class="today-kicker">Próxima lectura</span>
+            <strong id="today-next" class="tile-next">Cargando tu agenda…</strong>
+            <span id="today-countdown" class="countdown" aria-live="polite"></span>
+          </div>
+          <p id="today-summary" class="tile-copy"></p>
+          <div id="today-detail" class="tile-detail" hidden>
+            <p class="detail-title">Tu agenda de hoy</p>
+            <div id="today-list" class="tile-list"></div>
+          </div>
+        </article>
+
+        <article id="confirm-tile" class="bento-tile tile-confirm" data-tile="confirm">
+          <div class="tile-heading">
+            <div><p class="eyebrow">SIGUIENTE PASO</p><h2 class="h2">En progreso</h2></div>
+            <span id="confirm-count" class="pill">—</span>
+            <button class="tile-expand" type="button" aria-expanded="false" aria-controls="confirm-detail">
+              <span class="sr-only">Ver consultas en progreso</span><span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <p id="confirm-copy" class="tile-copy">Revisando tus consultas…</p>
+          <div id="confirm-preview" class="tile-list"></div>
+          <div class="tile-foot">
+            <span class="tile-foot-copy">Puedes revisarlas con calma.</span>
+            <a class="text-link" href="#consultas" data-goto-view="consultas" data-goto-state="en_proceso">Abrir consultas</a>
+          </div>
+          <div id="confirm-detail" class="tile-detail" hidden>
+            <p class="detail-title">Consultas que puedes revisar con calma</p>
+            <div id="confirm-list" class="tile-list"></div>
+            <div class="quick-links">
+              <a class="text-link" href="#consultas" data-goto-view="consultas" data-goto-state="en_proceso">Ver en progreso</a>
+              <a class="text-link" href="#consultas" data-goto-view="consultas" data-goto-state="finalizado">Ver finalizadas</a>
+            </div>
+          </div>
+        </article>
+        <article id="calendario" class="bento-tile tile-calendar" data-tile="calendar">
+          <div class="tile-heading">
+            <div><p class="eyebrow">DISPONIBILIDAD</p><h2 class="h2">Calendario</h2></div>
+            <div class="cal-nav">
+              <button id="cal-prev" class="icon-btn" type="button" aria-label="Mes anterior">‹</button>
+              <input id="availability-month" type="month" aria-label="Mes del calendario">
+              <button id="cal-next" class="icon-btn" type="button" aria-label="Mes siguiente">›</button>
+            </div>
+            <button class="tile-expand" type="button" aria-expanded="false" aria-controls="calendar-detail">
+              <span class="sr-only">Ver detalle del calendario</span><span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <div class="heat-legend" aria-label="Ocupación: libre, ligera, media, alta y completa">
+            <span class="heat-swatch heat-0" aria-label="Sin reservas"></span>
+            <span class="heat-swatch heat-1" aria-label="Ocupación ligera"></span>
+            <span class="heat-swatch heat-2" aria-label="Ocupación media"></span>
+            <span class="heat-swatch heat-3" aria-label="Ocupación alta"></span>
+            <span class="heat-swatch heat-full" aria-label="Sin cupos libres"></span>
+            <span class="heat-key">Ocupación</span>
+          </div>
+          <div id="calendar" class="cal" aria-label="Calendario de disponibilidad"></div>
+          <div id="calendar-detail" class="tile-detail" hidden>
+            <p class="detail-title">Cada día reúne reservas y cupos libres.</p>
+            <p class="hint">El punto dorado indica hoy; la barra muestra ocupación; el rayado indica una fecha cerrada. Selecciona un día para revisar o ajustar su disponibilidad.</p>
+            <a class="text-link" href="#disponibilidad" data-goto-view="disponibilidad">Ajustar la fecha seleccionada</a>
+          </div>
+        </article>
+
+        <article class="bento-tile tile-summary" data-tile="summary">
+          <div class="tile-heading">
+            <div><p class="eyebrow">UNA MIRADA RÁPIDA</p><h2 class="h2">Tu mes</h2></div>
+            <button class="tile-expand" type="button" aria-expanded="false" aria-controls="summary-detail">
+              <span class="sr-only">Ver detalle del resumen</span><span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"><span>Consultas individuales hoy</span><strong id="stat-total">—</strong></div>
+            <div class="stat-row"><span>En progreso</span><strong id="stat-progress">—</strong></div>
+            <div class="stat-row"><span>Finalizadas hoy</span><strong id="stat-finished">—</strong></div>
+          </div>
+          <div id="summary-detail" class="tile-detail" hidden>
+            <p class="hint">Este resumen cuenta consultas individuales. Los contadores históricos sin ficha aparecen aparte en el registro.</p>
+          </div>
+        </article>
+
+        <article class="bento-tile tile-availability" data-tile="availability">
+          <div class="tile-heading">
+            <div><p class="eyebrow">ABRIR O CERRAR FECHAS</p><h2 class="h2">Disponibilidad</h2></div>
+            <button class="tile-expand" type="button" aria-expanded="false" aria-controls="availability-detail">
+              <span class="sr-only">Ver detalle de disponibilidad</span><span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <strong id="stat-open-days" class="availability-count">—</strong>
+          <p id="availability-summary" class="tile-copy">Fechas abiertas este mes</p>
+          <a class="btn pri" href="#disponibilidad" data-goto-view="disponibilidad">Ajustar disponibilidad</a>
+          <div id="availability-detail" class="tile-detail" hidden>
+            <p class="hint">Elige un día en el calendario para ajustar cupos, jornada y si recibes reservas.</p>
+            <a class="text-link" href="#inicio" data-goto-view="inicio" data-goto-target="calendario">Ir al calendario</a>
+          </div>
+        </article>
+      </section>
+      <section class="panel blush" id="vista-consultas" data-view="consultas" data-reveal>
+          <div class="ph">
+            <div><p class="eyebrow">REGISTRO HISTÓRICO</p><h2 class="h2">Consultas</h2></div>
+            <span id="consulta-count" class="pill">—</span>
+          </div>
+          <div class="seg" id="consulta-tabs" role="tablist" aria-label="Filtrar consultas por estado">
+            <button type="button" class="seg-btn on" role="tab" aria-selected="true" data-state="">Todos</button>
+            <button type="button" class="seg-btn" role="tab" aria-selected="false" data-state="en_proceso">En progreso</button>
+            <button type="button" class="seg-btn" role="tab" aria-selected="false" data-state="finalizado">Finalizadas</button>
+          </div>
+          <div class="filters">
+            <label>Mes<input id="consultas-month" type="month"></label>
+            <label class="search-label">Buscar<input id="consultas-search" type="search" maxlength="80" placeholder="Nombre, teléfono o lectura"></label>
+            <button id="search-consultas" type="button" class="btn">Buscar</button>
+          </div>
+          <p class="hint">Hasta 200 consultas por búsqueda. El estado no modifica la disponibilidad.</p>
+          <div id="consultas-list" class="list" aria-live="polite"></div>
+          <div class="manual-section">
+            <div class="ph">
+              <div><p class="eyebrow">CONTADORES HISTÓRICOS DE D1</p><h3 class="h2">Registros manuales sin desglose</h3></div>
+              <span id="manual-total" class="pill">0 lecturas</span>
+            </div>
+            <p class="hint">Son conteos por fecha sin ficha individual; no representan nombres, estados ni citas separadas. Se filtran por mes, no por texto o estado.</p>
+            <div id="manual-list" class="list" aria-live="polite"></div>
+          </div>
+          <p class="quote">Lo que se comparte aquí, se queda aquí.</p>
+        </section>
+
+      <form id="rule-form" class="panel blush rule-form" data-view="disponibilidad">
+          <div class="ph">
+            <div><p class="eyebrow">AJUSTES DE FECHA</p><h2 id="rule-title" class="h2">Selecciona una fecha</h2></div>
+            <span id="rule-meta" class="pill"></span>
+          </div>
+          <label class="toggle"><input id="rule-open" type="checkbox"> Fecha abierta</label>
+          <label class="toggle"><input id="rule-emergency-extended" type="checkbox"> Emergencias fuera de la ventana normal</label>
+          <div class="time-fields">
+            <label>Inicio de jornada<input id="rule-start" type="time" step="1800" required></label>
+            <label>Fin de jornada<input id="rule-end" type="time" step="1800" required></label>
+          </div>
+          <p class="sub">Bloques de 30 minutos · las lecturas extensas ocupan dos bloques.</p>
+          <div class="capacity-grid">
+            <label>Cortas · normal<input id="cap-corta-normal" type="number" min="0" max="50" required></label>
+            <label>Cortas · emergencia<input id="cap-corta-emergencia" type="number" min="0" max="50" required></label>
+            <label>Extensas · normal<input id="cap-extensa-normal" type="number" min="0" max="50" required></label>
+            <label>Extensas · emergencia<input id="cap-extensa-emergencia" type="number" min="0" max="50" required></label>
+          </div>
+          <button id="save-rule" class="btn pri" type="submit">Guardar cambios</button>
+          <button id="reset-rule" class="btn" type="button" hidden>Volver a la regla semanal</button>
+          <p class="hint">El cambio crea una excepción solo para la fecha seleccionada.</p>
+        </form>
+
+      <section class="panel blush charts" id="vista-graficos" data-view="graficos" data-reveal>
+        <div class="ph">
+          <div><p class="eyebrow">ESTADÍSTICAS DE CONSULTAS</p><h2 class="h2">Gráficos</h2></div>
+          <span id="stats-total" class="pill">—</span>
+        </div>
+        <div class="stats-controls">
+          <label>Mes<input id="stats-month" type="month"></label>
+          <label class="toggle"><input id="stats-all" type="checkbox"> Todo el histórico</label>
+        </div>
+        <div class="charts-grid">
+          <article class="chart-card">
+            <div class="ph"><div><p class="eyebrow">DEMANDA</p><h3 class="h2">Lecturas más pedidas</h3></div></div>
+            <div class="donut-wrap">
+              <div id="lecturas-donut" class="donut" role="img" aria-label="Distribución de lecturas solicitadas">
+                <div class="donut-center"><strong id="lecturas-center">0</strong><span>lecturas</span></div>
+              </div>
+              <ul id="lecturas-legend" class="legend"></ul>
+            </div>
+          </article>
+          <article class="chart-card">
+            <div class="ph"><div><p class="eyebrow">COMUNIDAD</p><h3 class="h2">Nuevas vs. frecuentes</h3></div></div>
+            <div class="donut-wrap">
+              <div id="consultantes-donut" class="donut" role="img" aria-label="Consultantes nuevas y frecuentes">
+                <div class="donut-center"><strong id="consultantes-center">0</strong><span>consultas</span></div>
+              </div>
+              <ul id="consultantes-legend" class="legend"></ul>
+            </div>
+          </article>
+
+          <article class="chart-card revenue-card">
+            <div class="ph revenue-head">
+              <div><p class="eyebrow">INGRESOS</p><h3 class="h2">Promedio por periodo</h3></div>
+              <div class="seg" id="ingresos-tabs" role="tablist" aria-label="Agrupar ingresos por periodo">
+                <button type="button" class="seg-btn" role="tab" aria-selected="false" data-granularidad="semana">Semana</button>
+                <button type="button" class="seg-btn on" role="tab" aria-selected="true" data-granularidad="mes">Mes</button>
+                <button type="button" class="seg-btn" role="tab" aria-selected="false" data-granularidad="año">Año</button>
+              </div>
+            </div>
+            <div class="revenue-summary">
+              <span>Total <strong id="ingresos-total">$0.00</strong></span>
+              <span>Promedio por consulta <strong id="ingresos-promedio">$0.00</strong></span>
+              <span>Consultas <strong id="ingresos-count">0</strong></span>
+            </div>
+            <div id="ingresos-bars" class="bars" role="img" aria-label="Ingresos cobrados por periodo"></div>
+            <p class="hint">Cada barra suma el total cobrado de las consultas del periodo; si una consulta no tiene total, se suman sus precios. Los contadores manuales sin ficha no entran aquí.</p>
+          </article>
+        </div>
+        <p class="hint">Las lecturas se cuentan por cada tipo elegido en una consulta; una reserva con varias lecturas suma en cada una.</p>
+      </section>
+
+      <footer>Solo accesible mediante una sesión autorizada de Cloudflare Access.</footer>
+    </main>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>
+
+
+

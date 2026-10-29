@@ -1,6 +1,5 @@
 // ui/calendar-ui.js - Calendario de fechas personalizado (lunes a viernes)
-// Reemplaza al input type=date nativo: sabados y domingos no se pueden elegir,
-// salvo las fechas listadas en DIAS_FINDE_ABIERTOS.
+// Las fechas abiertas y sus excepciones vienen de la disponibilidad servida por D1.
 
 const CAL_WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']; // semana inicia en lunes
 const CAL_MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -9,6 +8,7 @@ const CAL_DAYNAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'vie
 let _calYear = null;
 let _calMonth = null;
 let _availLoaded = {};
+let _availErrorShown = {};
 
 function _capWord(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -17,11 +17,16 @@ function _capWord(s) {
 async function _loadMonthAvailability(year, month) {
   const key = year + '-' + String(month + 1).padStart(2, '0');
   if (_availLoaded[key]) return;
-  _availLoaded[key] = true;
   const from = formatDateValue(new Date(year, month, 1));
   const to = formatDateValue(new Date(year, month + 1, 0));
-  await fetchAvailability(from, to);
-  renderCalendar();
+  if (await fetchAvailability(from, to)) {
+    _availLoaded[key] = true;
+    _availErrorShown[key] = false;
+    renderCalendar();
+  } else if (!_availErrorShown[key]) {
+    _availErrorShown[key] = true;
+    showNotification('no se pudo cargar la disponibilidad. inténtalo de nuevo en un momento ✦');
+  }
 }
 
 // Fecha minima permitida: hoy + 2 dias normal, hoy mismo si es emergencia
@@ -49,9 +54,7 @@ function formatPrettyDate(iso) {
 }
 
 function selectCalendarDate(iso) {
-  const p = iso.split('-').map(Number);
-  const dow = new Date(p[0], p[1] - 1, p[2]).getDay();
-  if ((dow === 0 || dow === 6) && !(typeof isOpenWeekend === 'function' && isOpenWeekend(iso))) return; // sabado o domingo: no permitido (salvo fines de semana abiertos)
+  if (!(typeof isOpenWeekend === 'function' && isOpenWeekend(iso))) return;
   const minIso = formatDateValue(getCalendarMinDate());
   if (iso < minIso) return; // dia ya pasado o no disponible
   const avail = getDayAvailability(iso);
@@ -116,16 +119,18 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const dow = new Date(year, month, d).getDay();
     const iso = formatDateValue(new Date(year, month, d));
-    const isWeekend = (dow === 0 || dow === 6) && !(typeof isOpenWeekend === 'function' && isOpenWeekend(iso));
-    const isPast = !isWeekend && iso < minIso;
+    const isOpen = typeof isOpenWeekend === 'function' && isOpenWeekend(iso);
+    const isWeekend = (dow === 0 || dow === 6) && !isOpen;
+    const isClosed = !isOpen;
+    const isPast = isOpen && iso < minIso;
     const isToday = iso === todayIso;
     const isSelected = state.fecha === iso;
     const avail = getDayAvailability(iso);
     // Estado del dia segun el modo activo:
     //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = sin cupo
     // La emergencia aplica dentro de la ventana (hoy → domingo de la semana que viene) si la lectura califica.
-    let status = 'open';
-    if (!isWeekend && !isPast) {
+    let status = isClosed ? 'full' : 'open';
+    if (isOpen && !isPast) {
       const emergencyOk = isEmergencyWindow(iso) && canEmergencyReading && avail.emergenciaLeft > 0;
       if (state.emergency && emergencyOk) {
         status = 'open';
@@ -141,18 +146,18 @@ function renderCalendar() {
     if (isPast) cls += ' is-past';
     if (isFull) cls += ' is-full';
     if (isOnlyEmergency) cls += ' is-only-emergency';
-    if (isToday && !isPast && !isWeekend) cls += ' is-today';
+    if (isToday && !isPast && isOpen) cls += ' is-today';
     if (isSelected) cls += ' selected';
 
     let inner = '<span class="cal-num">' + d + '</span>';
-    if (!isWeekend && !isPast) {
+    if (isOpen && !isPast) {
       let dotCls = 'cal-dot';
       if (isFull) dotCls += ' is-full';
       else if (isOnlyEmergency) dotCls += ' is-only-emergency';
       inner += '<span class="' + dotCls + '"></span>';
     }
 
-    html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isWeekend || isPast ? ' disabled' : '') + '>' + inner + '</button>';
+    html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isClosed || isPast ? ' disabled' : '') + '>' + inner + '</button>';
   }
   html += '</div>';
   html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-gold"></i>solo emergencia</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';

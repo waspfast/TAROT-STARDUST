@@ -1,58 +1,15 @@
-// data/availability.js - Cupos por dia (backend Cloudflare Worker, 4 contadores)
-
-// Limites del nuevo modelo (desde 2026-10-12)
-var BOOKING_LIMITS = {
-  corta_normal: 6, corta_emergencia: 5,
-  extensa_normal: 3, extensa_emergencia: 0
-};
-// Limites del modelo anterior (antes de 2026-10-12): normal <= 6, emergencia <= 6
-var OLD_LIMITS = { normal: 6, emergencia: 6 };
-var TRANSICION_FECHA = '2026-10-12';
-
-// Dias sin cupo (agotados): fechas "YYYY-MM-DD" que quieras bloquear.
-var DIAS_AGOTADOS = [
-  '2026-09-30', '2026-10-01', '2026-10-02',
-  '2026-10-23', '2026-10-26', '2026-10-29',
-  '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27',
-  '2026-12-04', '2026-12-09', '2026-12-10', '2026-12-11'
-];
-
-// Fines de semana abiertos: sabados/domingos que SI se pueden reservar.
-var DIAS_FINDE_ABIERTOS = [
-  '2026-11-21', '2026-11-22', '2026-11-29',
-  '2026-12-06', '2026-12-12', '2026-12-13'
-];
-
-// Limites por fecha: sobrescriben BOOKING_LIMITS solo en esos dias.
-var LIMITES_ESPECIALES = {
-  // viernes 30: agenda abierta solo para emergencias, ventana 10:30 - 15:00
-  // (6 cortas de emergencia + 1 extensa de emergencia, sin normales)
-  '2026-10-30': { corta_normal: 0, extensa_normal: 0, corta_emergencia: 6, extensa_emergencia: 1 },
-  // domingo: solo 2 extensas de emergencia (sin normal, sin cortas)
-  '2026-11-29': { corta_normal: 0, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 2 },
-  // domingo: 3 cortas normal + 3 cortas de emergencia
-  '2026-12-06': { corta_normal: 3, extensa_normal: 0, corta_emergencia: 3, extensa_emergencia: 0 },
-  // lunes: 2 cortas + 1 extensa normal + 3 cortas de emergencia
-  '2026-12-07': { corta_normal: 2, extensa_normal: 1, corta_emergencia: 3, extensa_emergencia: 0 },
-  // martes: 3 cortas normal + 3 cortas de emergencia
-  '2026-12-08': { corta_normal: 3, extensa_normal: 0, corta_emergencia: 3, extensa_emergencia: 0 },
-  // sabado: solo cortas normales
-  '2026-12-12': { corta_normal: 6, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 0 },
-  // domingo: solo cortas normales
-  '2026-12-13': { corta_normal: 6, extensa_normal: 0, corta_emergencia: 0, extensa_emergencia: 0 }
-};
+// data/availability.js - reglas y reservas servidas desde D1 por el Worker.
 
 var _availability = {};
 
-// ¿Este sabado/domingo esta abierto para reservar?
+// Las fechas sin regla cargada se consideran cerradas.
 function isOpenWeekend(iso) {
-  return DIAS_FINDE_ABIERTOS.indexOf(iso) !== -1;
+  return !!(_availability[iso] && _availability[iso].is_open);
 }
 
 // ¿La fecha tiene cupo de emergencia fuera de la ventana normal?
 function isSpecialEmergencyDate(iso) {
-  var lim = LIMITES_ESPECIALES[iso];
-  return !!(lim && (lim.corta_emergencia > 0 || lim.extensa_emergencia > 0));
+  return !!(_availability[iso] && _availability[iso].emergencia_extendida);
 }
 
 async function fetchAvailability(fromIso, toIso) {
@@ -60,13 +17,17 @@ async function fetchAvailability(fromIso, toIso) {
     var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
     var url = base + '/disponibilidad?from=' + encodeURIComponent(fromIso) + '&to=' + encodeURIComponent(toIso);
     var res = await fetch(url);
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.error('El Worker respondió con error al consultar disponibilidad:', res.status);
+      return false;
+    }
     var data = await res.json();
     if (data && data.dias) {
       Object.keys(data.dias).forEach(function (k) { _availability[k] = data.dias[k]; });
     }
     return true;
   } catch (e) {
+    console.error('No se pudo cargar la disponibilidad:', e);
     return false;
   }
 }
@@ -79,18 +40,18 @@ async function fetchDaySlots(iso) {
     var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
     var url = base + '/disponibilidad?from=' + encodeURIComponent(iso) + '&to=' + encodeURIComponent(iso);
     var res = await fetch(url);
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.error('El Worker respondió con error al consultar los horarios:', res.status);
+      return false;
+    }
     var data = await res.json();
     var dia = data && data.dias ? data.dias[iso] : null;
     if (dia) _availability[iso] = Object.assign({}, _availability[iso] || {}, dia);
     return true;
   } catch (e) {
+    console.error('No se pudieron cargar los horarios del día:', e);
     return false;
   }
-}
-
-function _esNuevoModelo(iso) {
-  return iso >= TRANSICION_FECHA;
 }
 
 // Tipos (corta/extensa) presentes en la seleccion actual.
@@ -107,12 +68,13 @@ function _tiposSeleccion() {
 
 function getDayAvailability(iso) {
   var c = _availability[iso] || {};
+  var limits = c.limits || {};
   var cortaNormal = c.corta_normal || 0;
   var cortaEmerg = c.corta_emergencia || 0;
   var extensaNormal = c.extensa_normal || 0;
   var extensaEmerg = c.extensa_emergencia || 0;
 
-  if (DIAS_AGOTADOS.indexOf(iso) !== -1) {
+  if (!c.is_open) {
     return {
       corta_normal: cortaNormal, corta_emergencia: cortaEmerg,
       extensa_normal: extensaNormal, extensa_emergencia: extensaEmerg,
@@ -121,28 +83,16 @@ function getDayAvailability(iso) {
   }
 
   var sel = _tiposSeleccion();
-  var normalLeft, emergenciaLeft;
-
-  if (_esNuevoModelo(iso)) {
-    // Limites por defecto o los especiales de esta fecha.
-    var lim = LIMITES_ESPECIALES[iso];
-    var limCortaN = lim ? lim.corta_normal : BOOKING_LIMITS.corta_normal;
-    var limExtN = lim ? lim.extensa_normal : BOOKING_LIMITS.extensa_normal;
-    var limCortaE = lim ? lim.corta_emergencia : BOOKING_LIMITS.corta_emergencia;
-    var limExtE = lim ? lim.extensa_emergencia : BOOKING_LIMITS.extensa_emergencia;
-    var nCorta = sel.corta ? Math.max(0, limCortaN - cortaNormal) : Infinity;
-    var nExt = sel.extensa ? Math.max(0, limExtN - extensaNormal) : Infinity;
-    var eCorta = sel.corta ? Math.max(0, limCortaE - cortaEmerg) : Infinity;
-    var eExt = sel.extensa ? Math.max(0, limExtE - extensaEmerg) : Infinity;
-    normalLeft = Math.min(nCorta, nExt);
-    emergenciaLeft = Math.min(eCorta, eExt);
-    if (!isFinite(normalLeft)) normalLeft = 0;
-    if (!isFinite(emergenciaLeft)) emergenciaLeft = 0;
-  } else {
-    // modelo anterior: extensa bloqueada, corta hasta 6/6
-    normalLeft = Math.max(0, OLD_LIMITS.normal - cortaNormal - extensaNormal);
-    emergenciaLeft = Math.max(0, OLD_LIMITS.emergencia - cortaEmerg - extensaEmerg);
-  }
+  var normalLeft = Math.min(
+    sel.corta ? Math.max(0, (limits.corta_normal || 0) - cortaNormal) : Infinity,
+    sel.extensa ? Math.max(0, (limits.extensa_normal || 0) - extensaNormal) : Infinity
+  );
+  var emergenciaLeft = Math.min(
+    sel.corta ? Math.max(0, (limits.corta_emergencia || 0) - cortaEmerg) : Infinity,
+    sel.extensa ? Math.max(0, (limits.extensa_emergencia || 0) - extensaEmerg) : Infinity
+  );
+  if (!isFinite(normalLeft)) normalLeft = 0;
+  if (!isFinite(emergenciaLeft)) emergenciaLeft = 0;
 
   return {
     corta_normal: cortaNormal, corta_emergencia: cortaEmerg,
@@ -176,17 +126,8 @@ function markBooked(iso, isEmergency, inicio, duracion) {
 // extensa = 35 min -> 2 bloques
 // seleccion mixta (corta + extensa) = extensa -> 2 bloques
 var SLOT_STEP_MIN = 30;
-var SLOT_INICIO_MIN = 10 * 60;   // 10:00
-var SLOT_FIN_MIN = 18 * 60;      // 18:00 (fin de la ultima lectura)
 var DURACION_CORTA_MIN = 25;
 var DURACION_EXTENSA_MIN = 35;
-
-// Ventanas de horario por fecha: sobrescriben la rejilla general (10:00 - 18:00).
-// "inicio" es el primer bloque valido y la lectura tiene que TERMINAR antes de "fin".
-var HORARIOS_ESPECIALES = {
-  // viernes 30: solo emergencias de 10:30 a 15:00
-  '2026-10-30': { inicio: '10:30', fin: '15:00' }
-};
 
 function slotToMinutes(hhmm) {
   var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
@@ -200,11 +141,10 @@ function slotToHhmm(minutes) {
   return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
 }
 
-// Ventana de horarios vigente para una fecha (por defecto 10:00 - 18:00).
+// Ventana horaria definida en D1 para la fecha.
 function ventanaDe(fecha) {
-  var w = HORARIOS_ESPECIALES[fecha];
-  if (!w) return { inicioMin: SLOT_INICIO_MIN, finMin: SLOT_FIN_MIN };
-  return { inicioMin: slotToMinutes(w.inicio), finMin: slotToMinutes(w.fin) };
+  var day = _availability[fecha] || {};
+  return { inicioMin: slotToMinutes(day.inicio), finMin: slotToMinutes(day.fin) };
 }
 
 // Todos los inicios posibles de la rejilla: 10:00, 10:30, ... 17:30

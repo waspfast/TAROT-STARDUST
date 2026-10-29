@@ -10,8 +10,11 @@ function loadSlotGrid() {
     return;
   }
   var iso = state.fecha;
-  fetchDaySlots(iso).then(function () {
-    if (state.fecha === iso) renderSlotSelect();
+  fetchDaySlots(iso).then(function (loaded) {
+    if (state.fecha === iso) {
+      if (!loaded) showNotification('no se pudieron actualizar los horarios. inténtalo de nuevo ✦');
+      renderSlotSelect();
+    }
   });
 }
 
