@@ -8,9 +8,20 @@ const state = {
   dashboardConsultas: [],
   expandedTile: null,
   consultaState: "",
+  consultaMode: "dia",
+  consultaDate: "",
+  consultasBase: [],
+  consultasLoaded: false,
+  manual: { canal: "whatsapp", tipo: "corta", fecha: "" },
+  tiposHoy: null,
+  identity: "",
   stats: null,
   ingresos: null,
+  ingresosMes: null,
   granularidad: "mes",
+  occupancy: null,
+  ocupacionGran: "dia",
+  activeMetric: "ingresos",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -27,7 +38,8 @@ const preferenceKeys = {
 const chartPalette = ["#d7a3b4", "#d4b06b", "#c4a0ac", "#a8c3b5", "#b9a7d4", "#e3b7a0"];
 const consultanteLabels = { nueva: "Nueva", frecuente: "Frecuente", sin_dato: "Sin dato" };
 const consultanteColors = { nueva: "#d7a3b4", frecuente: "#d4b06b", sin_dato: "#cfc2c6" };
-const emptyDonut = "conic-gradient(rgba(58,53,53,.09) 0 100%)";
+const tipoLabels = { emergencia: "Emergencias", normal: "Sin emergencia" };
+const tipoColors = { emergencia: "#a85c7e", normal: "#a8c3b5" };
 
 let pendingRequests = 0;
 
@@ -117,6 +129,11 @@ function formatMonthLabel(value) {
     .format(new Date(year, month - 1, 1));
 }
 
+/* "octubre de 2026" -> "Octubre 2026" (encabezado del calendario) */
+function monthTitle(value) {
+  return capitalize(formatMonthLabel(value)).replace(/\s+de\s+/gi, " ") || "—";
+}
+
 function capitalize(value) {
   const text = String(value || "");
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
@@ -171,9 +188,26 @@ function totalsFor(rule) {
   return { booked, capacity, free: Math.max(0, capacity - booked) };
 }
 
+function describeDay(rule) {
+  const { booked, capacity, free } = totalsFor(rule);
+  const reservations = Number(rule?.consultas || 0);
+  const ratio = capacity ? Math.min(1, booked / capacity) : 0;
+  const isOpen = !!rule?.is_open;
+  const level = !isOpen ? "closed" : ratio >= 1 ? "full" : ratio > 0 ? "mid" : "free";
+  const label = { free: "Libre", mid: "Ocupación media", full: "Llena", closed: "Cerrada" }[level];
+  const meta = isOpen
+    ? `${booked} de ${capacity} ${capacity === 1 ? "cupo usado" : "cupos usados"} · ${free} ${free === 1 ? "libre" : "libres"}`
+      + (reservations ? ` · ${reservations} ${reservations === 1 ? "reserva" : "reservas"}` : "")
+    : `Sin cupos publicados · ${booked} ${booked === 1 ? "lectura contabilizada" : "lecturas contabilizadas"}`;
+  return { level, label, meta, booked, capacity, free, reservations };
+}
+
 function renderCalendar() {
+  closeDaySheet();
   const calendar = $("calendar");
   calendar.replaceChildren();
+  const calendarTitle = $("cal-title");
+  if (calendarTitle) calendarTitle.textContent = monthTitle(state.month);
   for (const label of ["L", "M", "X", "J", "V", "S", "D"]) {
     const weekday = document.createElement("span");
     weekday.className = "wd";
@@ -197,46 +231,50 @@ function renderCalendar() {
   for (let day = 1; day <= days; day++) {
     const date = `${state.month}-${String(day).padStart(2, "0")}`;
     const rule = rulesByDate.get(date);
-    const { booked, capacity, free } = totalsFor(rule);
-    const reservations = Number(rule?.consultas || 0);
-    const ratio = capacity ? Math.min(1, booked / capacity) : 0;
-    const wrapper = document.createElement("span");
+    const { level, label, meta } = describeDay(rule);
+    const dayLabel = capitalize(formatLongDate(date));
+    const selected = date === state.selectedDate;
+    const position = blanks + day - 1;
+    const wrapper = document.createElement("div");
     wrapper.className = "calendar-day";
-    wrapper.dataset.column = String((blanks + day - 1) % 7 + 1);
+    wrapper.dataset.column = String((position % 7) + 1);
+    wrapper.dataset.row = String(Math.floor(position / 7) + 1);
 
     const button = document.createElement("button");
     button.type = "button";
     button.className = "d";
     button.dataset.date = date;
-    button.textContent = String(day);
-    button.style.setProperty("--heat", `${Math.round(ratio * 70)}%`);
-    if (!rule?.is_open) button.classList.add("is-closed");
-    if (reservations > 0 || booked > 0) button.classList.add("has-bookings");
-    if (rule?.is_open && free === 0) button.classList.add("is-full");
+    button.dataset.level = level;
+    button.textContent = String(day); // el único número de la celda: la fecha
     if (date === today) button.classList.add("is-today");
-    if (date === state.selectedDate) button.classList.add("is-selected");
-    button.setAttribute("aria-pressed", String(date === state.selectedDate));
-
-    const openLabel = rule?.is_open ? "abierta" : "cerrada";
-    const tip = `${date}: ${openLabel}; ${reservations} ${reservations === 1 ? "reserva individual" : "reservas individuales"}; ${booked} ${booked === 1 ? "lectura contabilizada" : "lecturas contabilizadas"}; ${free} ${free === 1 ? "cupo de lectura libre" : "cupos de lectura libres"}.`;
-    button.setAttribute("aria-label", tip);
-    if (reservations > 0 || booked > 0) {
-      const badge = document.createElement("span");
-      badge.className = "day-bookings";
-      badge.textContent = String(reservations || booked);
-      badge.setAttribute("aria-hidden", "true");
-      button.append(badge);
-    }
-    button.addEventListener("click", () => selectDate(date));
+    if (selected) button.classList.add("is-selected");
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-label", `${dayLabel}: ${label}. ${meta}.`);
+    button.addEventListener("click", () => {
+      selectDate(date);
+      openDaySheet(date);
+    });
     wrapper.append(button);
 
-    const tooltip = document.createElement("span");
+    const tooltip = document.createElement("div");
     tooltip.className = "cal-tooltip";
-    tooltip.setAttribute("role", "tooltip");
-    tooltip.textContent = tip;
+    tooltip.setAttribute("role", "dialog");
+    tooltip.setAttribute("aria-label", `Detalle de ${dayLabel}`);
+    appendText(tooltip, "p", "cal-tip-date", dayLabel);
+    appendText(tooltip, "p", "cal-tip-meta", `${label} · ${meta}`);
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "cal-edit";
+    edit.textContent = "Editar fecha";
+    edit.addEventListener("click", () => {
+      selectDate(date);
+      activateView("disponibilidad");
+    });
+    tooltip.append(edit);
     wrapper.append(tooltip);
     calendar.append(wrapper);
   }
+  renderGauge();
 }
 function selectDate(date) {
   state.selectedDate = date;
@@ -246,6 +284,77 @@ function selectDate(date) {
     button.setAttribute("aria-pressed", String(selected));
   }
   fillRuleForm(state.rules.find((item) => item.date === date));
+  syncManualDate(date);
+}
+
+function openDaySheet(date) {
+  const sheet = $("day-sheet");
+  if (!sheet || !window.matchMedia("(max-width:767px)").matches) return;
+  const { label, meta } = describeDay(state.rules.find((item) => item.date === date));
+  $("day-sheet-title").textContent = capitalize(formatLongDate(date));
+  $("day-sheet-level").textContent = label;
+  $("day-sheet-meta").textContent = meta;
+  sheet.dataset.date = date;
+  sheet.classList.add("is-open");
+  const backdrop = $("cal-backdrop");
+  if (backdrop) backdrop.hidden = false;
+  $("day-sheet-edit").focus({ preventScroll: true });
+}
+
+function closeDaySheet() {
+  const sheet = $("day-sheet");
+  const backdrop = $("cal-backdrop");
+  if (backdrop) backdrop.hidden = true;
+  if (!sheet) return;
+  sheet.classList.remove("is-open");
+  delete sheet.dataset.date;
+}
+
+function bindDaySheet() {
+  const sheet = $("day-sheet");
+  if (!sheet) return;
+  const backdrop = $("cal-backdrop");
+  if (backdrop) backdrop.addEventListener("click", closeDaySheet);
+  const close = $("day-sheet-close");
+  if (close) close.addEventListener("click", closeDaySheet);
+  const edit = $("day-sheet-edit");
+  if (edit) edit.addEventListener("click", () => {
+    const date = sheet.dataset.date;
+    closeDaySheet();
+    if (date) selectDate(date);
+    activateView("disponibilidad");
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDaySheet();
+  });
+  window.addEventListener("resize", () => {
+    if (!window.matchMedia("(max-width:767px)").matches) closeDaySheet();
+  });
+}
+
+/* en móvil se cambia de mes deslizando sobre la cuadrícula */
+function bindCalendarSwipe() {
+  const calendar = $("calendar");
+  if (!calendar) return;
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  calendar.addEventListener("touchstart", (event) => {
+    tracking = event.touches.length === 1 && window.matchMedia("(max-width:767px)").matches;
+    if (!tracking) return;
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+  }, { passive: true });
+  calendar.addEventListener("touchend", (event) => {
+    if (!tracking) return;
+    tracking = false;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.5) return;
+    shiftMonth(deltaX < 0 ? 1 : -1);
+  }, { passive: true });
 }
 
 function fillRuleForm(rule) {
@@ -261,28 +370,26 @@ function fillRuleForm(rule) {
   for (const [column, id] of capacityFields) $(id).value = String(rule?.[column] ?? 0);
   $("save-rule").disabled = !state.selectedDate;
   $("reset-rule").hidden = !rule?.custom;
-  $("availability-summary").textContent = rule
-    ? `${rule.is_open ? "Abierta" : "Cerrada"} · ${free} ${free === 1 ? "cupo de lectura libre" : "cupos de lectura libres"} el ${state.selectedDate}`
-    : "Selecciona una fecha en el calendario";
 }
 
 async function loadAvailability() {
-  state.month = $("availability-month").value || monthValue();
+  state.month = state.month || monthValue();
   const data = await request(`/api/admin/availability?month=${encodeURIComponent(state.month)}`);
   state.rules = data.days;
   renderCalendar();
   fillRuleForm(state.rules.find((item) => item.date === state.selectedDate));
+  syncManualDate(state.selectedDate);
   const openDays = state.rules.filter((item) => item.is_open).length;
   $("stat-open-days").textContent = String(openDays);
-  $("availability-summary").textContent = `${openDays} fechas abiertas este mes`;
+  syncTiposHoy();
 }
 
 function shiftMonth(delta) {
-  const current = $("availability-month").value || monthValue();
+  const current = state.month || monthValue();
   const [year, monthNumber] = current.split("-").map(Number);
   const next = new Date(Date.UTC(year, monthNumber - 1 + delta, 1));
-  $("availability-month").value = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
-  state.selectedDate = `${$("availability-month").value}-01`;
+  state.month = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
+  state.selectedDate = `${state.month}-01`;
   loadAvailability().catch((error) => showError(error.message));
 }
 
@@ -394,9 +501,6 @@ function renderTodayTile(now = new Date()) {
     $("today-countdown").textContent = "";
   }
 
-  $("stat-total").textContent = String(todaysConsultas.length);
-  $("stat-finished").textContent = String(todaysConsultas.filter((consulta) => consulta.estado === "finalizado").length);
-
   const list = $("today-list");
   list.replaceChildren();
   if (!todaysConsultas.length) appendEmptyMessage(list, "No hay consultas individuales registradas para hoy.");
@@ -404,48 +508,164 @@ function renderTodayTile(now = new Date()) {
   return upcoming.length > 0;
 }
 
-function renderConfirmTile() {
-  const confirmationList = state.dashboardConsultas
+/* ---------- inicio: KPIs, ocupación, perfil y lecturas en curso ---------- */
+function readingsOf(consulta) {
+  const names = new Set();
+  for (const raw of String(consulta?.lecturas || "").split(",")) {
+    const name = raw.trim();
+    if (name) names.add(name);
+  }
+  return names.size;
+}
+
+function consultasOfMonth(month) {
+  return state.dashboardConsultas.filter((consulta) => String(consulta.fecha || "").startsWith(month));
+}
+
+function renderSparkline(now) {
+  const container = $("kpi-spark");
+  if (!container) return;
+  const values = [];
+  for (let offset = 4; offset >= 0; offset -= 1) {
+    const day = new Date(now);
+    day.setDate(day.getDate() - offset);
+    const key = dateValue(day);
+    values.push(state.dashboardConsultas
+      .filter((consulta) => consulta.fecha === key)
+      .reduce((sum, consulta) => sum + readingsOf(consulta), 0));
+  }
+  const max = Math.max(1, ...values);
+  container.replaceChildren();
+  for (const value of values) {
+    const bar = document.createElement("i");
+    bar.style.height = `${Math.max(10, Math.round(value / max * 100))}%`;
+    container.append(bar);
+  }
+}
+
+function renderProfile(monthList = consultasOfMonth(monthValue())) {
+  const email = String(state.identity || "").trim();
+  const avatar = $("perfil-avatar");
+  if (avatar) avatar.textContent = email ? email.charAt(0).toUpperCase() : "✶";
+  const mail = $("perfil-mail");
+  if (mail) mail.textContent = email || "Sesión autorizada";
+  $("perfil-abiertas").textContent = String(monthList.filter((consulta) => consulta.estado === "en_proceso").length);
+  $("perfil-frecuentes").textContent = String(monthList.filter((consulta) => consulta.consultante === "frecuente").length);
+  $("perfil-nuevas").textContent = String(monthList.filter((consulta) => consulta.consultante === "nueva").length);
+}
+
+function renderKpiRow(now = new Date()) {
+  const today = dateValue(now);
+  const todays = state.dashboardConsultas.filter((consulta) => consulta.fecha === today);
+  const readings = todays.reduce((sum, consulta) => sum + readingsOf(consulta), 0);
+  $("kpi-hoy").textContent = String(readings);
+  $("kpi-hoy-foot").textContent = todays.length
+    ? `${todays.length} ${todays.length === 1 ? "consulta" : "consultas"} hoy · últimos 5 días`
+    : "Sin consultas individuales hoy";
+  renderSparkline(now);
+
+  const month = monthValue();
+  const monthList = consultasOfMonth(month);
+  $("kpi-consultantes").textContent = String(monthList.length);
+  $("kpi-consultantes-foot").textContent =
+    `${monthList.length === 1 ? "consultante" : "consultantes"} en ${formatMonthLabel(month)}`;
+  renderProfile(monthList);
+}
+
+function summarizeDays(days) {
+  let booked = 0;
+  let capacity = 0;
+  let open = 0;
+  for (const day of Array.isArray(days) ? days : []) {
+    if (!day?.is_open) continue;
+    const totals = totalsFor(day);
+    booked += totals.booked;
+    capacity += totals.capacity;
+    open += 1;
+  }
+  return { booked, capacity, open, rate: capacity ? Math.min(100, booked / capacity * 100) : null };
+}
+
+function renderGauge() {
+  const arc = $("gauge-arc");
+  const value = $("gauge-value");
+  if (!arc || !value) return;
+  const summary = summarizeDays(state.rules);
+  const rate = summary.rate;
+  // el trazo usa pathLength="100": el offset es el complemento de la ocupación
+  const offset = rate === null ? 100 : Math.round((100 - rate) * 10) / 10;
+  arc.style.strokeDashoffset = String(offset);
+  value.textContent = rate === null ? "—" : formatPercent(rate);
+  const month = $("gauge-month");
+  if (month) month.textContent = monthTitle(state.month);
+  const foot = $("gauge-foot");
+  if (foot) {
+    foot.textContent = summary.capacity
+      ? `${summary.booked} de ${summary.capacity} cupos usados en ${summary.open} `
+        + `${summary.open === 1 ? "fecha abierta" : "fechas abiertas"}.`
+      : "Publica fechas abiertas para ver la ocupación.";
+  }
+  const gauge = $("gauge");
+  if (gauge) {
+    gauge.setAttribute("aria-label", rate === null
+      ? "Ocupación del mes: sin cupos publicados"
+      : `Ocupación del mes: ${formatPercent(rate)}, ${summary.booked} de ${summary.capacity} cupos usados`);
+  }
+}
+
+function appendCursoRecord(container, consulta) {
+  const item = document.createElement("article");
+  item.className = "curso-item";
+  const main = document.createElement("div");
+  main.className = "curso-main";
+  appendText(main, "div", "curso-name", formatName(consulta.nombre));
+  const phone = formatPhone(consulta.telefono);
+  appendText(main, "div", "curso-meta",
+    `${formatLongDate(consulta.fecha)}${consulta.inicio ? ` · ${consulta.inicio}` : ""}`
+    + `${consulta.tipo === "emergencia" ? " · Emergencia" : ""}${phone ? ` · ${phone}` : ""}`);
+  item.append(main);
+  appendText(item, "span", "curso-chip", statusLabel(consulta.estado));
+  container.append(item);
+}
+
+function renderProgressTile() {
+  const list = state.dashboardConsultas
     .filter((consulta) => consulta.estado === "en_proceso")
     .sort(compareConsultas);
-  $("confirm-count").textContent = String(confirmationList.length);
-  $("stat-progress").textContent = String(confirmationList.length);
-  $("confirm-copy").textContent = confirmationList.length
-    ? `${confirmationList.length} ${confirmationList.length === 1 ? "consulta sigue" : "consultas siguen"} en progreso.`
-    : "Todo al día; no hay consultas en progreso.";
-  $("confirm-tile").classList.toggle("is-priority", confirmationList.length > 0);
+  $("kpi-progreso").textContent = String(list.length);
+  $("curso-count").textContent = String(list.length);
+  $("curso-copy").textContent = list.length
+    ? `${list.length} ${list.length === 1 ? "lectura sigue" : "lecturas siguen"} en progreso.`
+    : "Todo al día; no hay lecturas por acompañar.";
 
-  const preview = $("confirm-preview");
-  const detail = $("confirm-list");
+  const preview = $("curso-list");
+  const all = $("curso-all");
   preview.replaceChildren();
-  detail.replaceChildren();
-  if (!confirmationList.length) {
-    appendEmptyMessage(preview, "Puedes seguir con lo que necesites, con calma.");
-    appendEmptyMessage(detail, "No hay consultas en progreso en este periodo.");
+  all.replaceChildren();
+  if (!list.length) {
+    appendEmptyMessage(preview, "Tu espacio está al día, con calma.");
+    appendEmptyMessage(all, "No hay lecturas en progreso en este periodo.");
     return 0;
   }
-  confirmationList.slice(0, 2).forEach((consulta) => appendTileRecord(preview, consulta));
-  confirmationList.forEach((consulta) => appendTileRecord(detail, consulta));
-  return confirmationList.length;
+  list.slice(0, 3).forEach((consulta) => appendCursoRecord(preview, consulta));
+  list.forEach((consulta) => appendCursoRecord(all, consulta));
+  return list.length;
 }
 
 function renderDashboard(now = new Date()) {
   const hasUpcomingToday = renderTodayTile(now);
-  const pendingCount = renderConfirmTile();
+  const pendingCount = renderProgressTile();
+  renderKpiRow(now);
+  renderGauge();
   const dashboard = $("dashboard");
-  dashboard.classList.toggle("is-confirming", pendingCount > 0);
+  dashboard.classList.toggle("has-pending", pendingCount > 0);
   dashboard.classList.toggle("is-quiet", !hasUpcomingToday);
-  dashboard.classList.toggle("is-empty", pendingCount === 0);
 }
 function renderConsultas(consultas) {
   state.consultas = consultas;
-  $("consulta-count").textContent = String(consultas.length);
+  $("consulta-count").textContent = state.consultasLoaded ? String(consultas.length) : "—";
   const container = $("consultas-list");
   container.replaceChildren();
-  if (!consultas.length) {
-    appendText(container, "p", "sub", "No hay consultas que coincidan con estos filtros.");
-    return;
-  }
 
   for (const consulta of consultas) {
     const card = document.createElement("article");
@@ -453,9 +673,23 @@ function renderConsultas(consultas) {
     appendText(card, "span", "consulta-time", consulta.inicio || "—");
     const details = document.createElement("div");
     appendText(details, "div", "consulta-who", formatName(consulta.nombre));
-    appendText(details, "div", "consulta-sub",
-      `${consulta.fecha} · ${consulta.tipo === "emergencia" ? "Emergencia" : "Normal"}`
-      + `${consulta.consultante ? ` · Consultante ${consulta.consultante}` : ""}`);
+    const parts = [
+      consulta.fecha,
+      consulta.tipo === "emergencia" ? "Emergencia" : "Normal",
+    ];
+    if (consulta.lectura_tipo === "extensa") parts.push("Extensa");
+    else if (consulta.lectura_tipo === "corta") parts.push("Corta");
+    if (consulta.canal && manualChannelLabels[consulta.canal]) {
+      parts.push(manualChannelLabels[consulta.canal]);
+    }
+    if (consulta.consultante) parts.push(`Consultante ${consulta.consultante}`);
+    appendText(details, "div", "consulta-sub", parts.join(" · "));
+    if (consulta.origen === "manual") {
+      const tag = document.createElement("span");
+      tag.className = "consulta-origen";
+      tag.textContent = "Manual";
+      details.append(tag);
+    }
     if (consulta.telefono) {
       const phone = document.createElement("p");
       phone.className = "consulta-phone";
@@ -502,45 +736,29 @@ function renderConsultas(consultas) {
       + `\nPrecios: ${consulta.precios || "—"} · Total: ${consulta.total ?? "—"}`);
     container.append(card);
   }
-}
 
-function renderManualRecords(records) {
-  const container = $("manual-list");
-  container.replaceChildren();
-  const total = records.reduce((sum, record) => sum + Number(record.total || 0), 0);
-  $("manual-total").textContent = `${total} ${total === 1 ? "lectura" : "lecturas"}`;
-  if (!records.length) {
-    appendText(container, "p", "sub", "No hay contadores históricos sin consulta individual para este mes.");
-    return;
-  }
-
-  for (const record of records) {
-    const card = document.createElement("article");
-    card.className = "consulta manual-record";
-    appendText(card, "span", "consulta-time", "—");
-    const detail = document.createElement("div");
-    detail.className = "consulta-main";
-    appendText(detail, "div", "consulta-who", "Registro manual · Sin desglose");
-    appendText(detail, "div", "consulta-sub", `${record.fecha} · ${record.total} lecturas contabilizadas`);
-    card.append(detail);
-    appendText(card, "span", "pill manual-pill", "Manual");
-    appendText(card, "p", "consulta-detail",
-      `Cortas normales: ${record.corta_normal}`
-      + ` · cortas emergencia: ${record.corta_emergencia}`
-      + ` · extensas normales: ${record.extensa_normal}`
-      + ` · extensas emergencia: ${record.extensa_emergencia}`);
-    container.append(card);
+  const empty = $("consultas-empty");
+  if (empty) {
+    empty.hidden = !state.consultasLoaded || consultas.length > 0;
+    const message = $("consultas-empty-text");
+    if (message) {
+      message.textContent = state.consultaMode === "dia" && state.consultaDate
+        ? `No hay entradas registradas para el ${formatLongDate(state.consultaDate)}.`
+        : "No hay consultas que coincidan con estos filtros.";
+    }
+    const seeMonth = $("consultas-ver-mes");
+    if (seeMonth) seeMonth.hidden = !state.consultasLoaded || state.consultaMode !== "dia";
   }
 }
 
 async function loadConsultas() {
   const params = new URLSearchParams();
-  if ($("consultas-month").value) params.set("month", $("consultas-month").value);
-  if (state.consultaState) params.set("estado", state.consultaState);
-  if ($("consultas-search").value.trim()) params.set("q", $("consultas-search").value.trim());
+  const month = $("consultas-month").value || monthValue();
+  if (month) params.set("month", month);
   const data = await request(`/api/admin/consultas?${params}`);
-  renderConsultas(data.consultas);
-  renderManualRecords(data.registros_manuales || []);
+  state.consultasBase = Array.isArray(data?.consultas) ? data.consultas : [];
+  state.consultasLoaded = true;
+  renderConsultasView();
 }
 
 function setConsultaState(value) {
@@ -553,7 +771,523 @@ function setConsultaState(value) {
       button.setAttribute("aria-selected", String(active));
     }
   }
-  loadConsultas().catch((error) => showError(error.message));
+  renderConsultasView();
+}
+
+/* ---------- consultas: KPIs, modo día/mes y tipos de lectura de hoy ---------- */
+const dayWeekdayFormat = new Intl.DateTimeFormat("es", { weekday: "short" });
+
+function parseDateValue(value) {
+  const [year, month, day] = String(value || "").split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day, 12);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function shiftDateValue(value, days) {
+  const date = parseDateValue(value) || new Date();
+  date.setDate(date.getDate() + days);
+  return dateValue(date);
+}
+
+function startOfWeekValue(value) {
+  const date = parseDateValue(value) || new Date();
+  const offset = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - offset);
+  return dateValue(date);
+}
+
+function consultaPeriodoEntries() {
+  if (state.consultaMode !== "dia" || !state.consultaDate) return state.consultasBase;
+  return state.consultasBase.filter((consulta) => consulta.fecha === state.consultaDate);
+}
+
+function consultaMatchesQuery(consulta, query) {
+  if (!query) return true;
+  const needle = query.toLowerCase();
+  return [consulta.nombre, consulta.telefono, consulta.lecturas]
+    .some((value) => String(value || "").toLowerCase().includes(needle));
+}
+
+function consultaPeriodoLabel() {
+  if (state.consultaMode === "dia" && state.consultaDate) return formatLongDate(state.consultaDate);
+  return monthTitle($("consultas-month").value || monthValue()).toLowerCase();
+}
+
+function renderConsultasKpis(periodo) {
+  const enProgreso = periodo.filter((consulta) => consulta.estado === "en_proceso").length;
+  const finalizadas = periodo.filter((consulta) => consulta.estado === "finalizado").length;
+  const emergencias = periodo.filter((consulta) => consulta.tipo === "emergencia").length;
+  const label = consultaPeriodoLabel();
+
+  $("consulta-kpi-registro").textContent = String(periodo.length);
+  $("consulta-kpi-registro-foot").textContent = periodo.length
+    ? `${periodo.length === 1 ? "consulta registrada" : "consultas registradas"} · ${label}`
+    : `Sin consultas registradas · ${label}`;
+  $("consulta-kpi-progreso").textContent = String(enProgreso);
+  $("consulta-kpi-progreso-foot").textContent = `en progreso · ${label}`;
+  $("consulta-kpi-finalizadas").textContent = String(finalizadas);
+  $("consulta-kpi-finalizadas-foot").textContent = `finalizadas · ${label}`;
+  $("consulta-kpi-emergencias").textContent = String(emergencias);
+  $("consulta-kpi-emergencias-foot").textContent = emergencias
+    ? `${emergencias} ${emergencias === 1 ? "lectura de emergencia" : "lecturas de emergencia"} · ${label}`
+    : `Sin emergencias registradas · ${label}`;
+  renderConsultasSparkline();
+}
+
+function renderConsultasSparkline(now = new Date()) {
+  const container = $("consulta-kpi-spark");
+  if (!container) return;
+  const seen = new Set();
+  const pool = [...state.dashboardConsultas, ...state.consultasBase]
+    .filter((consulta) => (seen.has(consulta.id) ? false : seen.add(consulta.id)));
+  const values = [];
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = new Date(now);
+    day.setDate(day.getDate() - offset);
+    const key = dateValue(day);
+    values.push(pool.filter((consulta) => consulta.fecha === key).length);
+  }
+  const max = Math.max(1, ...values);
+  container.replaceChildren();
+  for (const value of values) {
+    const bar = document.createElement("i");
+    bar.style.height = `${Math.max(12, Math.round(value / max * 100))}%`;
+    container.append(bar);
+  }
+}
+
+function renderDayStrip() {
+  const strip = $("consulta-days");
+  if (!strip) return;
+  const today = dateValue();
+  const selected = state.consultaDate || today;
+  const first = startOfWeekValue(selected);
+  const counts = new Map();
+  for (const consulta of state.consultasBase) {
+    counts.set(consulta.fecha, (counts.get(consulta.fecha) || 0) + 1);
+  }
+  strip.replaceChildren();
+  for (let index = 0; index < 7; index += 1) {
+    const date = shiftDateValue(first, index);
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "day-chip";
+    chip.dataset.date = date;
+    chip.setAttribute("role", "tab");
+    chip.setAttribute("aria-label", formatLongDate(date));
+    const active = date === selected;
+    chip.classList.toggle("on", active);
+    chip.setAttribute("aria-selected", String(active));
+    if (date === today) chip.classList.add("is-today");
+    if (counts.get(date)) chip.classList.add("has-readings");
+    const weekday = dayWeekdayFormat.format(parseDateValue(date)).replace(/\.$/, "");
+    appendText(chip, "span", "day-chip-weekday", capitalize(weekday));
+    appendText(chip, "span", "day-chip-number", String(Number(date.slice(8, 10))));
+    const dot = document.createElement("span");
+    dot.className = "day-chip-dot";
+    dot.setAttribute("aria-hidden", "true");
+    chip.append(dot);
+    strip.append(chip);
+  }
+  const range = $("consulta-range");
+  if (range) range.textContent = formatLongDate(selected);
+  const tiposDate = $("consulta-tipos-date");
+  if (tiposDate) tiposDate.textContent = formatShortDay(today);
+}
+
+function lecturaEsCorta(consulta) {
+  return String(consulta.lecturas || "").toLowerCase().includes("corta");
+}
+
+function topLecturaDelDia(fichas) {
+  const tally = new Map();
+  for (const consulta of fichas) {
+    for (const raw of String(consulta.lecturas || "").split(/[,·|]/)) {
+      const name = raw.trim();
+      if (!name) continue;
+      tally.set(name, (tally.get(name) || 0) + 1);
+    }
+  }
+  let best = null;
+  for (const [name, count] of tally) {
+    if (!best || count > best.count) best = { name, count };
+  }
+  return best;
+}
+
+function renderTiposHoy() {
+  if (!$("tipos-corta-bar")) return;
+  const today = dateValue();
+  const counts = state.tiposHoy?.date === today ? state.tiposHoy.counts : null;
+  const fichas = (state.dashboardConsultas.length ? state.dashboardConsultas : state.consultasBase)
+    .filter((consulta) => consulta.fecha === today);
+
+  let cortas = Number(counts?.corta_normal || 0) + Number(counts?.corta_emergencia || 0);
+  let extensas = Number(counts?.extensa_normal || 0) + Number(counts?.extensa_emergencia || 0);
+  let emergencias = Number(counts?.corta_emergencia || 0) + Number(counts?.extensa_emergencia || 0);
+  let normales = Number(counts?.corta_normal || 0) + Number(counts?.extensa_normal || 0);
+
+  if (cortas + extensas === 0 && fichas.length) {
+    cortas = fichas.filter(lecturaEsCorta).length;
+    extensas = fichas.length - cortas;
+    emergencias = fichas.filter((consulta) => consulta.tipo === "emergencia").length;
+    normales = fichas.length - emergencias;
+  }
+
+  const total = cortas + extensas;
+  const pctCortas = total ? Math.round(cortas / total * 100) : 0;
+  const pctExtensas = total ? Math.round(extensas / total * 100) : 0;
+
+  $("tipos-corta-bar").style.width = `${pctCortas}%`;
+  $("tipos-extensa-bar").style.width = `${pctExtensas}%`;
+  $("tipos-corta-pct").textContent = total ? `${pctCortas}%` : "—";
+  $("tipos-extensa-pct").textContent = total ? `${pctExtensas}%` : "—";
+  $("tipos-corta-foot").textContent = total ? `${cortas} de ${total} lecturas de hoy` : "Sin movimientos hoy";
+  $("tipos-extensa-foot").textContent = total ? `${extensas} de ${total} lecturas de hoy` : "Sin movimientos hoy";
+
+  const top = topLecturaDelDia(fichas);
+  $("tipos-top-name").textContent = top ? capitalize(top.name) : "Sin lecturas registradas";
+  $("tipos-top-count").textContent = top ? String(top.count) : "—";
+  $("tipos-emergencias").textContent = String(emergencias);
+  $("tipos-normales").textContent = String(normales);
+  const card = document.querySelector(".consulta-tipos");
+  if (card) card.classList.toggle("is-empty", total === 0);
+}
+
+function renderConsultasView() {
+  const periodo = consultaPeriodoEntries();
+  const query = ($("consultas-search")?.value || "").trim();
+  const visibles = periodo
+    .filter((consulta) => !state.consultaState || consulta.estado === state.consultaState)
+    .filter((consulta) => consultaMatchesQuery(consulta, query));
+  renderConsultas(visibles);
+  if (state.consultasLoaded) renderConsultasKpis(periodo);
+  renderDayStrip();
+  renderTiposHoy();
+}
+
+function setConsultaMode(mode) {
+  state.consultaMode = mode === "mes" ? "mes" : "dia";
+  if (state.consultaMode === "dia" && !state.consultaDate) state.consultaDate = dateValue();
+  const switcher = $("consulta-mode");
+  if (switcher) {
+    for (const button of switcher.querySelectorAll(".seg-btn")) {
+      const active = (button.dataset.mode || "") === state.consultaMode;
+      button.classList.toggle("on", active);
+      button.setAttribute("aria-selected", String(active));
+    }
+  }
+  const monthField = $("consultas-month-field");
+  if (monthField) monthField.hidden = state.consultaMode !== "mes";
+  const dayNav = $("consulta-day-nav");
+  if (dayNav) dayNav.hidden = state.consultaMode !== "dia";
+  const dayFoot = $("consulta-day-foot");
+  if (dayFoot) dayFoot.hidden = state.consultaMode !== "dia";
+
+  if (state.consultaMode === "dia" && state.consultaDate) {
+    const month = state.consultaDate.slice(0, 7);
+    if ($("consultas-month").value !== month) {
+      $("consultas-month").value = month;
+      loadConsultas().catch((error) => showError(error.message));
+      return;
+    }
+  }
+  renderConsultasView();
+}
+
+function selectConsultaDay(date) {
+  if (!date) return;
+  state.consultaDate = date;
+  setConsultaMode("dia");
+}
+
+function shiftConsultaWeek(delta) {
+  state.consultaDate = shiftDateValue(state.consultaDate || dateValue(), delta * 7);
+  setConsultaMode("dia");
+}
+
+async function loadTiposHoy() {
+  if (syncTiposHoy()) return;
+  const today = dateValue();
+  const month = today.slice(0, 7);
+  const data = await request(`/api/admin/availability?month=${encodeURIComponent(month)}`);
+  const days = Array.isArray(data?.days) ? data.days : [];
+  const day = days.find((entry) => entry.date === today);
+  state.tiposHoy = {
+    date: today,
+    counts: day?.counts || {},
+    consultas: Number(day?.consultas) || 0,
+  };
+  renderTiposHoy();
+}
+
+/* Reutiliza las reglas ya cargadas cuando el mes visible es el actual. */
+function syncTiposHoy() {
+  const today = dateValue();
+  if (state.month !== today.slice(0, 7) || !Array.isArray(state.rules)) return false;
+  const day = state.rules.find((entry) => entry.date === today);
+  if (!day) return false;
+  state.tiposHoy = {
+    date: today,
+    counts: day.counts || {},
+    consultas: Number(day.consultas) || 0,
+  };
+  renderTiposHoy();
+  return true;
+}
+
+function bindConsultasFilters() {
+  const mode = $("consulta-mode");
+  if (mode) {
+    mode.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest(".seg-btn") : null;
+      if (!button) return;
+      setConsultaMode(button.dataset.mode || "dia");
+    });
+  }
+  const strip = $("consulta-days");
+  if (strip) {
+    strip.addEventListener("click", (event) => {
+      const chip = event.target instanceof Element ? event.target.closest(".day-chip") : null;
+      if (!chip) return;
+      selectConsultaDay(chip.dataset.date || "");
+    });
+  }
+  const prev = $("consulta-day-prev");
+  if (prev) prev.addEventListener("click", () => shiftConsultaWeek(-1));
+  const next = $("consulta-day-next");
+  if (next) next.addEventListener("click", () => shiftConsultaWeek(1));
+  const todayButton = $("consulta-today");
+  if (todayButton) todayButton.addEventListener("click", () => selectConsultaDay(dateValue()));
+  const seeMonth = $("consultas-ver-mes");
+  if (seeMonth) seeMonth.addEventListener("click", () => setConsultaMode("mes"));
+}
+
+/* ---------- disponibilidad: reserva manual ---------- */
+const manualChannelHints = {
+  whatsapp: "Número de teléfono",
+  correo: "correo@ejemplo.com",
+  telegram: "Usuario o número de Telegram",
+  discord: "Usuario de Discord",
+};
+const manualChannelLabels = {
+  whatsapp: "WhatsApp",
+  correo: "Correo",
+  telegram: "Telegram",
+  discord: "Discord",
+};
+const manualChipFormat = new Intl.DateTimeFormat("es", { day: "numeric", month: "short" });
+
+function manualDateLabel(value) {
+  const date = parseDateValue(value);
+  return date ? manualChipFormat.format(date) : "—";
+}
+
+function setManualMessage(text, tone = "info") {
+  const box = $("manual-message");
+  if (!box) return;
+  box.textContent = text || "";
+  box.hidden = !text;
+  if (text) box.dataset.tone = tone;
+  else delete box.dataset.tone;
+}
+
+function updateManualChannel(channel) {
+  state.manual.canal = manualChannelHints[channel] ? channel : "whatsapp";
+  const group = $("manual-canal");
+  if (group) {
+    for (const button of group.querySelectorAll("[data-canal]")) {
+      const active = button.dataset.canal === state.manual.canal;
+      button.classList.toggle("on", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+  }
+  const contacto = $("manual-contacto");
+  if (contacto) contacto.placeholder = manualChannelHints[state.manual.canal];
+}
+
+function updateManualKind(kind) {
+  state.manual.tipo = kind === "extensa" ? "extensa" : "corta";
+  const group = $("manual-tipo");
+  if (!group) return;
+  for (const button of group.querySelectorAll("[data-tipo]")) {
+    const active = button.dataset.tipo === state.manual.tipo;
+    button.classList.toggle("on", active);
+    button.setAttribute("aria-selected", String(active));
+  }
+}
+
+/* Regla del día elegido, solo si su mes ya está cargado en Disponibilidad. */
+function manualRuleFor(date) {
+  if (!date || !Array.isArray(state.rules)) return null;
+  return state.rules.find((item) => item.date === date) || null;
+}
+
+function updateManualSubmit(event, options = {}) {
+  const button = $("manual-submit");
+  const message = $("manual-message");
+  if (!button) return;
+  // Solo un cambio del usuario limpia el mensaje anterior de la tarjeta.
+  const edited = !!event && typeof event.type === "string";
+  const nombre = ($("manual-nombre").value || "").trim();
+  const contacto = ($("manual-contacto").value || "").trim();
+  const fecha = $("manual-fecha").value;
+  const rule = manualRuleFor(fecha);
+  const closed = !!rule && !rule.is_open;
+  button.disabled = !nombre || !contacto || !fecha || closed;
+  if (closed) {
+    // Al recorrer el calendario basta con dejar el botón bloqueado en silencio;
+    // el aviso aparece cuando la persona intenta rellenar la reserva.
+    if (edited) setManualMessage(`El ${formatLongDate(fecha)} está cerrado: actívalo en «Ajustes de fecha» o elige otro día.`, "error");
+  } else if (!options.keepMessage && (edited || (message && message.dataset.tone === "error"))) {
+    setManualMessage("");
+  }
+}
+
+/* La fecha del formulario sigue al día elegido en el calendario (y viceversa). */
+function syncManualDate(date) {
+  const value = date || state.selectedDate || dateValue();
+  state.manual.fecha = value;
+  const field = $("manual-fecha");
+  if (field && field.value !== value) field.value = value;
+  const chip = $("manual-date-chip");
+  if (chip) chip.textContent = manualDateLabel(value);
+  updateManualSubmit();
+}
+
+/* Cambiar la fecha en la tarjeta selecciona ese día; si es de otro mes, lo carga. */
+function selectAvailabilityDate(date) {
+  if (!date) return;
+  if (date.slice(0, 7) !== state.month) {
+    state.month = date.slice(0, 7);
+    state.selectedDate = date;
+    loadAvailability().catch((error) => showError(error.message));
+    return;
+  }
+  selectDate(date);
+}
+
+function manualErrorMessage(error) {
+  const message = String((error && error.message) || "");
+  if (message.includes("AGENDA_LLENA")) return "Esa fecha está cerrada o ya no tiene cupo para ese tipo de lectura.";
+  if (message.includes("HORARIO_OCUPADO")) return "Ese horario ya está ocupado: prueba con otro bloque.";
+  if (message.includes("HORARIO_INVALIDO")) return "La hora debe caer dentro de la jornada y en bloques de 30 minutos.";
+  if (message.includes("FECHA_INVALIDA")) return "Elige una fecha válida.";
+  if (message.includes("CANAL_INVALIDO")) return "Elige un canal de contacto.";
+  return message || "No se pudo registrar la reserva.";
+}
+
+async function submitManualReserva(event) {
+  event.preventDefault();
+  const button = $("manual-submit");
+  if (!button || button.disabled) return;
+  const payload = {
+    nombre: ($("manual-nombre").value || "").trim(),
+    contacto: ($("manual-contacto").value || "").trim(),
+    canal: state.manual.canal,
+    tipo: state.manual.tipo,
+    emergencia: $("manual-emergencia").checked,
+    fecha: $("manual-fecha").value,
+    hora: $("manual-hora").value,
+  };
+  if (!payload.nombre || !payload.contacto || !payload.fecha) return;
+
+  button.disabled = true;
+  setManualMessage("Registrando la reserva…", "info");
+  try {
+    const data = await request("/api/admin/consultas", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const consulta = (data && data.consulta) || {};
+    const fecha = consulta.fecha || payload.fecha;
+    setManualMessage(
+      `Reserva registrada: ${formatName(consulta.nombre || payload.nombre)} · `
+      + `${formatLongDate(fecha)}`
+      + `${consulta.inicio ? ` · ${consulta.inicio}` : " · sin hora"}.`,
+      "ok"
+    );
+    $("manual-nombre").value = "";
+    $("manual-contacto").value = "";
+    $("manual-hora").value = "";
+    $("manual-emergencia").checked = false;
+    // Disponibilidad se queda en el día reservado; Consultas, en ese día también.
+    state.month = fecha.slice(0, 7);
+    state.selectedDate = fecha;
+    state.consultaDate = fecha;
+    $("consultas-month").value = fecha.slice(0, 7);
+    await Promise.all([
+      loadAvailability(),
+      loadConsultas(),
+      loadDashboardConsultas(),
+      loadStats(),
+    ]);
+    await loadTiposHoy().catch(() => {});
+    setConsultaMode("dia");
+    syncManualDate(fecha);
+    showNotice("La reserva manual quedó registrada en el panel.");
+  } catch (error) {
+    setManualMessage(manualErrorMessage(error), "error");
+  } finally {
+    button.disabled = false;
+    // Recalcula el botón sin borrar el aviso recién mostrado.
+    updateManualSubmit(null, { keepMessage: true });
+  }
+}
+
+function bindManualReserva() {
+  const form = $("manual-reserva");
+  if (!form) return;
+  form.addEventListener("submit", submitManualReserva);
+
+  const nombre = $("manual-nombre");
+  if (nombre) nombre.addEventListener("input", updateManualSubmit);
+  const contacto = $("manual-contacto");
+  if (contacto) contacto.addEventListener("input", updateManualSubmit);
+  const hora = $("manual-hora");
+  if (hora) hora.addEventListener("change", updateManualSubmit);
+  const emergencia = $("manual-emergencia");
+  if (emergencia) emergencia.addEventListener("change", updateManualSubmit);
+
+  const canal = $("manual-canal");
+  if (canal) {
+    canal.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest("[data-canal]") : null;
+      if (!button) return;
+      updateManualChannel(button.dataset.canal || "whatsapp");
+      updateManualSubmit();
+    });
+  }
+
+  const tipo = $("manual-tipo");
+  if (tipo) {
+    tipo.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest("[data-tipo]") : null;
+      if (!button) return;
+      updateManualKind(button.dataset.tipo || "corta");
+    });
+  }
+
+  const fecha = $("manual-fecha");
+  if (fecha) {
+    fecha.addEventListener("change", (event) => {
+      const value = fecha.value;
+      if (!value) {
+        state.manual.fecha = "";
+        const chip = $("manual-date-chip");
+        if (chip) chip.textContent = "—";
+        updateManualSubmit(event);
+        return;
+      }
+      selectAvailabilityDate(value);
+      updateManualSubmit(event);
+    });
+  }
+
+  updateManualChannel(state.manual.canal);
+  updateManualKind(state.manual.tipo);
+  syncManualDate(state.selectedDate || dateValue());
 }
 
 async function loadDashboardConsultas() {
@@ -581,78 +1315,475 @@ function groupReadings(entries) {
   return items;
 }
 
-function donutGradient(items) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-  if (!total) return emptyDonut;
-  let offset = 0;
-  const stops = items.filter((item) => item.value > 0).map((item) => {
-    const start = (offset / total) * 100;
-    offset += item.value;
-    const end = (offset / total) * 100;
-    return `${item.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
-  });
-  return `conic-gradient(${stops.join(", ")})`;
+/* ---------- métricas-botón: estado activo y salto al desglose ---------- */
+const metricLabels = {
+  ingresos: "Ingresos del mes",
+  ocupacion: "Ocupación",
+  promedio: "Ingreso promedio",
+  frecuencia: "Nuevas vs. frecuentes",
+  ranking: "Lecturas más pedidas",
+};
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svgNode(tag, attrs = {}) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  return node;
 }
 
-function renderDonut(donutId, legendId, centerId, items, centerTotal, emptyText) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-  $(donutId).style.setProperty("--segments", donutGradient(items));
-  const legend = $(legendId);
-  legend.replaceChildren();
-  if (!total) {
-    const message = document.createElement("li");
-    message.className = "legend-empty";
-    message.textContent = emptyText;
-    legend.append(message);
-  } else {
-    for (const entry of items.filter((item) => item.value > 0)) {
-      const row = document.createElement("li");
-      const dot = document.createElement("span");
-      dot.className = "dot";
-      dot.style.background = entry.color;
-      const name = document.createElement("span");
-      name.className = "legend-name";
-      name.textContent = entry.label;
-      name.title = entry.label;
-      const value = document.createElement("span");
-      value.className = "legend-value";
-      value.textContent = `${entry.value} · ${Math.round((entry.value / total) * 100)}%`;
-      row.append(dot, name, value);
-      legend.append(row);
-    }
+function chartEmpty(message) {
+  const paragraph = document.createElement("p");
+  paragraph.className = "chart-empty";
+  paragraph.textContent = message;
+  return paragraph;
+}
+
+function chartEmptyItem(message) {
+  const item = document.createElement("li");
+  item.className = "legend-empty";
+  item.textContent = message;
+  return item;
+}
+
+function percentOf(part, total) {
+  return total > 0 ? (Number(part) || 0) / total * 100 : 0;
+}
+
+function formatPercent(value) {
+  return `${Math.round(Number(value) || 0)}%`;
+}
+
+function selectMetric(metric, options = {}) {
+  const active = metricLabels[metric] ? metric : "ingresos";
+  state.activeMetric = active;
+  for (const card of document.querySelectorAll("[data-metric]")) {
+    const on = card.dataset.metric === active;
+    card.classList.toggle("is-active", on);
+    card.setAttribute("aria-pressed", String(on));
   }
-  $(centerId).textContent = String(centerTotal ?? 0);
+  for (const panel of document.querySelectorAll(".stat-detail")) {
+    panel.classList.toggle("is-active", panel.dataset.detail === active);
+  }
+  if (!options.scroll) return;
+  const detail = document.querySelector(`.stat-detail[data-detail="${active}"]`);
+  if (!detail) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  detail.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+}
+
+function bindStatMetrics() {
+  const metrics = $("stats-metrics");
+  if (metrics) {
+    metrics.addEventListener("click", (event) => {
+      const card = event.target instanceof Element ? event.target.closest("[data-metric]") : null;
+      if (!card) return;
+      selectMetric(card.dataset.metric, { scroll: true });
+    });
+  }
+  const tabs = $("ocupacion-tabs");
+  if (tabs) {
+    tabs.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest(".seg-btn") : null;
+      if (!button) return;
+      const gran = button.dataset.ocupacion || "dia";
+      if (gran === state.ocupacionGran) return;
+      state.ocupacionGran = gran;
+      for (const item of tabs.querySelectorAll(".seg-btn")) {
+        const on = item === button;
+        item.classList.toggle("on", on);
+        item.setAttribute("aria-selected", String(on));
+      }
+      renderOcupacion();
+    });
+  }
+  const bars = $("ocupacion-bars");
+  if (bars) {
+    bars.addEventListener("scroll", () => syncBarsScroll(bars), { passive: true });
+    window.addEventListener("resize", () => syncBarsScroll(bars));
+  }
+}
+
+function monthlyPeriodos() {
+  return Array.isArray(state.ingresosMes?.periodos) ? state.ingresosMes.periodos : [];
+}
+
+function kpiPeriod() {
+  const periodos = monthlyPeriodos();
+  if (!periodos.length) return { current: null, previous: null };
+  const target = $("stats-all")?.checked ? "" : ($("stats-month").value || monthValue());
+  let index = target ? periodos.findIndex((item) => String(item.inicio).slice(0, 7) === target) : -1;
+  if (index < 0) index = periodos.length - 1;
+  return { current: periodos[index] || null, previous: periodos[index - 1] || null };
+}
+
+function deltaChip(current, previous) {
+  const base = Number(previous) || 0;
+  const value = Number(current) || 0;
+  if (!base) return { text: value ? "nuevo" : "—", tone: "flat" };
+  const variation = (value - base) / base * 100;
+  const tone = Math.abs(variation) < 0.05 ? "flat" : variation > 0 ? "up" : "down";
+  const sign = variation > 0 ? "+" : variation < 0 ? "\u2212" : "";
+  return { text: `${sign}${Math.abs(variation).toFixed(1)}%`, tone };
+}
+
+function renderChip(id, chip) {
+  const element = $(id);
+  if (!element) return;
+  element.textContent = chip.text;
+  element.classList.remove("up", "down", "flat");
+  element.classList.add(chip.tone);
+}
+
+function occupancySummary() {
+  const days = Array.isArray(state.occupancy?.days) ? state.occupancy.days : [];
+  return { ...summarizeDays(days), days };
+}
+
+function occupancyDays(days) {
+  return days.map((day) => {
+    const totals = totalsFor(day);
+    const date = String(day?.date || "");
+    const capacity = day?.is_open ? totals.capacity : 0;
+    return {
+      date,
+      label: String(Number(date.slice(8, 10)) || date.slice(8, 10)),
+      booked: totals.booked,
+      capacity,
+      consultas: Number(day?.consultas) || 0,
+      value: capacity ? Math.min(100, totals.booked / capacity * 100) : 0,
+    };
+  });
+}
+
+function occupancyWeeks(days) {
+  const groups = new Map();
+  for (const day of days) {
+    const date = String(day?.date || "");
+    if (!date) continue;
+    const [year, month, dayNumber] = date.split("-").map(Number);
+    const current = new Date(Date.UTC(year, month - 1, dayNumber));
+    const monday = new Date(current);
+    monday.setUTCDate(current.getUTCDate() - ((current.getUTCDay() + 6) % 7));
+    const key = monday.toISOString().slice(0, 10);
+    if (!groups.has(key)) {
+      groups.set(key, { date: key, label: formatShortDay(key), booked: 0, capacity: 0, consultas: 0 });
+    }
+    const group = groups.get(key);
+    if (day?.is_open) {
+      const totals = totalsFor(day);
+      group.booked += totals.booked;
+      group.capacity += totals.capacity;
+    }
+    group.consultas += Number(day?.consultas) || 0;
+  }
+  return [...groups.values()].map((group) => ({
+    ...group,
+    value: group.capacity ? Math.min(100, group.booked / group.capacity * 100) : 0,
+  }));
+}
+
+function occupancyLabel(item, gran) {
+  if (gran === "semana") return `Semana del ${formatShortDay(item.date)}`;
+  return capitalize(formatLongDate(item.date));
+}
+
+function renderOcupacion() {
+  const summary = occupancySummary();
+  const gran = state.ocupacionGran === "semana" ? "semana" : "dia";
+  $("ocupacion-media").textContent = summary.rate === null ? "—" : formatPercent(summary.rate);
+  $("ocupacion-cupos").textContent = summary.capacity ? `${summary.booked}/${summary.capacity}` : "—";
+  $("ocupacion-consultas").textContent = String(Number(state.stats?.total) || 0);
+
+  const container = $("ocupacion-bars");
+  if (!container) return;
+  const items = gran === "semana" ? occupancyWeeks(summary.days) : occupancyDays(summary.days);
+  container.replaceChildren();
+  container.classList.toggle("is-dense", items.length > 14);
+  if (!items.length) {
+    container.append(chartEmpty(state.occupancy
+      ? "No hay días con cupos publicados en este periodo."
+      : "Elige un mes concreto para ver la ocupación día a día."));
+    syncBarsScroll(container);
+    return;
+  }
+  container.setAttribute("aria-label",
+    `Ocupación por ${gran}: ${items.length} ${items.length === 1 ? "periodo" : "periodos"}, media ${formatPercent(summary.rate || 0)}`);
+  for (const item of items) {
+    const bar = document.createElement("div");
+    bar.className = item.capacity ? "bar" : "bar is-closed";
+    bar.title = item.capacity
+      ? `${occupancyLabel(item, gran)} · ${formatPercent(item.value)} de ocupación · ${item.booked} de ${item.capacity} cupos · ${item.consultas} ${item.consultas === 1 ? "consulta" : "consultas"}`
+      : `${occupancyLabel(item, gran)} · sin cupos publicados`;
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    fill.style.height = item.capacity ? `${Math.max(2, Math.round(item.value))}%` : "0%";
+    track.append(fill);
+    const value = document.createElement("span");
+    value.className = "bar-value";
+    value.textContent = item.capacity ? formatPercent(item.value) : "—";
+    const caption = document.createElement("span");
+    caption.className = "bar-label";
+    caption.textContent = item.label;
+    bar.append(track, value, caption);
+    container.append(bar);
+  }
+  syncBarsScroll(container);
+}
+
+function renderRanking(entries) {
+  const list = $("ranking-list");
+  if (!list) return;
+  list.replaceChildren();
+  const items = groupReadings(Array.isArray(entries) ? entries : []);
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  $("ranking-total").textContent = `${total} ${total === 1 ? "lectura" : "lecturas"}`;
+  if (!total) {
+    list.append(chartEmptyItem("Aún no hay lecturas registradas en este periodo."));
+    return;
+  }
+  for (const item of items) {
+    const share = percentOf(item.value, total);
+    const row = document.createElement("li");
+    row.className = "ratio-row";
+    const head = document.createElement("span");
+    head.className = "ratio-head";
+    const name = document.createElement("span");
+    name.className = "ratio-name";
+    name.textContent = item.label;
+    name.title = item.label;
+    const value = document.createElement("span");
+    value.className = "ratio-value";
+    value.textContent = `${formatPercent(share)} · ${item.value}`;
+    head.append(name, value);
+    const track = document.createElement("span");
+    track.className = "ratio-track";
+    const fill = document.createElement("i");
+    fill.style.width = `${Math.max(3, share).toFixed(1)}%`;
+    fill.style.background = item.color;
+    track.append(fill);
+    row.append(head, track);
+    list.append(row);
+  }
+}
+
+function renderFrecuencia(consultantes) {
+  const counts = {
+    nueva: Number(consultantes?.nueva) || 0,
+    frecuente: Number(consultantes?.frecuente) || 0,
+    sin_dato: Number(consultantes?.sin_dato) || 0,
+  };
+  const total = counts.nueva + counts.frecuente + counts.sin_dato;
+  const donut = $("frecuencia-donut");
+  const legend = $("frecuencia-legend");
+  if (!donut || !legend) return;
+  legend.replaceChildren();
+  const totalLabel = $("frecuencia-donut-total");
+  if (totalLabel) totalLabel.textContent = String(total);
+  const label = $("frecuencia-donut-label");
+  if (label) label.textContent = total === 1 ? "consulta" : "consultas";
+  if (!total) {
+    donut.style.removeProperty("background");
+    donut.setAttribute("aria-label", "Sin consultas registradas en este periodo");
+    legend.append(chartEmptyItem("Aún no hay consultas registradas en este periodo."));
+    return;
+  }
+  const plurals = { nueva: "Nuevas", frecuente: "Frecuentes", sin_dato: "Sin dato" };
+  const segments = [];
+  let cursor = 0;
+  for (const key of ["frecuente", "nueva", "sin_dato"]) {
+    if (!counts[key]) continue;
+    const next = cursor + percentOf(counts[key], total);
+    segments.push(`${consultanteColors[key]} ${cursor.toFixed(2)}% ${next.toFixed(2)}%`);
+    cursor = next;
+  }
+  donut.style.background = `conic-gradient(${segments.join(", ")})`;
+  donut.setAttribute("aria-label",
+    `Consultantes: ${counts.frecuente} frecuentes, ${counts.nueva} nuevas, ${counts.sin_dato} sin dato`);
+  for (const key of ["frecuente", "nueva", "sin_dato"]) {
+    const row = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = consultanteColors[key];
+    const name = document.createElement("span");
+    name.className = "legend-name";
+    name.textContent = plurals[key];
+    const value = document.createElement("span");
+    value.className = "legend-value";
+    value.textContent = `${counts[key]} · ${formatPercent(percentOf(counts[key], total))}`;
+    row.append(dot, name, value);
+    legend.append(row);
+  }
+}
+
+function renderTipos(tipos) {
+  const counts = {
+    emergencia: Number(tipos?.emergencia) || 0,
+    normal: Number(tipos?.normal) || 0,
+  };
+  const total = counts.emergencia + counts.normal;
+  const donut = $("tipos-donut");
+  const legend = $("tipos-legend");
+  if (!donut || !legend) return;
+  legend.replaceChildren();
+  const totalLabel = $("tipos-donut-total");
+  if (totalLabel) totalLabel.textContent = String(total);
+  const label = $("tipos-donut-label");
+  if (label) label.textContent = total === 1 ? "consulta" : "consultas";
+  if (!total) {
+    donut.style.removeProperty("background");
+    donut.setAttribute("aria-label", "Sin consultas registradas en este periodo");
+    legend.append(chartEmptyItem("Aún no hay consultas registradas en este periodo."));
+    return;
+  }
+  const segments = [];
+  let cursor = 0;
+  for (const key of ["emergencia", "normal"]) {
+    if (!counts[key]) continue;
+    const next = cursor + percentOf(counts[key], total);
+    segments.push(`${tipoColors[key]} ${cursor.toFixed(2)}% ${next.toFixed(2)}%`);
+    cursor = next;
+  }
+  donut.style.background = `conic-gradient(${segments.join(", ")})`;
+  donut.setAttribute("aria-label",
+    `Modalidad: ${counts.emergencia} con emergencia, ${counts.normal} sin emergencia`);
+  for (const key of ["emergencia", "normal"]) {
+    const row = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = tipoColors[key];
+    const name = document.createElement("span");
+    name.className = "legend-name";
+    name.textContent = tipoLabels[key];
+    const value = document.createElement("span");
+    value.className = "legend-value";
+    value.textContent = `${counts[key]} · ${formatPercent(percentOf(counts[key], total))}`;
+    row.append(dot, name, value);
+    legend.append(row);
+  }
+}
+
+function renderKpis() {
+  const { current, previous } = kpiPeriod();
+  const stats = state.stats || {};
+  const consultas = Number(stats.total) || 0;
+  const periodName = $("stats-all")?.checked
+    ? "Todo el histórico"
+    : monthTitle($("stats-month").value || monthValue());
+  const currentName = current ? periodLabel(current, "mes") : "";
+  const previousName = previous ? periodLabel(previous, "mes") : "";
+
+  $("kpi-ingresos").textContent = formatMoney(current?.ingresos);
+  $("kpi-ingresos").title = current
+    ? `${formatMoney(current.ingresos)} en ${currentName}${previous ? ` · ${formatMoney(previous.ingresos)} en ${previousName}` : ""}`
+    : "Sin importes registrados";
+  renderChip("kpi-ingresos-chip", deltaChip(current?.ingresos, previous?.ingresos));
+  $("kpi-ingresos-foot").textContent = current
+    ? `${currentName} · vs. ${previousName || "sin periodo previo"}`
+    : "Sin periodos registrados";
+
+  const summary = occupancySummary();
+  $("kpi-ocupacion").textContent = summary.rate === null ? "—" : formatPercent(summary.rate);
+  $("kpi-ocupacion-foot").textContent = summary.rate === null
+    ? "Elige un mes para ver la ocupación"
+    : `${consultas} ${consultas === 1 ? "consulta realizada" : "consultas realizadas"}`;
+  const mini = $("kpi-ocupacion-mini");
+  mini.replaceChildren();
+  for (const week of occupancyWeeks(summary.days).slice(-6)) {
+    const notch = document.createElement("i");
+    notch.style.height = `${Math.max(4, Math.round(week.value))}%`;
+    mini.append(notch);
+  }
+
+  $("kpi-promedio").textContent = formatMoney(current?.promedio ?? state.ingresosMes?.promedio_consulta);
+  renderChip("kpi-promedio-chip", deltaChip(current?.promedio, previous?.promedio));
+  $("kpi-promedio-foot").textContent = current
+    ? `${Number(current.consultas) || 0} ${Number(current.consultas) === 1 ? "consulta" : "consultas"} en ${currentName}`
+    : "Ticket medio por consulta";
+
+  const counts = {
+    nueva: Number(stats.consultantes?.nueva) || 0,
+    frecuente: Number(stats.consultantes?.frecuente) || 0,
+    sin_dato: Number(stats.consultantes?.sin_dato) || 0,
+  };
+  const identified = counts.nueva + counts.frecuente;
+  $("kpi-frecuente-pct").textContent = identified ? formatPercent(percentOf(counts.frecuente, identified)) : "—";
+  $("kpi-nueva-pct").textContent = identified ? formatPercent(percentOf(counts.nueva, identified)) : "—";
+  renderChip("kpi-frecuencia-chip", counts.sin_dato
+    ? { text: `${counts.sin_dato} sin dato`, tone: "flat" }
+    : { text: "\u25CF Al día", tone: identified ? "up" : "flat" });
+  $("kpi-frecuencia-foot").textContent = identified || counts.sin_dato
+    ? `${counts.nueva} ${counts.nueva === 1 ? "nueva" : "nuevas"} · ${counts.frecuente} ${counts.frecuente === 1 ? "frecuente" : "frecuentes"}${counts.sin_dato ? ` · ${counts.sin_dato} sin dato` : ""}`
+    : "Sin consultas en el periodo";
+
+  const lecturas = Array.isArray(stats.lecturas) ? stats.lecturas : [];
+  const totalLecturas = lecturas.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const top = lecturas[0] || null;
+  const topCount = Number(top?.total) || 0;
+  $("kpi-ranking-name").textContent = top ? capitalize(top.nombre) : "Sin lecturas todavía";
+  $("kpi-ranking-share").textContent = topCount ? formatPercent(percentOf(topCount, totalLecturas)) : "—";
+  $("kpi-ranking-meta").textContent = top
+    ? `${topCount} ${topCount === 1 ? "pedida" : "pedidas"} de ${totalLecturas} · ${periodName}`
+    : "Sin lecturas en el periodo";
+
+  selectMetric(state.activeMetric);
 }
 
 function renderStats(data) {
   const total = Number(data?.total || 0);
-  const lecturas = Array.isArray(data?.lecturas) ? data.lecturas : [];
-  const consultantes = data?.consultantes || {};
-  const lecturaTotal = lecturas.reduce((sum, item) => sum + Number(item.total || 0), 0);
-  renderDonut("lecturas-donut", "lecturas-legend", "lecturas-center", groupReadings(lecturas), lecturaTotal,
-    "Aún no hay lecturas registradas en este periodo.");
-  const consultanteItems = ["nueva", "frecuente", "sin_dato"].map((key) => ({
-    label: consultanteLabels[key],
-    value: Number(consultantes[key] || 0),
-    color: consultanteColors[key],
-  }));
-  renderDonut("consultantes-donut", "consultantes-legend", "consultantes-center", consultanteItems, total,
-    "Aún no hay consultas registradas en este periodo.");
+  const manualTotal = Number(data?.manual_total || 0);
+  renderRanking(Array.isArray(data?.lecturas) ? data.lecturas : []);
+  renderFrecuencia(data?.consultantes || {});
+  renderTipos(data?.tipos || {});
   $("stats-total").textContent = `${total} ${total === 1 ? "consulta" : "consultas"}`;
   $("stats-total").title = $("stats-all").checked
     ? "Histórico completo"
     : formatMonthLabel($("stats-month").value);
+  const hint = $("stats-hint");
+  if (hint) {
+    hint.textContent = "Las lecturas se cuentan por cada tipo elegido en una consulta;"
+      + " una reserva con varias lecturas suma en cada una."
+      + (manualTotal
+        ? ` Incluye ${manualTotal} ${manualTotal === 1 ? "lectura" : "lecturas"}`
+          + " de contadores históricos sin ficha (solo totales por día)."
+        : "");
+  }
+  renderOcupacion();
+  renderKpis();
 }
 
 async function loadStats() {
   const all = $("stats-all").checked;
   $("stats-month").disabled = all;
+  const month = all ? "" : ($("stats-month").value || monthValue());
   const params = new URLSearchParams();
-  if (!all) params.set("month", $("stats-month").value || monthValue());
+  if (month) params.set("month", month);
   const query = params.toString();
   const data = await request(`/api/admin/estadisticas${query ? `?${query}` : ""}`);
   state.stats = data;
+  try {
+    await loadOccupancy(month);
+  } catch (error) {
+    state.occupancy = null;
+    console.warn("No se pudo cargar la ocupación del periodo.", error);
+  }
   renderStats(data);
+}
+
+// La ocupación sale de la disponibilidad publicada del mes: cupos usados / cupos abiertos.
+async function loadOccupancy(month) {
+  if (!month) {
+    state.occupancy = null;
+    return;
+  }
+  if (state.occupancy?.month === month) return;
+  if (state.month === month && state.rules.length) {
+    state.occupancy = { month, days: state.rules };
+    return;
+  }
+  const data = await request(`/api/admin/availability?month=${encodeURIComponent(month)}`);
+  state.occupancy = { month, days: Array.isArray(data?.days) ? data.days : [] };
 }
 
 /* ingresos por periodo */
@@ -686,54 +1817,89 @@ function syncBarsScroll(container) {
   container.classList.toggle("is-more-right", max > 2 && container.scrollLeft < max - 2);
 }
 
+function renderCurve(periodos, granularidad) {
+  const plot = $("ingresos-curve");
+  const labels = $("ingresos-curve-labels");
+  if (!plot || !labels) return;
+  plot.replaceChildren();
+  labels.replaceChildren();
+  $("ingresos-curve-max").textContent = "";
+  if (!periodos.length) {
+    plot.append(chartEmpty("Aún no hay consultas con importe registrado."));
+    return;
+  }
+  const width = 640;
+  const height = 200;
+  const padX = 8;
+  const padY = 14;
+  const ingresos = periodos.map((periodo) => Number(periodo.ingresos) || 0);
+  const promedios = periodos.map((periodo) => Number(periodo.promedio) || 0);
+  const maxIngreso = Math.max(...ingresos, 1);
+  const maxPromedio = Math.max(...promedios, 1);
+  const stepX = periodos.length > 1 ? (width - padX * 2) / (periodos.length - 1) : 0;
+  const xAt = (index) => (periodos.length > 1 ? padX + index * stepX : width / 2);
+  const yIncome = (value) => height - padY - value / maxIngreso * (height - padY * 2);
+  const yAverage = (value) => height - padY - value / maxPromedio * (height - padY * 2);
+  const line = (values, y) => values
+    .map((value, index) => `${index ? "L" : "M"}${xAt(index).toFixed(1)} ${y(value).toFixed(1)}`)
+    .join(" ");
+
+  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: "none" });
+  const grid = svgNode("g", { class: "curve-grid" });
+  for (const ratio of [0, 0.5, 1]) {
+    const y = (padY + (height - padY * 2) * ratio).toFixed(1);
+    grid.append(svgNode("line", { x1: 0, x2: width, y1: y, y2: y, "vector-effect": "non-scaling-stroke" }));
+  }
+  svg.append(grid);
+  svg.append(svgNode("path", {
+    class: "curve-area",
+    d: `${line(ingresos, yIncome)} L${xAt(periodos.length - 1).toFixed(1)} ${height - padY} L${xAt(0).toFixed(1)} ${height - padY} Z`,
+  }));
+  svg.append(svgNode("path", {
+    class: "curve-line",
+    d: line(ingresos, yIncome),
+    "vector-effect": "non-scaling-stroke",
+  }));
+  svg.append(svgNode("path", {
+    class: "curve-avg",
+    d: line(promedios, yAverage),
+    "vector-effect": "non-scaling-stroke",
+  }));
+  if (periodos.length <= 24) {
+    for (const [index, value] of ingresos.entries()) {
+      svg.append(svgNode("circle", {
+        class: "curve-dot",
+        cx: xAt(index).toFixed(1),
+        cy: yIncome(value).toFixed(1),
+        r: 3,
+        "vector-effect": "non-scaling-stroke",
+      }));
+    }
+  }
+  plot.append(svg);
+  plot.setAttribute("aria-label",
+    `Curva de ${periodos.length} ${periodos.length === 1 ? "periodo" : "periodos"}: ingresos máximos ${formatMoney(maxIngreso)}, ticket medio máximo ${formatMoney(maxPromedio)}`);
+  $("ingresos-curve-max").textContent = `máx ${formatMoney(maxIngreso)} · ticket ${formatMoney(maxPromedio)}`;
+
+  const picks = periodos.length <= 6
+    ? periodos.map((_, index) => index)
+    : [...new Set(Array.from({ length: 6 }, (_, step) => Math.round(step * (periodos.length - 1) / 5)))];
+  for (const index of picks) {
+    const label = document.createElement("span");
+    label.textContent = periodLabel(periodos[index], granularidad);
+    labels.append(label);
+  }
+}
+
 function renderIngresos(data) {
   const periodos = Array.isArray(data?.periodos) ? data.periodos : [];
   const granularidad = data?.granularidad || state.granularidad;
   $("ingresos-total").textContent = formatMoney(data?.total);
   $("ingresos-promedio").textContent = formatMoney(data?.promedio_consulta);
   $("ingresos-count").textContent = String(Number(data?.consultas) || 0);
-
-  const container = $("ingresos-bars");
-  container.replaceChildren();
-  container.classList.toggle("is-dense", periodos.length > 14);
-  container.setAttribute("aria-label",
-    `Ingresos por ${granularidad}: ${periodos.length} ${periodos.length === 1 ? "periodo" : "periodos"}, total ${formatMoney(data?.total)}`);
-  if (!periodos.length) {
-    appendText(container, "p", "bars-empty", "Aún no hay consultas con importe registrado.");
-    syncBarsScroll(container);
-    return;
-  }
-
-  const max = Math.max(...periodos.map((periodo) => Number(periodo.ingresos) || 0), 1);
-  for (const periodo of periodos) {
-    const ingresos = Number(periodo.ingresos) || 0;
-    const consultas = Number(periodo.consultas) || 0;
-    const label = periodLabel(periodo, granularidad);
-
-    const bar = document.createElement("div");
-    bar.className = "bar";
-    bar.title = granularidad === "semana"
-      ? `Semana del ${periodo.inicio} al ${periodo.fin} · ${formatMoney(ingresos)} · ${consultas} ${consultas === 1 ? "consulta" : "consultas"} · promedio ${formatMoney(periodo.promedio)}`
-      : `${label} · ${formatMoney(ingresos)} · ${consultas} ${consultas === 1 ? "consulta" : "consultas"} · promedio ${formatMoney(periodo.promedio)}`;
-
-    const track = document.createElement("div");
-    track.className = "bar-track";
-    const fill = document.createElement("div");
-    fill.className = "bar-fill";
-    fill.style.height = `${Math.max(2, Math.round((ingresos / max) * 100))}%`;
-    track.append(fill);
-
-    const value = document.createElement("span");
-    value.className = "bar-value";
-    value.textContent = ingresos ? formatMoney(ingresos) : "—";
-    const caption = document.createElement("span");
-    caption.className = "bar-label";
-    caption.textContent = label;
-
-    bar.append(track, value, caption);
-    container.append(bar);
-  }
-  syncBarsScroll(container);
+  renderCurve(periodos, granularidad);
+  if (granularidad === "mes") state.ingresosMes = data;
+  renderKpis();
 }
 
 async function loadIngresos() {
@@ -745,11 +1911,6 @@ async function loadIngresos() {
 }
 
 function bindIngresosTabs() {
-  const bars = $("ingresos-bars");
-  if (bars) {
-    bars.addEventListener("scroll", () => syncBarsScroll(bars), { passive: true });
-    window.addEventListener("resize", () => syncBarsScroll(bars));
-  }
   const tabs = $("ingresos-tabs");
   if (!tabs) return;
   tabs.addEventListener("click", (event) => {
@@ -782,12 +1943,12 @@ function updateDiscreet(value) {
 }
 
 function applyTileExpansion(tile, expanded) {
-  const detailId = tile.querySelector(".tile-expand").getAttribute("aria-controls");
-  const detail = $(detailId);
-  const button = tile.querySelector(".tile-expand");
+  const button = tile.querySelector(".tile-expand, [data-tile-toggle]");
+  if (!button) return;
+  const detail = $(button.getAttribute("aria-controls"));
   tile.classList.toggle("is-expanded", expanded);
   button.setAttribute("aria-expanded", String(expanded));
-  detail.hidden = !expanded;
+  if (detail) detail.hidden = !expanded;
 }
 
 function applyWithTransition(update) {
@@ -827,13 +1988,14 @@ function toggleTile(tile) {
 }
 
 function bindTiles() {
-  for (const tile of document.querySelectorAll(".bento-tile[data-tile]")) {
+  for (const tile of document.querySelectorAll("[data-tile]")) {
     tile.addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       if (event.target.closest("a, button, input, select, label")) return;
       toggleTile(tile);
     });
-    tile.querySelector(".tile-expand").addEventListener("click", () => toggleTile(tile));
+    const trigger = tile.querySelector(".tile-expand, [data-tile-toggle]");
+    if (trigger) trigger.addEventListener("click", () => toggleTile(tile));
   }
   document.addEventListener("click", (event) => {
     if (!state.expandedTile || !(event.target instanceof Element)) return;
@@ -866,7 +2028,7 @@ let activateView = () => {};
 function bindView() {
   const views = [...document.querySelectorAll("main [data-view]")];
   if (!views.length) return;
-  const navLinks = [...document.querySelectorAll(".side .nav[data-goto-view]")];
+  const navLinks = [...document.querySelectorAll(".side .nav[data-goto-view], .tabbar .nav[data-goto-view]")];
   const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const reveal = (view) => {
     const items = [view, ...view.querySelectorAll("[data-reveal]")];
@@ -975,6 +2137,36 @@ function bindTabs() {
     link.addEventListener("click", () => setConsultaState(link.dataset.gotoState || ""));
   }
 }
+function bindSettingsSheet() {
+  const toggle = $("settings-toggle");
+  const sheet = $("settings-sheet");
+  const backdrop = $("settings-backdrop");
+  const close = $("settings-close");
+  if (!toggle || !sheet || !backdrop) return;
+  const isOpen = () => sheet.classList.contains("is-open");
+  const setOpen = (open) => {
+    sheet.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    backdrop.hidden = !open;
+  };
+  toggle.addEventListener("click", () => setOpen(!isOpen()));
+  if (close) close.addEventListener("click", () => setOpen(false));
+  backdrop.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isOpen()) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+  for (const link of sheet.querySelectorAll("[data-goto-view]")) {
+    link.addEventListener("click", () => setOpen(false));
+  }
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 768 && isOpen()) setOpen(false);
+  });
+}
+
+
 async function initialize() {
   startClock();
   updateDensity(readPreference(preferenceKeys.density, "comfortable"));
@@ -982,30 +2174,41 @@ async function initialize() {
   bindTiles();
   bindTabs();
   bindIngresosTabs();
+  bindStatMetrics();
   bindReveal();
   bindView();
+  bindSettingsSheet();
+  bindDaySheet();
+  bindCalendarSwipe();
+  bindConsultasFilters();
+  bindManualReserva();
   try {
     const user = await request("/api/admin/me");
+    state.identity = String(user.email || "");
     $("identity").textContent = `Sesión autorizada: ${user.email}`;
-    $("availability-month").value = monthValue();
     $("consultas-month").value = monthValue();
     $("stats-month").value = monthValue();
-    state.month = $("availability-month").value;
+    state.month = monthValue();
+    state.consultaDate = dateValue();
     state.selectedDate = dateValue().startsWith(`${state.month}-`)
       ? dateValue()
       : `${state.month}-01`;
-    await Promise.all([loadAvailability(), loadConsultas(), loadDashboardConsultas(), loadStats(), loadIngresos()]);
-    window.setInterval(() => renderTodayTile(), 30000);
+    setConsultaMode(state.consultaMode);
+    await Promise.all([
+      loadAvailability(),
+      loadConsultas(),
+      loadDashboardConsultas(),
+      loadStats(),
+      loadIngresos(),
+      loadTiposHoy(),
+    ]);
+    window.setInterval(() => renderDashboard(), 30000);
   } catch (error) {
     showError(error.message);
     $("identity").textContent = "No se pudo verificar la sesión.";
   }
 }
 
-$("availability-month").addEventListener("change", () => {
-  state.selectedDate = `${$("availability-month").value}-01`;
-  loadAvailability().catch((error) => showError(error.message));
-});
 $("cal-prev").addEventListener("click", () => shiftMonth(-1));
 $("cal-next").addEventListener("click", () => shiftMonth(1));
 $("rule-form").addEventListener("submit", saveRule);
@@ -1019,13 +2222,12 @@ $("density-toggle").addEventListener("change", (event) => {
   savePreference(preferenceKeys.density, event.target.value);
   updateDensity(event.target.value);
 });
-$("search-consultas").addEventListener("click", () => {
-  loadConsultas().catch((error) => showError(error.message));
-});
+$("search-consultas").addEventListener("click", () => renderConsultasView());
+$("consultas-search").addEventListener("input", () => renderConsultasView());
 $("consultas-search").addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
-    loadConsultas().catch((error) => showError(error.message));
+    renderConsultasView();
   }
 });
 $("consultas-month").addEventListener("change", () => {

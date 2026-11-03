@@ -1,4 +1,16 @@
 import { verifyAccess } from "./access.js";
+import {
+  DURACION_CORTA_MIN,
+  DURACION_EXTENSA_MIN,
+  bloquesDe,
+  inicioValido,
+  liberarSlot,
+  reservarCupo,
+  reservarSlot,
+  toHhmm,
+  toMinutes,
+  ventanaDe,
+} from "./booking.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -118,6 +130,26 @@ async function readMonth(db, month) {
   return days;
 }
 
+// Columnas del registro. Las de la migración 0003 se piden aparte para que el
+// panel siga funcionando si todavía no se aplicó.
+const CONSULTA_COLUMNS = `id, fecha, tipo, inicio, consultante, nombre, telefono, lecturas,
+            precios, total, estado, creado_en`;
+const CONSULTA_COLUMNS_MANUAL = `${CONSULTA_COLUMNS}, canal, lectura_tipo, origen`;
+
+async function selectConsultas(db, where, binds) {
+  const query = (columns) => db.prepare(
+    `SELECT ${columns}
+       FROM consultas ${where}
+      ORDER BY fecha DESC, inicio DESC, id DESC LIMIT 200`
+  ).bind(...binds).all();
+  try {
+    return await query(CONSULTA_COLUMNS_MANUAL);
+  } catch (error) {
+    if (!/no such column|has no column named/i.test(String((error && error.message) || error))) throw error;
+    return await query(CONSULTA_COLUMNS);
+  }
+}
+
 async function listConsultas(db, params) {
   const month = params.get("month") || "";
   const state = params.get("estado") || "";
@@ -142,37 +174,124 @@ async function listConsultas(db, params) {
     binds.push(`%${query}%`, `%${query}%`, `%${query}%`);
   }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const result = await db.prepare(
-    `SELECT id, fecha, tipo, inicio, consultante, nombre, telefono, lecturas,
-            precios, total, estado, creado_en
-       FROM consultas ${where}
-      ORDER BY fecha DESC, inicio DESC, id DESC LIMIT 200`
-  ).bind(...binds).all();
+  const result = await selectConsultas(db, where, binds);
 
-  const manualClauses = [
-    `(COALESCE(r.corta_normal, 0) + COALESCE(r.corta_emergencia, 0)
-      + COALESCE(r.extensa_normal, 0) + COALESCE(r.extensa_emergencia, 0)) > 0`,
-    "NOT EXISTS (SELECT 1 FROM consultas c WHERE c.fecha = r.fecha)",
-  ];
-  const manualBinds = [];
-  if (month) {
-    const [year, monthNumber] = month.split("-").map(Number);
-    const nextMonth = new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 7) + "-01";
-    manualClauses.push("r.fecha >= ? AND r.fecha < ?");
-    manualBinds.push(`${month}-01`, nextMonth);
+  return json({ consultas: result.results || [] });
+}
+
+/* ── Reserva manual desde el panel ──────────────────────────────────────────
+   Registra una consulta creada a mano (llamada, WhatsApp, etc.): descuenta el
+   cupo del día y, si llega con hora, reserva su bloque de agenda. No notifica
+   a Telegram: es un registro interno del panel.                              */
+const MANUAL_CHANNELS = ["whatsapp", "correo", "telegram", "discord"];
+const LECTURA_KINDS = ["corta", "extensa"];
+
+async function insertManualConsulta(env, row) {
+  try {
+    return await env.DB.prepare(
+      `INSERT INTO consultas
+        (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios,
+         total, estado, canal, lectura_tipo, origen)
+       VALUES (?, ?, ?, NULL, ?, ?, ?, NULL, NULL, 'en_proceso', ?, ?, 'manual')`
+    ).bind(
+      row.fecha, row.tipo, row.inicio, row.nombre, row.contacto,
+      row.lecturas, row.canal, row.lecturaTipo
+    ).run();
+  } catch (error) {
+    // Si la migración 0003 todavía no se aplicó, guarda el registro sin las
+    // columnas nuevas para no perder la reserva.
+    if (!/no such column|has no column named/i.test(String((error && error.message) || error))) throw error;
+    return await env.DB.prepare(
+      `INSERT INTO consultas
+        (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios,
+         total, estado)
+       VALUES (?, ?, ?, NULL, ?, ?, ?, NULL, NULL, 'en_proceso')`
+    ).bind(row.fecha, row.tipo, row.inicio, row.nombre, row.contacto, row.lecturas).run();
   }
-  const manual = await db.prepare(
-    `SELECT fecha, corta_normal, corta_emergencia, extensa_normal, extensa_emergencia,
-            COALESCE(corta_normal, 0) + COALESCE(corta_emergencia, 0)
-              + COALESCE(extensa_normal, 0) + COALESCE(extensa_emergencia, 0) AS total
-       FROM reservas r
-      WHERE ${manualClauses.join(" AND ")}
-      ORDER BY fecha DESC LIMIT 200`
-  ).bind(...manualBinds).all();
-  return json({
-    consultas: result.results || [],
-    registros_manuales: manual.results || [],
+}
+
+async function createManualConsulta(request, env, actor) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return json({ error: "Datos incompletos" }, 400);
+
+  const fecha = String(body.fecha || "");
+  const hora = String(body.hora || "");
+  const nombre = String(body.nombre || "").trim().slice(0, 80);
+  const contacto = String(body.contacto || "").trim().slice(0, 80);
+  const canal = String(body.canal || "");
+  const tipo = String(body.tipo || "");
+  const emergencia = body.emergencia === true;
+
+  if (!isRealDate(fecha)) return json({ error: "FECHA_INVALIDA" }, 400);
+  if (!nombre || !contacto) return json({ error: "FALTAN_DATOS" }, 400);
+  if (!MANUAL_CHANNELS.includes(canal)) return json({ error: "CANAL_INVALIDO" }, 400);
+  if (!LECTURA_KINDS.includes(tipo)) return json({ error: "TIPO_INVALIDO" }, 400);
+  if (hora) {
+    const inicioMin = toMinutes(hora);
+    if (!TIME_RE.test(hora) || !Number.isFinite(inicioMin) || inicioMin % 30 !== 0) {
+      return json({ error: "HORARIO_INVALIDO" }, 400);
+    }
+  }
+
+  const rule = await getDayRule(env.DB, fecha);
+  if (!rule.is_open) return json({ error: "AGENDA_LLENA", fecha }, 409);
+
+  const tipoSlot = emergencia ? "emergencia" : "normal";
+  const duracion = tipo === "extensa" ? DURACION_EXTENSA_MIN : DURACION_CORTA_MIN;
+  let inicio = null;
+  let bloques = [];
+
+  if (hora) {
+    const inicioMin = toMinutes(hora);
+    const ventana = ventanaDe(rule);
+    if (!inicioValido(inicioMin, rule) || inicioMin + duracion > ventana.finMin) {
+      return json({ error: "HORARIO_INVALIDO", inicio: hora }, 400);
+    }
+    inicio = toHhmm(inicioMin);
+    bloques = bloquesDe(inicioMin, duracion);
+    const libre = await reservarSlot(env, fecha, tipoSlot, bloques);
+    if (!libre) return json({ error: "HORARIO_OCUPADO", fecha, inicio }, 409);
+  }
+
+  const reservado = await reservarCupo(
+    env, fecha, emergencia,
+    tipo === "corta" ? 1 : 0,
+    tipo === "extensa" ? 1 : 0,
+    rule
+  );
+  if (!reservado) {
+    await liberarSlot(env, fecha, tipoSlot, bloques);
+    return json({ error: "AGENDA_LLENA", fecha }, 409);
+  }
+
+  const lecturas = tipo === "extensa" ? "Lectura extensa" : "Lectura corta";
+  const inserted = await insertManualConsulta(env, {
+    fecha, tipo: tipoSlot, inicio, nombre, contacto, lecturas, canal, lecturaTipo: tipo,
   });
+
+  await env.DB.prepare(
+    "INSERT INTO admin_audit (actor, action, target, detail) VALUES (?, ?, ?, ?)"
+  ).bind(
+    actor, "consulta.create.manual", fecha,
+    JSON.stringify({ nombre, canal, tipo, emergencia, inicio })
+  ).run();
+
+  return json({
+    ok: true,
+    consulta: {
+      id: inserted && inserted.meta ? inserted.meta.last_row_id : null,
+      fecha,
+      tipo: tipoSlot,
+      inicio,
+      nombre,
+      telefono: contacto,
+      lecturas,
+      estado: "en_proceso",
+      canal,
+      lectura_tipo: tipo,
+      origen: "manual",
+    },
+  }, 201);
 }
 
 async function saveAvailability(request, env, actor, date) {
@@ -269,20 +388,39 @@ async function statsConsultas(db, params) {
 
   const clauses = [];
   const binds = [];
+  // Contadores históricos de `reservas`: solo existen como totales por fecha,
+  // sin nombre, estado ni identificador de cita.
+  const manualClauses = [
+    `(COALESCE(r.corta_normal, 0) + COALESCE(r.corta_emergencia, 0)
+      + COALESCE(r.extensa_normal, 0) + COALESCE(r.extensa_emergencia, 0)) > 0`,
+    "NOT EXISTS (SELECT 1 FROM consultas c WHERE c.fecha = r.fecha)",
+  ];
+  const manualBinds = [];
   if (month) {
     const [year, monthNumber] = month.split("-").map(Number);
     const nextMonth = new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 7) + "-01";
     clauses.push("fecha >= ? AND fecha < ?");
     binds.push(`${month}-01`, nextMonth);
+    manualClauses.push("r.fecha >= ? AND r.fecha < ?");
+    manualBinds.push(`${month}-01`, nextMonth);
   }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const result = await db.prepare(
-    `SELECT lecturas, consultante, estado FROM consultas ${where}`
+    `SELECT lecturas, consultante, estado, tipo FROM consultas ${where}`
   ).bind(...binds).all();
+  const manual = await db.prepare(
+    `SELECT COALESCE(SUM(corta_normal), 0) AS corta_normal,
+            COALESCE(SUM(corta_emergencia), 0) AS corta_emergencia,
+            COALESCE(SUM(extensa_normal), 0) AS extensa_normal,
+            COALESCE(SUM(extensa_emergencia), 0) AS extensa_emergencia
+       FROM reservas r
+      WHERE ${manualClauses.join(" AND ")}`
+  ).bind(...manualBinds).first();
 
   const readings = new Map();
   const clients = { nueva: 0, frecuente: 0, sin_dato: 0 };
   const states = { en_proceso: 0, finalizado: 0 };
+  const types = { emergencia: 0, normal: 0 };
   let total = 0;
 
   for (const row of result.results || []) {
@@ -291,6 +429,8 @@ async function statsConsultas(db, params) {
     else states.en_proceso += 1;
     if (row.consultante === "nueva" || row.consultante === "frecuente") clients[row.consultante] += 1;
     else clients.sin_dato += 1;
+    if (row.tipo === "emergencia") types.emergencia += 1;
+    else types.normal += 1;
 
     const seen = new Set();
     for (const raw of String(row.lecturas || "").split(",")) {
@@ -301,11 +441,32 @@ async function statsConsultas(db, params) {
     }
   }
 
+  // Los contadores manuales no distinguen lecturas por nombre, así que entran
+  // al ranking como filas "sin ficha" y al desglose de modalidad.
+  const manualCount = (key) => Number(manual && manual[key]) || 0;
+  const manualRows = [
+    { nombre: "Cortas · normal (sin ficha)", total: manualCount("corta_normal") },
+    { nombre: "Cortas · emergencia (sin ficha)", total: manualCount("corta_emergencia") },
+    { nombre: "Extensas · normal (sin ficha)", total: manualCount("extensa_normal") },
+    { nombre: "Extensas · emergencia (sin ficha)", total: manualCount("extensa_emergencia") },
+  ].filter((row) => row.total > 0);
+  types.emergencia += manualCount("corta_emergencia") + manualCount("extensa_emergencia");
+  types.normal += manualCount("corta_normal") + manualCount("extensa_normal");
+  const manualTotal = manualRows.reduce((sum, row) => sum + row.total, 0);
+
   const lecturas = [...readings.entries()]
     .map(([nombre, count]) => ({ nombre, total: count }))
+    .concat(manualRows)
     .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, "es"));
 
-  return json({ total, lecturas, consultantes: clients, estados: states });
+  return json({
+    total,
+    lecturas,
+    consultantes: clients,
+    estados: states,
+    tipos: types,
+    manual_total: manualTotal,
+  });
 }
 
 function normalizeGranularity(value) {
@@ -403,6 +564,9 @@ export async function handleAdmin(request, env) {
     if (request.method === "GET" && path === "/api/admin/me") return json({ email: user.email });
     if (request.method === "GET" && path === "/api/admin/consultas") {
       return await listConsultas(env.DB, url.searchParams);
+    }
+    if (request.method === "POST" && path === "/api/admin/consultas") {
+      return await createManualConsulta(request, env, user.email);
     }
     if (request.method === "GET" && path === "/api/admin/estadisticas") {
       return await statsConsultas(env.DB, url.searchParams);

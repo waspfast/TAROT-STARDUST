@@ -43,7 +43,7 @@
         <i data-lucide="instagram" class="w-5 h-5 text-txt"></i>
         <p class="text-txt font-medium">@thestardust.tarot</p>
       </div>
-      <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">reserva tu lectura de tarot en pocos pasos!<br> elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por DM ✦</p>
+      <p class="text-txtsoft text-xs leading-relaxed max-w-xs mx-auto">reserva tu lectura de tarot en pocos pasos!<br> elige tu consulta, fecha y horario, realiza tu pago y envía tu comprobante por WhatsApp ✦</p>
     </div>
 
     <!-- Progress -->
@@ -255,11 +255,12 @@
           <div class="border-t border-dashed border-gray-200 my-3"></div>
           <div class="text-center"><p class="text-xs text-txtsoft">TOTAL</p><p id="receiptTotal" class="font-title text-3xl font-bold text-accent">$0.00</p></div>
         </div>
-        <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">hazle captura de pantalla o descarga esta imagen y envíalo por DM a <span class="font-medium">@thestardust.tarot</span></p>
+        <p id="confirmHint" class="hidden text-center text-xs text-txtsoft mt-4 mb-5 leading-relaxed">hazle captura de pantalla o descarga esta imagen y envíala por WhatsApp al <span class="font-medium">+58 422-3090025</span></p>
         <div id="preConfirmBtns" class="flex gap-3"><button onclick="goStep(3)" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button><button onclick="confirmReceipt()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> confirmar</button></div>
         <div id="loadingPanel" class="hidden mt-4 fade-in text-center"><div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-accent rounded-full animate-spin mb-4"></div><p class="text-sm text-txtsoft">enviando confirmación…</p></div>
         <div id="optionsPanel" class="hidden mt-4 fade-in">
           <div class="flex flex-col gap-2">
+            <button onclick="sendWhatsAppReceipt()" class="w-full bg-[#25D366] text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> enviar comprobante por WhatsApp</button>
             <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> descargar imagen</button>
             <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> enviar a @thestardust.tarot</button>
             <button onclick="goStep(3)" class="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition flex items-center justify-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> atrás</button>
@@ -268,10 +269,11 @@
         <div id="successPanel" class="hidden mt-4 fade-in text-center">
           <div class="text-4xl mb-2">✨</div>
           <p class="font-title text-xl font-semibold mb-1">¡listo!</p>
-          <p class="text-sm text-txtsoft mb-4">tu recibo ha sido creado exitosamente</p>
+          <p class="text-sm text-txtsoft mb-4">adjunta tu captura y envíala por WhatsApp</p>
           <div class="flex flex-col gap-2 mt-2">
-            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> descargar imagen</button>
+            <button id="send-wa-btn" onclick="sendWhatsAppReceipt()" class="w-full bg-[#25D366] text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.1 7.4L3 21l1.9-5.2A8.5 8.5 0 1 1 21 11.5Z"></path></svg> enviar comprobante por WhatsApp</button>
             <button onclick="sendToStardust()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="star" class="w-4 h-4"></i> enviar a @thestardust.tarot</button>
+            <button onclick="downloadImage()" class="w-full border border-accent text-accent rounded-xl py-2.5 text-sm font-medium hover:bg-accent hover:text-white transition flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> descargar imagen</button>
           </div>
           <div class="flex gap-3 mt-4"><button onclick="showOptionsAgain()" class="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium hover:bg-surface transition">volver a comprobantes</button><button onclick="resetForm()" class="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition">agendar otra</button></div>
         </div>

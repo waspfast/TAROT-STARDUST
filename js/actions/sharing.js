@@ -22,6 +22,13 @@ function sendToStardust() {
   showNotification('Recibo copiado — pégalo en Instagram');
 }
 
+// Abre el chat de WhatsApp del negocio para que el cliente envíe su comprobante.
+// Sin texto prefijado: la persona adjunta su captura y presiona enviar.
+function sendWhatsAppReceipt() {
+  window.open(`https://wa.me/${WHATSAPP_BUSINESS}`, '_blank');
+  showNotification('abriendo WhatsApp — adjunta tu captura y envía');
+}
+
 function copyToClipboard() {
   navigator.clipboard.writeText(generateReceiptText());
   showNotification('Recibo copiado al portapapeles');
