@@ -243,6 +243,17 @@
               <p id="consulta-kpi-finalizadas-foot" class="kpi-card-foot">en el periodo</p>
             </article>
 
+            <article class="kpi-card">
+              <div class="kpi-card-head"><span class="kpi-card-label">Canceladas</span></div>
+              <div class="kpi-card-inline">
+                <span class="kpi-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M7 7l10 10"></path><path d="M17 7 7 17"></path><circle cx="12" cy="12" r="8.4"></circle></svg>
+                </span>
+                <strong id="consulta-kpi-canceladas" class="kpi-card-value">—</strong>
+              </div>
+              <p id="consulta-kpi-canceladas-foot" class="kpi-card-foot">sin cancelaciones</p>
+            </article>
+
             <article class="kpi-card kpi-accent consulta-kpi-accent">
               <svg class="kpi-accent-wave" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
                 <path d="M0 78c52-26 104-38 164-24s104 36 156 12v54H0Z" fill="rgba(255,255,255,.14)"></path>
@@ -269,10 +280,11 @@
               <button type="button" class="seg-btn on" role="tab" aria-selected="true" data-state="">Todos</button>
               <button type="button" class="seg-btn" role="tab" aria-selected="false" data-state="en_proceso">En progreso</button>
               <button type="button" class="seg-btn" role="tab" aria-selected="false" data-state="finalizado">Finalizadas</button>
+              <button type="button" class="seg-btn" role="tab" aria-selected="false" data-state="cancelada">Canceladas</button>
             </div>
             <div class="filters">
               <label id="consultas-month-field" hidden>Mes<input id="consultas-month" type="month"></label>
-              <label class="search-label">Buscar<input id="consultas-search" type="search" maxlength="80" placeholder="Nombre, teléfono o lectura"></label>
+              <label class="search-label">Buscar<input id="consultas-search" type="search" maxlength="80" placeholder="Nombre, teléfono, lectura o detalle"></label>
               <button id="search-consultas" type="button" class="btn">Buscar</button>
             </div>
             <div id="consulta-day-nav" class="day-nav">
@@ -282,6 +294,8 @@
             </div>
             <div id="consulta-day-foot" class="day-nav-foot">
               <button id="consulta-today" class="btn" type="button">Hoy</button>
+              <button id="consulta-order" class="btn" type="button" aria-pressed="false">Organizar por hora</button>
+              <button id="consulta-print" class="btn" type="button">Imprimir reservas</button>
               <p id="consulta-range" class="hint" aria-live="polite">—</p>
             </div>
             <p class="hint">Hasta 200 consultas por búsqueda. El estado no modifica la disponibilidad.</p>
@@ -400,6 +414,12 @@
             <input id="manual-emergencia" type="checkbox"> Emergencia
           </label>
 
+          <div class="manual-field">
+            <label class="manual-label" for="manual-detalle">Detalle (opcional)</label>
+            <textarea id="manual-detalle" class="manual-input" rows="2" maxlength="600"
+              placeholder="Contexto de la consulta, acuerdos, notas…"></textarea>
+          </div>
+
           <div class="manual-times">
             <label class="manual-field" for="manual-fecha">
               <span class="manual-label">Fecha</span>
@@ -497,6 +517,7 @@
             <div class="ph revenue-head">
               <div><p class="eyebrow">INGRESOS</p><h3 class="h2">Curva de ingresos y ticket medio</h3></div>
               <div class="seg" id="ingresos-tabs" role="tablist" aria-label="Agrupar ingresos por periodo">
+                <button type="button" class="seg-btn" role="tab" aria-selected="false" data-granularidad="dia">Día</button>
                 <button type="button" class="seg-btn" role="tab" aria-selected="false" data-granularidad="semana">Semana</button>
                 <button type="button" class="seg-btn on" role="tab" aria-selected="true" data-granularidad="mes">Mes</button>
                 <button type="button" class="seg-btn" role="tab" aria-selected="false" data-granularidad="año">Año</button>
@@ -590,6 +611,41 @@
     <p class="day-sheet-meta" id="day-sheet-meta"></p>
     <button class="btn pri" id="day-sheet-edit" type="button">Editar fecha</button>
   </div>
+  <button class="modal-backdrop" id="consulta-modal-backdrop" type="button" tabindex="-1" aria-label="Cerrar ficha" hidden></button>
+  <div class="modal" id="consulta-modal" role="dialog" aria-modal="true" aria-labelledby="consulta-modal-title" hidden>
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow" id="consulta-modal-eyebrow">FICHA DE LA CONSULTA</p>
+        <h2 class="modal-title" id="consulta-modal-title">—</h2>
+      </div>
+      <button class="modal-close" id="consulta-modal-close" type="button" aria-label="Cerrar ficha">×</button>
+    </div>
+    <dl class="modal-grid" id="consulta-modal-body"></dl>
+    <p class="modal-subtitle">Detalle</p>
+    <p class="modal-detail" id="consulta-modal-detail"></p>
+    <div class="modal-actions">
+      <button class="btn" id="consulta-modal-call" type="button">Llamar</button>
+      <button class="btn" id="consulta-modal-copy" type="button">Copiar teléfono</button>
+    </div>
+  </div>
+
+  <button class="modal-backdrop" id="print-backdrop" type="button" tabindex="-1" aria-label="Cerrar resumen" hidden></button>
+  <div class="modal modal-print" id="print-modal" role="dialog" aria-modal="true" aria-labelledby="print-title" hidden>
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow" id="print-eyebrow">RESUMEN DEL DÍA</p>
+        <h2 class="modal-title" id="print-title">Reservas</h2>
+      </div>
+      <button class="modal-close" id="print-close" type="button" aria-label="Cerrar resumen">×</button>
+    </div>
+    <pre class="print-output" id="print-output"></pre>
+    <div class="modal-actions">
+      <button class="btn" id="print-download" type="button">Descargar .txt</button>
+      <button class="btn pri" id="print-copy" type="button">Copiar</button>
+    </div>
+    <p class="hint">Texto plano en columnas para pegar en notas o imprimir sin la interfaz.</p>
+  </div>
+
   <nav class="tabbar" aria-label="Navegación del panel">
     <a class="nav on" href="#inicio" data-goto-view="inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg><span>Inicio</span></a>
     <a class="nav" href="#consultas" data-goto-view="consultas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"></path></svg><span>Consultas</span></a>

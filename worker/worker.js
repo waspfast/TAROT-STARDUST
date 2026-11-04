@@ -60,6 +60,15 @@ function montoNumerico(valor) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Contexto que la consultante escribe en el formulario. Se guarda tal cual, sin
+// saltos de línea repetidos, y se descarta el texto de relleno del formulario.
+function textoDetalle(valor) {
+  if (valor === null || valor === undefined) return null;
+  const texto = String(valor).replace(/\s+/g, " ").trim();
+  if (!texto || texto.toLowerCase() === "sin detalle") return null;
+  return texto.slice(0, 600);
+}
+
 async function registrarConsulta(env, fecha, tipo, inicio, data) {
   if (!useD1(env)) return;
 
@@ -81,24 +90,33 @@ async function registrarConsulta(env, fecha, tipo, inicio, data) {
     : data.consultante_nueva === false ? "frecuente"
     : null;
 
+  const detalle = textoDetalle(data.detalle);
+  const columnas = "fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios, total";
+  const valores = [
+    fecha, tipo, inicio, consultante, nombre, telefono,
+    data.lecturas || null, precios, montoNumerico(data.total),
+  ];
+
   try {
     await env.DB.prepare(
-      `INSERT INTO consultas
-        (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios, total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
-      fecha,
-      tipo,
-      inicio,
-      consultante,
-      nombre,
-      telefono,
-      data.lecturas || null,
-      precios,
-      montoNumerico(data.total)
-    ).run();
+      `INSERT INTO consultas (${columnas}, detalle)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(...valores, detalle).run();
   } catch (err) {
-    console.error("No se pudo registrar la consulta:", err.message);
+    const mensaje = String((err && err.message) || err);
+    // Si la migración 0004 todavía no se aplicó, guarda la ficha sin el detalle.
+    if (/no such column|has no column named/i.test(mensaje)) {
+      try {
+        await env.DB.prepare(
+          `INSERT INTO consultas (${columnas}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(...valores).run();
+        return;
+      } catch (fallback) {
+        console.error("No se pudo registrar la consulta:", fallback.message);
+        return;
+      }
+    }
+    console.error("No se pudo registrar la consulta:", mensaje);
   }
 }
 

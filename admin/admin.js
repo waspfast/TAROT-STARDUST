@@ -10,6 +10,7 @@ const state = {
   consultaState: "",
   consultaMode: "dia",
   consultaDate: "",
+  orderByHora: false,
   consultasBase: [],
   consultasLoaded: false,
   manual: { canal: "whatsapp", tipo: "corta", fecha: "" },
@@ -40,6 +41,11 @@ const consultanteLabels = { nueva: "Nueva", frecuente: "Frecuente", sin_dato: "S
 const consultanteColors = { nueva: "#d7a3b4", frecuente: "#d4b06b", sin_dato: "#cfc2c6" };
 const tipoLabels = { emergencia: "Emergencias", normal: "Sin emergencia" };
 const tipoColors = { emergencia: "#a85c7e", normal: "#a8c3b5" };
+const statusOptions = [
+  ["en_proceso", "En progreso"],
+  ["finalizado", "Finalizada"],
+  ["cancelada", "Cancelada"],
+];
 
 let pendingRequests = 0;
 
@@ -91,7 +97,7 @@ async function request(path, options = {}) {
       if (response.status === 401 || response.status === 403) {
         throw new Error("Acceso no autorizado. Comprueba Cloudflare Access y vuelve a iniciar sesión.");
       }
-      throw new Error(data.error || `Error HTTP ${response.status}`);
+      throw new Error(data.message || data.error || `Error HTTP ${response.status}`);
     }
     return data;
   } finally {
@@ -439,11 +445,37 @@ function appendText(parent, tag, className, value) {
 }
 
 function statusLabel(status) {
-  return status === "finalizado" ? "Finalizada" : "En progreso";
+  if (status === "finalizado") return "Finalizada";
+  if (status === "cancelada") return "Cancelada";
+  return "En progreso";
 }
 
 function compareConsultas(left, right) {
   return `${left.fecha} ${left.inicio || "99:99"}`.localeCompare(`${right.fecha} ${right.inicio || "99:99"}`);
+}
+
+// Orden por hora para el modo Día: primero la agenda y al final las fichas sin
+// hora asignada.
+function compareByHour(left, right) {
+  const hour = `${left.inicio || "99:99"}`.localeCompare(`${right.inicio || "99:99"}`);
+  if (hour !== 0) return hour;
+  return String(left.id || "").localeCompare(String(right.id || ""));
+}
+
+// El nombre abre la ficha completa; así el teléfono, el detalle y el origen
+// quedan a un toque sin cargar la lista del registro.
+function nameControl(consulta, className) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = formatName(consulta.nombre);
+  button.title = "Ver ficha completa";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openConsultaModal(consulta);
+  });
+  return button;
 }
 
 function consultationDateTime(consulta) {
@@ -451,16 +483,28 @@ function consultationDateTime(consulta) {
   return new Date(`${consulta.fecha}T${consulta.inicio}:00`);
 }
 
+function detalleTexto(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function truncateText(value, max = 140) {
+  const text = detalleTexto(value);
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
 function appendTileRecord(container, consulta, options = {}) {
   const item = document.createElement("div");
   item.className = "tile-list-item";
   appendText(item, "span", "tile-list-time", consulta.inicio || "—");
-  appendText(item, "span", "tile-list-name", formatName(consulta.nombre));
+  item.append(nameControl(consulta, "tile-list-name name-link"));
   const phone = formatPhone(consulta.telefono);
   const date = options.showDate === false ? "" : `${consulta.fecha} · `;
   appendText(item, "span", "tile-list-meta",
     `${date}${statusLabel(consulta.estado)} · ${consulta.tipo === "emergencia" ? "Emergencia" : "Normal"}`
     + (phone ? ` · ${phone}` : ""));
+  const detalle = truncateText(consulta.detalle, 110);
+  if (detalle) appendText(item, "span", "tile-list-detail", detalle);
   container.append(item);
 }
 
@@ -475,7 +519,8 @@ function renderTodayTile(now = new Date()) {
     .sort(compareConsultas);
   const upcoming = todaysConsultas.filter((consulta) => {
     const at = consultationDateTime(consulta);
-    return consulta.estado !== "finalizado" && at && at.getTime() >= now.getTime();
+    // Una consulta cancelada ya no es la próxima lectura del día.
+    return consulta.estado === "en_proceso" && at && at.getTime() >= now.getTime();
   });
   const next = upcoming[0];
 
@@ -618,7 +663,7 @@ function appendCursoRecord(container, consulta) {
   item.className = "curso-item";
   const main = document.createElement("div");
   main.className = "curso-main";
-  appendText(main, "div", "curso-name", formatName(consulta.nombre));
+  main.append(nameControl(consulta, "curso-name name-link"));
   const phone = formatPhone(consulta.telefono);
   appendText(main, "div", "curso-meta",
     `${formatLongDate(consulta.fecha)}${consulta.inicio ? ` · ${consulta.inicio}` : ""}`
@@ -670,9 +715,10 @@ function renderConsultas(consultas) {
   for (const consulta of consultas) {
     const card = document.createElement("article");
     card.className = "consulta";
+    if (consulta.estado === "cancelada") card.classList.add("is-cancelada");
     appendText(card, "span", "consulta-time", consulta.inicio || "—");
     const details = document.createElement("div");
-    appendText(details, "div", "consulta-who", formatName(consulta.nombre));
+    details.append(nameControl(consulta, "consulta-who name-link"));
     const parts = [
       consulta.fecha,
       consulta.tipo === "emergencia" ? "Emergencia" : "Normal",
@@ -703,10 +749,12 @@ function renderConsultas(consultas) {
       }
       details.append(phone);
     }
+    const detalle = truncateText(consulta.detalle, 180);
+    if (detalle) appendText(details, "p", "consulta-note", detalle);
     const status = document.createElement("select");
     status.className = "status-control";
     status.setAttribute("aria-label", `Estado de la consulta ${consulta.id}`);
-    for (const [value, label] of [["en_proceso", "En progreso"], ["finalizado", "Finalizada"]]) {
+    for (const [value, label] of statusOptions) {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = label;
@@ -771,7 +819,7 @@ function setConsultaState(value) {
       button.setAttribute("aria-selected", String(active));
     }
   }
-  renderConsultasView();
+  applyWithTransition(renderConsultasView);
 }
 
 /* ---------- consultas: KPIs, modo día/mes y tipos de lectura de hoy ---------- */
@@ -805,7 +853,7 @@ function consultaPeriodoEntries() {
 function consultaMatchesQuery(consulta, query) {
   if (!query) return true;
   const needle = query.toLowerCase();
-  return [consulta.nombre, consulta.telefono, consulta.lecturas]
+  return [consulta.nombre, consulta.telefono, consulta.lecturas, consulta.detalle]
     .some((value) => String(value || "").toLowerCase().includes(needle));
 }
 
@@ -817,6 +865,7 @@ function consultaPeriodoLabel() {
 function renderConsultasKpis(periodo) {
   const enProgreso = periodo.filter((consulta) => consulta.estado === "en_proceso").length;
   const finalizadas = periodo.filter((consulta) => consulta.estado === "finalizado").length;
+  const canceladas = periodo.filter((consulta) => consulta.estado === "cancelada").length;
   const emergencias = periodo.filter((consulta) => consulta.tipo === "emergencia").length;
   const label = consultaPeriodoLabel();
 
@@ -828,6 +877,10 @@ function renderConsultasKpis(periodo) {
   $("consulta-kpi-progreso-foot").textContent = `en progreso · ${label}`;
   $("consulta-kpi-finalizadas").textContent = String(finalizadas);
   $("consulta-kpi-finalizadas-foot").textContent = `finalizadas · ${label}`;
+  $("consulta-kpi-canceladas").textContent = String(canceladas);
+  $("consulta-kpi-canceladas-foot").textContent = canceladas
+    ? `${canceladas === 1 ? "cancelada" : "canceladas"} · ${label}`
+    : `Sin cancelaciones · ${label}`;
   $("consulta-kpi-emergencias").textContent = String(emergencias);
   $("consulta-kpi-emergencias-foot").textContent = emergencias
     ? `${emergencias} ${emergencias === 1 ? "lectura de emergencia" : "lecturas de emergencia"} · ${label}`
@@ -958,13 +1011,23 @@ function renderTiposHoy() {
 function renderConsultasView() {
   const periodo = consultaPeriodoEntries();
   const query = ($("consultas-search")?.value || "").trim();
-  const visibles = periodo
+  let visibles = periodo
     .filter((consulta) => !state.consultaState || consulta.estado === state.consultaState)
     .filter((consulta) => consultaMatchesQuery(consulta, query));
+  if (state.orderByHora) visibles = visibles.slice().sort(compareByHour);
+  syncOrderButton();
   renderConsultas(visibles);
   if (state.consultasLoaded) renderConsultasKpis(periodo);
   renderDayStrip();
   renderTiposHoy();
+}
+
+function syncOrderButton() {
+  const button = $("consulta-order");
+  if (!button) return;
+  const active = Boolean(state.orderByHora);
+  button.classList.toggle("is-on", active);
+  button.setAttribute("aria-pressed", String(active));
 }
 
 function setConsultaMode(mode) {
@@ -993,7 +1056,7 @@ function setConsultaMode(mode) {
       return;
     }
   }
-  renderConsultasView();
+  applyWithTransition(renderConsultasView);
 }
 
 function selectConsultaDay(date) {
@@ -1060,8 +1123,252 @@ function bindConsultasFilters() {
   if (next) next.addEventListener("click", () => shiftConsultaWeek(1));
   const todayButton = $("consulta-today");
   if (todayButton) todayButton.addEventListener("click", () => selectConsultaDay(dateValue()));
+  const orderButton = $("consulta-order");
+  if (orderButton) orderButton.addEventListener("click", () => {
+    state.orderByHora = !state.orderByHora;
+    applyWithTransition(renderConsultasView);
+  });
+  const printButton = $("consulta-print");
+  if (printButton) printButton.addEventListener("click", openPrintModal);
   const seeMonth = $("consultas-ver-mes");
   if (seeMonth) seeMonth.addEventListener("click", () => setConsultaMode("mes"));
+}
+
+function buildDayPrintText(fecha, consultas, scope = "dia") {
+  const rule = "+" + "-".repeat(48);
+  const alcance = scope === "mes" ? "RESERVAS DEL MES" : "RESERVAS DEL DIA";
+  const lines = [
+    rule,
+    `|  STARDUST TAROT - ${alcance}`,
+    rule,
+    scope === "mes" ? capitalize(monthTitle(fecha)) : capitalize(formatLongDate(fecha)),
+    "",
+  ];
+  if (!consultas.length) {
+    lines.push(scope === "mes" ? "Sin reservas registradas en este mes." : "Sin reservas registradas para este dia.", "");
+  } else {
+    for (const consulta of consultas) {
+      const hour = (consulta.inicio || "--:--").padEnd(5, " ");
+      const name = truncateText(consulta.nombre, 24) || "Sin nombre";
+      lines.push(`${hour}  ${name.padEnd(26, " ")} ${statusLabel(consulta.estado).toUpperCase()}`);
+      const meta = [
+        consulta.tipo === "emergencia" ? "Emergencia" : "Normal",
+        consulta.lectura_tipo === "extensa" ? "Extensa" : consulta.lectura_tipo === "corta" ? "Corta" : null,
+        consulta.origen === "manual" ? "Manual" : null,
+        consulta.canal ? manualChannelLabels[consulta.canal] || null : null,
+      ].filter(Boolean).join(" · ");
+      lines.push(`       ${meta}`);
+      if (consulta.lecturas) lines.push(`       Lecturas: ${consulta.lecturas}`);
+      const phone = String(consulta.telefono || "").trim();
+      if (phone) lines.push(`       Tel. ${state.discreet ? formatPhone(phone) : phone}`);
+      const detalle = truncateText(consulta.detalle, 92);
+      if (detalle) lines.push(`       ${detalle}`);
+      lines.push("");
+    }
+    const progreso = consultas.filter((consulta) => consulta.estado === "en_proceso").length;
+    const finalizadas = consultas.filter((consulta) => consulta.estado === "finalizado").length;
+    const canceladas = consultas.filter((consulta) => consulta.estado === "cancelada").length;
+    lines.push(
+      `TOTAL ${consultas.length} ${consultas.length === 1 ? "reserva" : "reservas"}`
+      + ` · ${progreso} en progreso · ${finalizadas} finalizadas`
+      + (canceladas ? ` · ${canceladas} canceladas` : "")
+    );
+    lines.push(`Generado ${new Intl.DateTimeFormat("es", { dateStyle: "short", timeStyle: "short" }).format(new Date())}`);
+  }
+  return lines.join("\n");
+}
+
+function printScope() {
+  if (state.consultaMode === "dia") {
+    const fecha = state.consultaDate || dateValue();
+    return { scope: "dia", clave: fecha, titulo: capitalize(formatLongDate(fecha)) };
+  }
+  const mes = $("consultas-month")?.value || monthValue();
+  return { scope: "mes", clave: mes, titulo: capitalize(monthTitle(mes)) };
+}
+
+function openPrintModal() {
+  const { scope, clave, titulo } = printScope();
+  const consultas = consultaPeriodoEntries().slice().sort(compareByHour);
+  $("print-output").textContent = buildDayPrintText(clave, consultas, scope);
+  $("print-title").textContent = titulo;
+  const eyebrow = $("print-eyebrow");
+  if (eyebrow) eyebrow.textContent = scope === "mes" ? "RESUMEN DEL MES" : "RESUMEN DEL DÍA";
+  openSheet("print-modal", "print-backdrop");
+}
+
+function downloadPrintText() {
+  const output = $("print-output");
+  if (!output) return;
+  const { scope, clave } = printScope();
+  const blob = new Blob([output.textContent || ""], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `reservas-${scope === "mes" ? "mes-" : ""}${clave}.txt`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function bindSheets() {
+  for (const backdropId of ["consulta-modal-backdrop", "print-backdrop"]) {
+    const backdrop = $(backdropId);
+    if (backdrop) backdrop.addEventListener("click", closeSheet);
+  }
+  const closeConsulta = $("consulta-modal-close");
+  if (closeConsulta) closeConsulta.addEventListener("click", closeSheet);
+  const closePrint = $("print-close");
+  if (closePrint) closePrint.addEventListener("click", closeSheet);
+  const call = $("consulta-modal-call");
+  if (call) {
+    call.addEventListener("click", () => {
+      if (call.dataset.phone) window.location.href = `tel:${call.dataset.phone}`;
+    });
+  }
+  const copyPhone = $("consulta-modal-copy");
+  if (copyPhone) {
+    copyPhone.addEventListener("click", () => copyWithFeedback(copyPhone, copyPhone.dataset.phone || ""));
+  }
+  const copyPrint = $("print-copy");
+  if (copyPrint) {
+    copyPrint.addEventListener("click", () => copyWithFeedback(copyPrint, $("print-output")?.textContent || ""));
+  }
+  const download = $("print-download");
+  if (download) download.addEventListener("click", downloadPrintText);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && sheetState.modal) closeSheet();
+  });
+}
+
+/* ---------- ficha de la consulta y resumen imprimible ---------- */
+
+const sheetState = { modal: null, backdrop: null, focus: null };
+
+function openSheet(modalId, backdropId) {
+  const modal = $(modalId);
+  if (!modal) return;
+  closeSheet();
+  const backdrop = $(backdropId);
+  sheetState.modal = modal;
+  sheetState.backdrop = backdrop;
+  sheetState.focus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (backdrop) backdrop.hidden = false;
+  modal.hidden = false;
+  modal.classList.add("is-open");
+  const target = modal.querySelector("[data-autofocus], button, a, input, textarea");
+  if (target) target.focus({ preventScroll: true });
+}
+
+function closeSheet() {
+  const { modal, backdrop, focus } = sheetState;
+  sheetState.modal = null;
+  sheetState.backdrop = null;
+  sheetState.focus = null;
+  if (modal) {
+    modal.classList.remove("is-open");
+    modal.hidden = true;
+  }
+  if (backdrop) backdrop.hidden = true;
+  if (focus && document.contains(focus)) {
+    try {
+      focus.focus({ preventScroll: true });
+    } catch (error) {
+      // el elemento ya no acepta foco: no hacemos nada
+    }
+  }
+}
+
+function modalRow(label, value) {
+  const term = document.createElement("dt");
+  term.textContent = label;
+  const detail = document.createElement("dd");
+  detail.textContent = value || "—";
+  return [term, detail];
+}
+
+function openConsultaModal(consulta) {
+  if (!consulta) return;
+  $("consulta-modal-title").textContent = formatName(consulta.nombre);
+  $("consulta-modal-eyebrow").textContent = consulta.origen === "manual"
+    ? "RESERVA MANUAL"
+    : "RESERVA EN LÍNEA";
+  const body = $("consulta-modal-body");
+  body.replaceChildren();
+  const rows = [
+    ["Fecha", capitalize(formatLongDate(consulta.fecha))],
+    ["Hora", consulta.inicio || "Sin hora asignada"],
+    ["Tipo", consulta.tipo === "emergencia" ? "Emergencia" : "Normal"],
+    ["Lecturas", consulta.lecturas || ""],
+    ["Precios", consulta.precios || ""],
+    ["Total", consulta.total === null || consulta.total === undefined || consulta.total === ""
+      ? ""
+      : formatMoney(consulta.total)],
+    ["Estado", statusLabel(consulta.estado)],
+    ["Canal", consulta.canal && manualChannelLabels[consulta.canal] ? manualChannelLabels[consulta.canal] : ""],
+    ["Teléfono", consulta.telefono ? (state.discreet ? formatPhone(consulta.telefono) : consulta.telefono) : ""],
+    ["Consultante", consulta.consultante ? capitalize(consulta.consultante) : ""],
+    ["Registrada", consulta.creado_en || ""],
+  ];
+  for (const [label, value] of rows) body.append(...modalRow(label, value));
+  if (consulta.origen) body.append(...modalRow("Origen", consulta.origen === "manual" ? "Manual" : "Pública"));
+
+  const detalle = detalleTexto(consulta.detalle);
+  const detailBox = $("consulta-modal-detail");
+  detailBox.textContent = detalle || "Sin detalle escrito por la consultante.";
+  detailBox.classList.toggle("is-empty", !detalle);
+
+  const phone = String(consulta.telefono || "").replace(/[^\d+]/g, "");
+  const call = $("consulta-modal-call");
+  const copy = $("consulta-modal-copy");
+  if (call) {
+    call.dataset.phone = phone;
+    call.disabled = !phone;
+  }
+  if (copy) {
+    copy.dataset.phone = phone;
+    copy.disabled = !phone;
+  }
+  openSheet("consulta-modal", "consulta-modal-backdrop");
+}
+
+async function copyText(value) {
+  const text = String(value || "");
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (error) {
+    // sin permiso de portapapeles: probamos el respaldo
+  }
+  try {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.append(field);
+    field.select();
+    const ok = document.execCommand("copy");
+    field.remove();
+    return ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function copyWithFeedback(button, value) {
+  if (!button) return;
+  const original = button.dataset.label || button.textContent;
+  button.dataset.label = original;
+  const ok = await copyText(value);
+  button.textContent = ok ? "Copiado ✓" : "Selecciona y copia";
+  window.setTimeout(() => {
+    button.textContent = original;
+  }, 1600);
 }
 
 /* ---------- disponibilidad: reserva manual ---------- */
@@ -1185,6 +1492,7 @@ async function submitManualReserva(event) {
   const payload = {
     nombre: ($("manual-nombre").value || "").trim(),
     contacto: ($("manual-contacto").value || "").trim(),
+    detalle: ($("manual-detalle")?.value || "").trim(),
     canal: state.manual.canal,
     tipo: state.manual.tipo,
     emergencia: $("manual-emergencia").checked,
@@ -1210,6 +1518,7 @@ async function submitManualReserva(event) {
     );
     $("manual-nombre").value = "";
     $("manual-contacto").value = "";
+    if ($("manual-detalle")) $("manual-detalle").value = "";
     $("manual-hora").value = "";
     $("manual-emergencia").checked = false;
     // Disponibilidad se queda en el día reservado; Consultas, en ese día también.
@@ -1804,7 +2113,7 @@ function formatShortDay(value) {
 function periodLabel(periodo, granularidad) {
   const inicio = String(periodo?.inicio || "");
   if (granularidad === "año") return inicio.slice(0, 4);
-  if (granularidad === "semana") return formatShortDay(inicio);
+  if (granularidad === "dia" || granularidad === "semana") return formatShortDay(inicio);
   const date = new Date(`${inicio.slice(0, 7)}-01T12:00:00`);
   if (!inicio || Number.isNaN(date.getTime())) return inicio;
   return monthYearFormat.format(date).replace(/\.$/, "");
@@ -1815,6 +2124,21 @@ function syncBarsScroll(container) {
   const max = container.scrollWidth - container.clientWidth;
   container.classList.toggle("is-more-left", container.scrollLeft > 2);
   container.classList.toggle("is-more-right", max > 2 && container.scrollLeft < max - 2);
+}
+
+// Máximos locales de la serie: solo se marcan los periodos con ingresos mayores
+// que sus vecinos, así una subida continua no llena la curva de picos.
+function findPeaks(values) {
+  const peaks = [];
+  values.forEach((value, index) => {
+    if (!(value > 0)) return;
+    const previous = index > 0 ? values[index - 1] : null;
+    const next = index < values.length - 1 ? values[index + 1] : null;
+    const beatsPrevious = previous === null || value > previous;
+    const beatsNext = next === null || value > next;
+    if (beatsPrevious && beatsNext) peaks.push(index);
+  });
+  return peaks;
 }
 
 function renderCurve(periodos, granularidad) {
@@ -1858,6 +2182,7 @@ function renderCurve(periodos, granularidad) {
   svg.append(svgNode("path", {
     class: "curve-line",
     d: line(ingresos, yIncome),
+    pathLength: 1,
     "vector-effect": "non-scaling-stroke",
   }));
   svg.append(svgNode("path", {
@@ -1876,9 +2201,34 @@ function renderCurve(periodos, granularidad) {
       }));
     }
   }
+  const peaks = findPeaks(ingresos);
+  for (const index of peaks.slice(0, 24)) {
+    svg.append(svgNode("circle", {
+      class: "curve-peak",
+      cx: xAt(index).toFixed(1),
+      cy: yIncome(ingresos[index]).toFixed(1),
+      r: 4,
+      "vector-effect": "non-scaling-stroke",
+    }));
+  }
   plot.append(svg);
+  if (peaks.length && peaks.length <= 6) {
+    // Etiqueta HTML sobre el pico: el SVG usa preserveAspectRatio="none", así que
+    // un <text> se deformaría con el ancho del contenedor.
+    for (const index of peaks) {
+      const tag = document.createElement("span");
+      tag.className = "curve-peak-label";
+      tag.style.left = `${xAt(index) / width * 100}%`;
+      tag.style.top = `${yIncome(ingresos[index]) / height * 100}%`;
+      if (index === 0) tag.dataset.edge = "start";
+      if (index === periodos.length - 1) tag.dataset.edge = "end";
+      tag.textContent = formatMoney(ingresos[index]);
+      plot.append(tag);
+    }
+  }
   plot.setAttribute("aria-label",
-    `Curva de ${periodos.length} ${periodos.length === 1 ? "periodo" : "periodos"}: ingresos máximos ${formatMoney(maxIngreso)}, ticket medio máximo ${formatMoney(maxPromedio)}`);
+    `Curva de ${periodos.length} ${periodos.length === 1 ? "periodo" : "periodos"}: ingresos máximos ${formatMoney(maxIngreso)}, ticket medio máximo ${formatMoney(maxPromedio)}`
+    + (peaks.length ? `, ${peaks.length} ${peaks.length === 1 ? "pico" : "picos"} marcados` : ""));
   $("ingresos-curve-max").textContent = `máx ${formatMoney(maxIngreso)} · ticket ${formatMoney(maxPromedio)}`;
 
   const picks = periodos.length <= 6
@@ -1902,12 +2252,13 @@ function renderIngresos(data) {
   renderKpis();
 }
 
-async function loadIngresos() {
+async function loadIngresos(options = {}) {
   const granularidad = state.granularidad || "mes";
   const data = await request(`/api/admin/ingresos?granularidad=${encodeURIComponent(granularidad)}`);
   state.ingresos = data;
   state.granularidad = data.granularidad || granularidad;
-  renderIngresos(data);
+  if (options.transition) applyWithTransition(() => renderIngresos(data));
+  else renderIngresos(data);
 }
 
 function bindIngresosTabs() {
@@ -1924,7 +2275,7 @@ function bindIngresosTabs() {
       item.classList.toggle("on", active);
       item.setAttribute("aria-selected", String(active));
     }
-    loadIngresos().catch((error) => showError(error.message));
+    loadIngresos({ transition: true }).catch((error) => showError(error.message));
   });
 }
 
@@ -2179,6 +2530,7 @@ async function initialize() {
   bindView();
   bindSettingsSheet();
   bindDaySheet();
+  bindSheets();
   bindCalendarSwipe();
   bindConsultasFilters();
   bindManualReserva();
