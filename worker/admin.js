@@ -42,7 +42,7 @@ function timeToMinutes(value) {
   return hours * 60 + minutes;
 }
 
-function parseRule(row, date, isOverride) {
+export function parseRule(row, date, isOverride) {
   return {
     date,
     is_open: Boolean(row.is_open),

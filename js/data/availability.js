@@ -13,10 +13,15 @@ function isSpecialEmergencyDate(iso) {
 }
 
 async function fetchAvailability(fromIso, toIso) {
+  var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
+  var url = base + '/disponibilidad?from=' + encodeURIComponent(fromIso) + '&to=' + encodeURIComponent(toIso);
+  // Corta la espera si el Worker no responde, para no quedarse "cargando" para siempre.
+  var controller = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function () { controller.abort(); }, 15000) : null;
   try {
-    var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
-    var url = base + '/disponibilidad?from=' + encodeURIComponent(fromIso) + '&to=' + encodeURIComponent(toIso);
-    var res = await fetch(url);
+    var options = { cache: 'no-store' };
+    if (controller) options.signal = controller.signal;
+    var res = await fetch(url, options);
     if (!res.ok) {
       console.error('El Worker respondió con error al consultar disponibilidad:', res.status);
       return false;
@@ -29,6 +34,8 @@ async function fetchAvailability(fromIso, toIso) {
   } catch (e) {
     console.error('No se pudo cargar la disponibilidad:', e);
     return false;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -39,7 +46,7 @@ async function fetchDaySlots(iso) {
   try {
     var base = (typeof WORKER_URL === 'string' ? WORKER_URL : '').replace(/\/+$/, '');
     var url = base + '/disponibilidad?from=' + encodeURIComponent(iso) + '&to=' + encodeURIComponent(iso);
-    var res = await fetch(url);
+    var res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       console.error('El Worker respondió con error al consultar los horarios:', res.status);
       return false;

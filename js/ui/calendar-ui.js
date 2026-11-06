@@ -8,6 +8,8 @@ const CAL_DAYNAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'vie
 let _calYear = null;
 let _calMonth = null;
 let _availLoaded = {};
+let _availLoading = {};
+let _availFailed = {};
 let _availErrorShown = {};
 
 function _capWord(s) {
@@ -16,17 +18,39 @@ function _capWord(s) {
 
 async function _loadMonthAvailability(year, month) {
   const key = year + '-' + String(month + 1).padStart(2, '0');
-  if (_availLoaded[key]) return;
+  if (_availLoaded[key] || _availLoading[key] || _availFailed[key]) return;
+  _availLoading[key] = true;
   const from = formatDateValue(new Date(year, month, 1));
   const to = formatDateValue(new Date(year, month + 1, 0));
-  if (await fetchAvailability(from, to)) {
-    _availLoaded[key] = true;
-    _availErrorShown[key] = false;
-    renderCalendar();
-  } else if (!_availErrorShown[key]) {
-    _availErrorShown[key] = true;
-    showNotification('no se pudo cargar la disponibilidad. inténtalo de nuevo en un momento ✦');
+  let ok = false;
+  try {
+    ok = await fetchAvailability(from, to);
+  } finally {
+    _availLoading[key] = false;
   }
+  if (ok) {
+    _availLoaded[key] = true;
+    _availFailed[key] = false;
+    _availErrorShown[key] = false;
+  } else {
+    _availFailed[key] = true;
+    if (!_availErrorShown[key]) {
+      _availErrorShown[key] = true;
+      showNotification('no se pudo cargar la disponibilidad. inténtalo de nuevo en un momento ✦');
+    }
+  }
+  renderCalendar();
+}
+
+// Vuelve a intentar cargar el mes visible (boton "reintentar" del calendario).
+function retryMonthAvailability() {
+  if (_calYear === null || _calMonth === null) return;
+  const key = _calYear + '-' + String(_calMonth + 1).padStart(2, '0');
+  _availLoaded[key] = false;
+  _availLoading[key] = false;
+  _availFailed[key] = false;
+  _availErrorShown[key] = false;
+  renderCalendar();
 }
 
 // Fecha minima permitida: hoy + 2 dias normal, hoy mismo si es emergencia
@@ -110,6 +134,21 @@ function renderCalendar() {
   html += '<button type="button" id="calNextBtn" class="cal-nav" aria-label="mes siguiente"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>';
   html += '</div>';
 
+  const key = year + '-' + String(month + 1).padStart(2, '0');
+  const ready = !!_availLoaded[key];
+  const failed = !!_availFailed[key];
+
+  if (!ready) {
+    html += '<div class="cal-loading' + (failed ? ' is-error' : '') + '">';
+    if (failed) {
+      html += '<p class="cal-loading-text">no pudimos cargar las fechas disponibles. revisa tu conexión e inténtalo de nuevo.</p>';
+      html += '<button type="button" id="calRetryBtn" class="cal-retry">reintentar</button>';
+    } else {
+      html += '<span class="cal-spinner" aria-hidden="true"></span>';
+      html += '<p class="cal-loading-text">cargando fechas disponibles…</p>';
+    }
+    html += '</div>';
+  } else {
   html += '<div class="calendar-grid">';
   for (let i = 0; i < 7; i++) {
     html += '<div class="cal-weekday' + (i >= 5 ? ' weekend' : '') + '">' + CAL_WEEKDAYS[i] + '</div>';
@@ -161,6 +200,7 @@ function renderCalendar() {
   }
   html += '</div>';
   html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-gold"></i>solo emergencia</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
+  }
 
   container.innerHTML = html;
 
@@ -168,6 +208,8 @@ function renderCalendar() {
   const nextBtn = document.getElementById('calNextBtn');
   if (prevBtn) prevBtn.addEventListener('click', function () { changeCalendarMonth(-1); });
   if (nextBtn) nextBtn.addEventListener('click', function () { changeCalendarMonth(1); });
+  const retryBtn = document.getElementById('calRetryBtn');
+  if (retryBtn) retryBtn.addEventListener('click', retryMonthAvailability);
   container.querySelectorAll('.cal-day:not(:disabled)').forEach(function (btn) {
     btn.addEventListener('click', function () {
         if (btn.classList.contains('is-full')) showFullDateModal('full');

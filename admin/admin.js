@@ -276,7 +276,12 @@ function renderCalendar() {
       selectDate(date);
       activateView("disponibilidad");
     });
-    tooltip.append(edit);
+    const quick = document.createElement("button");
+    quick.type = "button";
+    quick.className = "cal-edit cal-quick";
+    quick.textContent = rule && rule.is_open ? "Cerrar día" : "Abrir día";
+    quick.addEventListener("click", () => toggleDayOpen(date));
+    tooltip.append(edit, quick);
     wrapper.append(tooltip);
     calendar.append(wrapper);
   }
@@ -296,10 +301,13 @@ function selectDate(date) {
 function openDaySheet(date) {
   const sheet = $("day-sheet");
   if (!sheet || !window.matchMedia("(max-width:767px)").matches) return;
-  const { label, meta } = describeDay(state.rules.find((item) => item.date === date));
+  const rule = state.rules.find((item) => item.date === date);
+  const { label, meta } = describeDay(rule);
   $("day-sheet-title").textContent = capitalize(formatLongDate(date));
   $("day-sheet-level").textContent = label;
   $("day-sheet-meta").textContent = meta;
+  const toggle = $("day-sheet-toggle");
+  if (toggle) toggle.textContent = rule && rule.is_open ? "Cerrar día" : "Abrir día";
   sheet.dataset.date = date;
   sheet.classList.add("is-open");
   const backdrop = $("cal-backdrop");
@@ -323,6 +331,11 @@ function bindDaySheet() {
   if (backdrop) backdrop.addEventListener("click", closeDaySheet);
   const close = $("day-sheet-close");
   if (close) close.addEventListener("click", closeDaySheet);
+  const toggle = $("day-sheet-toggle");
+  if (toggle) toggle.addEventListener("click", () => {
+    const date = sheet.dataset.date;
+    if (date) toggleDayOpen(date);
+  });
   const edit = $("day-sheet-edit");
   if (edit) edit.addEventListener("click", () => {
     const date = sheet.dataset.date;
@@ -410,12 +423,22 @@ async function saveRule(event) {
   };
   for (const [column, id] of capacityFields) body[column] = Number($(id).value);
   $("save-rule").disabled = true;
+  const date = state.selectedDate;
   try {
-    const saved = await request(`/api/admin/availability/${state.selectedDate}`, {
+    const saved = await request(`/api/admin/availability/${date}`, {
       method: "PUT",
       body: JSON.stringify(body),
     });
-    await loadAvailability();
+    // Feedback instantáneo: aplica los valores guardados sin esperar el refetch.
+    const rule = state.rules.find((item) => item.date === date);
+    if (rule) {
+      Object.assign(rule, body, { custom: true });
+      renderCalendar();
+      fillRuleForm(rule);
+      $("stat-open-days").textContent = String(state.rules.filter((item) => item.is_open).length);
+    }
+    // Reconcilia contadores y lecturas en segundo plano.
+    loadAvailability().catch((error) => showError(error.message));
     showNotice(!body.is_open && saved.existing_bookings
       ? `La fecha quedó cerrada. Aún hay ${saved.existing_bookings} ${saved.existing_bookings === 1 ? "lectura contabilizada" : "lecturas contabilizadas"}; puedes avisar a quienes reservaron del cambio.`
       : "La disponibilidad de esta fecha quedó guardada.");
@@ -432,6 +455,53 @@ async function resetRule() {
     await request(`/api/admin/availability/${state.selectedDate}`, { method: "DELETE" });
     await loadAvailability();
     showNotice("La fecha volvió a seguir su regla semanal.");
+  } catch (error) {
+    showError(error.message);
+  }
+}
+// Abre o cierra un día con un solo clic desde el calendario, conservando los
+// cupos (contadores) y la jornada que ya tenga configurados.
+async function toggleDayOpen(date) {
+  const rule = state.rules.find((item) => item.date === date);
+  if (!rule) return;
+  const capacity = ["corta_normal", "corta_emergencia", "extensa_normal", "extensa_emergencia"]
+    .reduce((sum, column) => sum + (Number(rule[column]) || 0), 0);
+  if (!rule.is_open && capacity <= 0) {
+    // Sin cupos definidos: abre el formulario para fijarlos antes de abrir.
+    selectDate(date);
+    activateView("disponibilidad");
+    closeDaySheet();
+    showNotice("Define los cupos de este día y pulsa «Guardar cambios» para abrirlo.");
+    return;
+  }
+  const body = {
+    is_open: !rule.is_open,
+    emergencia_extendida: !!rule.emergencia_extendida,
+    inicio: rule.inicio || "10:00",
+    fin: rule.fin || "18:00",
+    corta_normal: Number(rule.corta_normal) || 0,
+    corta_emergencia: Number(rule.corta_emergencia) || 0,
+    extensa_normal: Number(rule.extensa_normal) || 0,
+    extensa_emergencia: Number(rule.extensa_emergencia) || 0,
+  };
+  try {
+    const saved = await request(`/api/admin/availability/${date}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    Object.assign(rule, body, { custom: true });
+    closeDaySheet();
+    renderCalendar();
+    if (state.selectedDate === date) fillRuleForm(rule);
+    $("stat-open-days").textContent = String(state.rules.filter((item) => item.is_open).length);
+    if (body.is_open) {
+      showNotice(`Abriste el ${formatLongDate(date)}.`);
+    } else if (!saved || !saved.existing_bookings) {
+      showNotice(`Cerraste el ${formatLongDate(date)}.`);
+    } else {
+      showNotice(`Cerraste el ${formatLongDate(date)}. Aún hay ${saved.existing_bookings} ${saved.existing_bookings === 1 ? "lectura contabilizada" : "lecturas contabilizadas"}.`);
+    }
+    loadAvailability().catch((error) => showError(error.message));
   } catch (error) {
     showError(error.message);
   }
@@ -491,6 +561,45 @@ function truncateText(value, max = 140) {
   const text = detalleTexto(value);
   if (text.length <= max) return text;
   return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+/* ---------- resumen imprimible: ayudas de texto ---------- */
+// Ancho de la "hoja" en columnas. Cabecera centrada, resto a la izquierda.
+const printWidth = 52;
+const printRule = "─".repeat(printWidth);
+const printSep = "· ─ ─ ─ ♡ ─ ─ ─ ♡ ─ ─ ─ ♡ ─ ─ ─ ·";
+
+function centerText(value, width = printWidth) {
+  const text = String(value ?? "").trim();
+  if (!text || text.length >= width) return text;
+  return " ".repeat(Math.floor((width - text.length) / 2)) + text;
+}
+
+// Parte el texto por palabras para que quepa en la hoja (las palabras más
+// largas que el ancho se cortan duro para no desbordar la línea).
+function wrapText(value, width = printWidth) {
+  const text = detalleTexto(value);
+  if (!text) return [];
+  const lines = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    if (!line && word.length <= width) {
+      line = word;
+      continue;
+    }
+    if (line && line.length + 1 + word.length <= width) {
+      line += ` ${word}`;
+      continue;
+    }
+    if (line) lines.push(line);
+    line = word;
+    while (line.length > width) {
+      lines.push(line.slice(0, width));
+      line = line.slice(width);
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 function appendTileRecord(container, consulta, options = {}) {
@@ -1135,46 +1244,60 @@ function bindConsultasFilters() {
 }
 
 function buildDayPrintText(fecha, consultas, scope = "dia") {
-  const rule = "+" + "-".repeat(48);
-  const alcance = scope === "mes" ? "RESERVAS DEL MES" : "RESERVAS DEL DIA";
+  const esMes = scope === "mes";
+  const titulo = esMes ? capitalize(monthTitle(fecha)) : capitalize(formatLongDate(fecha));
+  const encabezado = esMes ? "RESERVAS DEL MES" : "RESERVAS DEL DÍA";
+  const generado = new Intl.DateTimeFormat("es", { dateStyle: "short", timeStyle: "short" }).format(new Date());
+  // Cabecera centrada, todo lo demás alineado a la izquierda.
   const lines = [
-    rule,
-    `|  STARDUST TAROT - ${alcance}`,
-    rule,
-    scope === "mes" ? capitalize(monthTitle(fecha)) : capitalize(formatLongDate(fecha)),
+    centerText("✦ ˖⁺⋆ ˖ ✦ ⋆ ˖⁺ ✦ ⋆ ˖⁺⋆"),
+    centerText("♡  S T A R D U S T   T A R O T  ♡"),
+    centerText("✦  ✧  ✦  ✧  ✦"),
+    centerText(encabezado),
+    centerText(titulo),
+    centerText("✦ ˖⁺⋆ ˖ ✦ ⋆ ˖⁺ ✦ ⋆ ˖⁺⋆"),
     "",
   ];
   if (!consultas.length) {
-    lines.push(scope === "mes" ? "Sin reservas registradas en este mes." : "Sin reservas registradas para este dia.", "");
+    lines.push(esMes ? "Sin reservas registradas en este mes." : "Sin reservas registradas para este día.", "");
+    lines.push(printRule);
+    lines.push(`Generado ${generado}`);
+    lines.push(printRule);
   } else {
     for (const consulta of consultas) {
+      lines.push(printSep);
       const hour = (consulta.inicio || "--:--").padEnd(5, " ");
-      const name = truncateText(consulta.nombre, 24) || "Sin nombre";
-      lines.push(`${hour}  ${name.padEnd(26, " ")} ${statusLabel(consulta.estado).toUpperCase()}`);
+      const name = truncateText(consulta.nombre, 26) || "Sin nombre";
+      lines.push(`${hour}  ${name.padEnd(28, " ")} ${statusLabel(consulta.estado).toUpperCase()}`);
       const meta = [
         consulta.tipo === "emergencia" ? "Emergencia" : "Normal",
         consulta.lectura_tipo === "extensa" ? "Extensa" : consulta.lectura_tipo === "corta" ? "Corta" : null,
         consulta.origen === "manual" ? "Manual" : null,
         consulta.canal ? manualChannelLabels[consulta.canal] || null : null,
       ].filter(Boolean).join(" · ");
-      lines.push(`       ${meta}`);
-      if (consulta.lecturas) lines.push(`       Lecturas: ${consulta.lecturas}`);
+      if (meta) for (const row of wrapText(meta)) lines.push(row);
+      if (consulta.lecturas) for (const row of wrapText(`Lecturas: ${consulta.lecturas}`)) lines.push(row);
       const phone = String(consulta.telefono || "").trim();
-      if (phone) lines.push(`       Tel. ${state.discreet ? formatPhone(phone) : phone}`);
-      const detalle = truncateText(consulta.detalle, 92);
-      if (detalle) lines.push(`       ${detalle}`);
+      if (phone) lines.push(`Tel. ${state.discreet ? formatPhone(phone) : phone}`);
+      const detalle = detalleTexto(consulta.detalle);
+      if (detalle) {
+        lines.push("Detalle:");
+        for (const row of wrapText(detalle)) lines.push(row);
+      }
       lines.push("");
     }
     const progreso = consultas.filter((consulta) => consulta.estado === "en_proceso").length;
     const finalizadas = consultas.filter((consulta) => consulta.estado === "finalizado").length;
     const canceladas = consultas.filter((consulta) => consulta.estado === "cancelada").length;
-    lines.push(
-      `TOTAL ${consultas.length} ${consultas.length === 1 ? "reserva" : "reservas"}`
-      + ` · ${progreso} en progreso · ${finalizadas} finalizadas`
-      + (canceladas ? ` · ${canceladas} canceladas` : "")
-    );
-    lines.push(`Generado ${new Intl.DateTimeFormat("es", { dateStyle: "short", timeStyle: "short" }).format(new Date())}`);
+    lines.push(printRule);
+    lines.push(`TOTAL ${consultas.length} ${consultas.length === 1 ? "reserva" : "reservas"}`);
+    const resumen = `${progreso} en progreso · ${finalizadas} ${finalizadas === 1 ? "finalizada" : "finalizadas"}`
+      + (canceladas ? ` · ${canceladas} ${canceladas === 1 ? "cancelada" : "canceladas"}` : "");
+    for (const row of wrapText(resumen)) lines.push(row);
+    lines.push(`Generado ${generado}`);
+    lines.push(printRule);
   }
+  lines.push(centerText("✦ ⋆ ˖ gracias por consultar las estrellas ˖ ⋆ ✦"));
   return lines.join("\n");
 }
 

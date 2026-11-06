@@ -19,7 +19,7 @@
 //   una emergencia puede solaparse con UNA normal; nunca con otra emergencia
 //   una normal no puede entrar si el bloque ya tiene cualquier reserva
 
-import { getDayRule, handleAdmin } from "./admin.js";
+import { getDayRule, handleAdmin, parseRule } from "./admin.js";
 import { verifyAccess } from "./access.js";
 import {
   DURACION_CORTA_MIN,
@@ -120,6 +120,58 @@ async function registrarConsulta(env, fecha, tipo, inicio, data) {
   }
 }
 
+// Regla usada cuando no hay fila para el dia (dia cerrado, sin cupos).
+const REGLA_CERRADA = {
+  is_open: 0, inicio: "10:00", fin: "18:00",
+  corta_normal: 0, corta_emergencia: 0, extensa_normal: 0, extensa_emergencia: 0,
+  emergencia_extendida: 0,
+};
+
+// Lee en UNA sola tanda las reglas (defaults + excepciones) y los contadores de
+// reservas de un rango de fechas. Asi /disponibilidad no pide dia por dia.
+async function readReglasRango(db, from, to) {
+  const [defaults, overrides, counts] = await db.batch([
+    db.prepare(
+      `SELECT weekday, is_open, inicio, fin, corta_normal, corta_emergencia,
+              extensa_normal, extensa_emergencia, emergencia_extendida
+         FROM availability_defaults`
+    ),
+    db.prepare(
+      `SELECT fecha, is_open, inicio, fin, corta_normal, corta_emergencia,
+              extensa_normal, extensa_emergencia, emergencia_extendida
+         FROM availability_overrides WHERE fecha >= ? AND fecha <= ?`
+    ).bind(from, to),
+    db.prepare(
+      `SELECT fecha, corta_normal, corta_emergencia, extensa_normal, extensa_emergencia
+         FROM reservas WHERE fecha >= ? AND fecha <= ?`
+    ).bind(from, to),
+  ]);
+  const defaultsByWeekday = new Map((defaults.results || []).map((row) => [row.weekday, row]));
+  const overridesByDate = new Map((overrides.results || []).map((row) => [row.fecha, row]));
+  const countsByDate = new Map((counts.results || []).map((row) => [row.fecha, row]));
+  const out = new Map();
+  const start = new Date(from + "T00:00:00Z");
+  const end = new Date(to + "T00:00:00Z");
+  const total = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  for (let i = 0; i < total; i++) {
+    const iso = new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10);
+    const override = overridesByDate.get(iso);
+    const weekday = new Date(iso + "T00:00:00Z").getUTCDay();
+    const row = override || defaultsByWeekday.get(weekday) || REGLA_CERRADA;
+    const counts = countsByDate.get(iso) || {};
+    out.set(iso, {
+      rule: parseRule(row, iso, Boolean(override)),
+      counts: {
+        corta_normal: counts.corta_normal || 0,
+        corta_emergencia: counts.corta_emergencia || 0,
+        extensa_normal: counts.extensa_normal || 0,
+        extensa_emergencia: counts.extensa_emergencia || 0,
+      },
+    });
+  }
+  return out;
+}
+
 async function handleDisponibilidad(env, url) {
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
@@ -136,12 +188,22 @@ async function handleDisponibilidad(env, url) {
       return json({ error: "El rango debe contener entre 1 y 62 días" }, 400);
     }
     const slotsPorDia = await getSlotsByDay(env, from, to);
+    // Con D1 se lee todo el rango en 3 consultas; sin D1 se conserva el bucle.
+    const reglas = useD1(env) ? await readReglasRango(env.DB, from, to) : null;
 
     for (let i = 0; i < total; i++) {
       const d = new Date(start.getTime() + i * 86400000);
       const iso = d.toISOString().slice(0, 10);
-      const dia = await getCounts(env, iso);
-      const rule = await getDayRule(env.DB, iso);
+      let dia;
+      let rule;
+      if (reglas) {
+        const item = reglas.get(iso);
+        dia = item.counts;
+        rule = item.rule;
+      } else {
+        dia = await getCounts(env, iso);
+        rule = await getDayRule(env.DB, iso);
+      }
       // Bloques ocupados del dia, separados por tipo de reserva.
       dia.slots = slotsPorDia[iso] || { normal: [], emergencia: [] };
       dia.is_open = rule.is_open;
