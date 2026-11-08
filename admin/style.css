@@ -632,9 +632,40 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 }
 
 /* animaciones */
-.reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s ease}
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s ease;
+  transition-delay:calc(var(--i,0) * 60ms)}
 .reveal.in{opacity:1;transform:none}
+
+/* ---------- view transitions por región ----------
+   `html.vt-regions` la pone y la quita admin.js al terminar la transición: fuera
+   de ese momento no hay ningún view-transition-name declarado, así que no puede
+   haber nombres duplicados ni capturas de cifras a medio contar. Los tres
+   nombres son únicos por construcción (#ingresos-curve, el único .stat-detail
+   activo y #stats-metrics). */
+html.vt-regions .curve-plot{view-transition-name:curva}
+html.vt-regions .stat-detail.is-active{view-transition-name:detalle-activo}
+html.vt-regions #stats-metrics{view-transition-name:kpi-strip}
+::view-transition-group(curva),
+::view-transition-group(detalle-activo),
+::view-transition-group(kpi-strip){
+  animation-duration:var(--dur-base);animation-timing-function:var(--ease-out)}
+/* durante estas transiciones el fundido global de root se anula (dura 0) para
+   que no parezca que toda la página se funde; solo se animan las regiones */
+html.vt-regions::view-transition-old(root),
+html.vt-regions::view-transition-new(root){animation-duration:0s}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+
+/* ---------- destello dorado al finalizar una consulta ----------
+   Capa ::after con opacidad animada: solo compone, no repinta la sombra. */
+.kpi.is-flash,.pill.is-flash{position:relative}
+.kpi.is-flash::after,.pill.is-flash::after{content:"";position:absolute;inset:-2px;
+  border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 0 3px rgba(212,176,107,.6),0 12px 26px -8px rgba(212,176,107,.7);
+  animation:stat-flash var(--dur-slow) var(--ease-out) both}
+/* la píldora es pequeña: el halo va pegado a su borde para que se note */
+.pill.is-flash::after{inset:-3px;
+  box-shadow:0 0 0 2px rgba(212,176,107,.65),0 0 16px 2px rgba(212,176,107,.55)}
+@keyframes stat-flash{0%{opacity:0}15%{opacity:1}50%{opacity:.75}100%{opacity:0}}
 
 @container (max-width:430px){
   .cal{gap:6px}
@@ -798,12 +829,14 @@ footer{color:var(--muted);text-align:center;font-size:12px}
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
     transition-duration:.01ms!important;transition-delay:0ms!important;animation-delay:0ms!important}
-  .reveal{opacity:1;transform:none}
+  .reveal{opacity:1;transform:none;transition-delay:0ms!important}
   /* las gráficas muestran su estado final, sin revelado ni entradas escalonadas */
   .curve-plot svg{clip-path:none!important}
   .kpi-spark svg{clip-path:none!important}
   .seg-pill{transition:none!important}
   .curve-dot,.curve-peak,.curve-peak-label{opacity:1!important}
+  /* sin destello: solo queda el aviso de texto */
+  .kpi.is-flash::after,.pill.is-flash::after{animation:none!important;opacity:0!important}
 }
 /* --- consultas: KPIs, modo día/mes, tira de días y bento --- */
 .consultas-view{gap:14px}

@@ -23,6 +23,7 @@ const state = {
   occupancy: null,
   ocupacionGran: "dia",
   activeMetric: "ingresos",
+  pendingFlash: null, // ids a destellar cuando se abra Gráficos
 };
 
 const $ = (id) => document.getElementById(id);
@@ -872,6 +873,9 @@ function renderConsultas(consultas) {
     status.value = consulta.estado;
     status.addEventListener("change", async () => {
       const previousStatus = consulta.estado;
+      // Solo el paso a "finalizado" mueve dinero: ni en_proceso ni cancelada
+      // destellan.
+      const finalizing = status.value === "finalizado" && previousStatus !== "finalizado";
       status.disabled = true;
       try {
         await request(`/api/admin/consultas/${consulta.id}/estado`, {
@@ -880,6 +884,7 @@ function renderConsultas(consultas) {
         });
         showNotice("El estado de la consulta quedó actualizado.");
         await Promise.all([loadConsultas(), loadDashboardConsultas(), loadStats(), loadIngresos()]);
+        if (finalizing) queueMoneyFlash(consultaHasAmount(consulta));
       } catch (error) {
         status.value = previousStatus;
         showError(error.message);
@@ -2107,19 +2112,32 @@ function bindLegendHighlight(legend, donut, rows) {
 function selectMetric(metric, options = {}) {
   const active = metricLabels[metric] ? metric : "ingresos";
   state.activeMetric = active;
-  for (const card of document.querySelectorAll("[data-metric]")) {
-    const on = card.dataset.metric === active;
-    card.classList.toggle("is-active", on);
-    card.setAttribute("aria-pressed", String(on));
-  }
-  for (const panel of document.querySelectorAll(".stat-detail")) {
-    panel.classList.toggle("is-active", panel.dataset.detail === active);
-  }
+  const apply = () => {
+    for (const card of document.querySelectorAll("[data-metric]")) {
+      const on = card.dataset.metric === active;
+      card.classList.toggle("is-active", on);
+      card.setAttribute("aria-pressed", String(on));
+    }
+    for (const panel of document.querySelectorAll(".stat-detail")) {
+      panel.classList.toggle("is-active", panel.dataset.detail === active);
+    }
+  };
+  // Solo el clic pide transición: renderKpis() llama a selectMetric() en cada
+  // render y ahí no debe abrirse ninguna (ni al cambiar de mes ni con el histórico).
+  if (options.transition) applyWithTransition(apply, { regions: true });
+  else apply();
   if (!options.scroll) return;
   const detail = document.querySelector(`.stat-detail[data-detail="${active}"]`);
   if (!detail) return;
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  detail.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  const scroll = () => detail.scrollIntoView({
+    behavior: reduced ? "auto" : "smooth",
+    block: "start",
+  });
+  // El scroll va después: mover la página durante la captura desplaza las
+  // instantáneas de la transición y se ve un salto.
+  if (options.transition) whenTransitionDone(scroll);
+  else scroll();
 }
 
 function bindStatMetrics() {
@@ -2128,7 +2146,7 @@ function bindStatMetrics() {
     metrics.addEventListener("click", (event) => {
       const card = event.target instanceof Element ? event.target.closest("[data-metric]") : null;
       if (!card) return;
-      selectMetric(card.dataset.metric, { scroll: true });
+      selectMetric(card.dataset.metric, { scroll: true, transition: true });
     });
   }
   const tabs = $("ocupacion-tabs");
@@ -2265,7 +2283,9 @@ function renderSpark(container, values, color) {
   }));
   svg.style.setProperty("--spark", color);
   container.append(svg);
-  if (motionOK()) container.classList.add("is-revealed");
+  // Igual que la curva: durante una view transition de la tira de KPI no se
+  // revela, o la instantánea nueva saldría con la mini serie a medio dibujar.
+  if (motionOK() && !regionsInFlight()) container.classList.add("is-revealed");
 }
 
 function renderKpiSparks() {
@@ -2991,7 +3011,10 @@ function renderCurve(periodos, granularidad) {
   // El SVG nuevo arranca recortado y la animación CSS lo abre de izquierda a
   // derecha; puntos, picos y etiquetas entran con su propio retraso. Con
   // prefers-reduced-motion no se marca: el estado base ya es el final.
-  plot.classList.toggle("is-revealed", motionOK());
+  // Durante una view transition de la curva la transición ya hace el trabajo:
+  // si reveláramos a la vez, la instantánea nueva se capturaría con el SVG a
+  // medio abrir y luego se vería el revelado otra vez (doble animación).
+  plot.classList.toggle("is-revealed", motionOK() && !regionsInFlight());
 }
 
 function renderIngresos(data) {
@@ -3011,7 +3034,7 @@ async function loadIngresos(options = {}) {
   const data = await request(`/api/admin/ingresos?granularidad=${encodeURIComponent(granularidad)}`);
   state.ingresos = data;
   state.granularidad = data.granularidad || granularidad;
-  if (options.transition) applyWithTransition(() => renderIngresos(data));
+  if (options.transition) applyWithTransition(() => renderIngresos(data), { regions: true });
   else renderIngresos(data);
 }
 
@@ -3057,23 +3080,108 @@ function applyTileExpansion(tile, expanded) {
   if (detail) detail.hidden = !expanded;
 }
 
-function applyWithTransition(update) {
+/* ---------- transiciones por región (View Transitions) ----------
+   Los view-transition-name solo existen mientras dura la transición: la clase
+   `vt-regions` en <html> los declara en CSS y se retira al terminar. Fuera de
+   ese momento no hay ningún nombre declarado, así que no puede haber nombres
+   duplicados ni una captura a mitad de conteo de las cifras. */
+let regionTransition = null;
+let regionTimer = 0;
+
+function regionsInFlight() {
+  return regionTransition !== null;
+}
+
+function endRegionTransition() {
+  window.clearTimeout(regionTimer);
+  regionTimer = 0;
+  regionTransition = null;
+  document.documentElement.classList.remove("vt-regions");
+}
+
+// Espera al final de la transición en curso (si la hay); si no, ejecuta ya.
+function whenTransitionDone(callback) {
+  const transition = regionTransition;
+  if (!transition) {
+    callback();
+    return;
+  }
+  transition.finished.catch(() => {}).then(callback);
+}
+
+function applyWithTransition(update, options = {}) {
   let applied = false;
   const run = () => {
     if (applied) return;
     applied = true;
     update();
   };
-  if (typeof document.startViewTransition === "function") {
+  const regions = options.regions === true;
+  // Sin soporte o con prefers-reduced-motion se actualiza directo.
+  if (typeof document.startViewTransition === "function" && motionOK()) {
     try {
-      document.startViewTransition(run);
+      if (regions) {
+        endRegionTransition(); // cierra una anterior que no llegó a limpiarse
+        document.documentElement.classList.add("vt-regions");
+      }
+      const transition = document.startViewTransition(run);
+      regionTransition = transition;
+      // red de seguridad: si `finished` no llega, las clases no se quedan pegadas
+      regionTimer = window.setTimeout(endRegionTransition, 1200);
+      transition.finished.catch(() => {}).then(() => {
+        if (regionTransition === transition) endRegionTransition();
+      });
       window.setTimeout(run, 150);
       return;
     } catch (error) {
       // sin transición: aplicamos el cambio de inmediato
+      endRegionTransition();
     }
   }
   run();
+}
+
+/* ---------- destello dorado al finalizar una consulta ----------
+   Un ::after con opacidad animada encima de la tarjeta y del pill: el
+   box-shadow se pinta una vez y solo cambia la opacidad de la capa, mucho más
+   barato que animar box-shadow (que repinta la sombra en cada frame). La
+   duración (--dur-slow, 600 ms) va a la par de countTo (700 ms). */
+const FLASH_TARGETS = ["kpi-ingresos", "kpi-promedio", "stats-total"];
+const FLASH_DURATION = 700;
+
+function consultaHasAmount(consulta) {
+  const total = consulta?.total;
+  return total !== null && total !== undefined && Number(total) > 0;
+}
+
+function chartsViewVisible() {
+  const view = $("vista-graficos");
+  return !!view && !view.hidden;
+}
+
+function flashElements(ids) {
+  if (!motionOK()) return; // reduced-motion: se queda solo el aviso de showNotice
+  for (const id of ids) {
+    const element = $(id);
+    if (!element) continue;
+    // #kpi-ingresos y #kpi-promedio son el <strong> del valor: el resplandor va
+    // en la tarjeta (.kpi) que lo contiene, no en el texto.
+    const target = element.closest(".kpi") || element;
+    target.classList.remove("is-flash");
+    void target.offsetWidth; // reinicia el keyframe si ya estaba destellando
+    target.classList.add("is-flash");
+    window.setTimeout(() => target.classList.remove("is-flash"), FLASH_DURATION);
+  }
+}
+
+// Sin importe (total NULL) el dinero no cambia: solo destella el pill.
+function queueMoneyFlash(withAmount) {
+  const ids = withAmount ? FLASH_TARGETS.slice() : [FLASH_TARGETS[2]];
+  if (!chartsViewVisible()) {
+    state.pendingFlash = ids; // se reproduce al abrir Gráficos
+    return;
+  }
+  flashElements(ids);
 }
 
 function closeExpandedTile() {
@@ -3140,13 +3248,21 @@ function bindView() {
     const items = [view, ...view.querySelectorAll("[data-reveal]")];
     const animate = !reduceMotion();
     if (animate) {
-      for (const item of items) item.classList.remove("in");
+      // Entrada escalonada: --i por orden de documento, con tope 6 para que
+      // nunca tarde más de ~360 ms en total.
+      for (const [index, item] of items.entries()) {
+        item.style.setProperty("--i", String(Math.min(index, 6)));
+        item.classList.remove("in");
+      }
       window.requestAnimationFrame(() => {
         for (const item of items) item.classList.add("in");
       });
       return;
     }
-    for (const item of items) item.classList.add("in");
+    for (const item of items) {
+      item.style.removeProperty("--i");
+      item.classList.add("in");
+    }
   };
   const scrollToId = (id) => {
     const target = document.getElementById(id);
@@ -3166,6 +3282,11 @@ function bindView() {
       view.classList.toggle("is-active", active);
       if (active) {
         reveal(view);
+        if (target.dataset.view === "graficos" && state.pendingFlash) {
+          const pending = state.pendingFlash;
+          state.pendingFlash = null;
+          window.requestAnimationFrame(() => flashElements(pending));
+        }
         const bars = view.querySelector(".bars");
         if (bars) window.requestAnimationFrame(() => syncBarsScroll(bars));
         // la píldora no se puede medir mientras la vista está oculta

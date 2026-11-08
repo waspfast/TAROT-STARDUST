@@ -446,7 +446,8 @@
           <label>Mes<input id="stats-month" type="month"></label>
           <label class="toggle"><input id="stats-all" type="checkbox"> Todo el histórico</label>
         </div>
-        <div class="stats-metrics" id="stats-metrics" role="group" aria-label="Métricas del periodo">
+        <div class="stats-metrics" id="stats-metrics" role="group" aria-label="Métricas del periodo"
+          data-reveal>
           <button type="button" class="kpi is-active" data-metric="ingresos" aria-pressed="true">
             <span class="kpi-head">
               <span class="kpi-icon gold" aria-hidden="true">
@@ -514,7 +515,7 @@
           </button>
         </div>
 
-        <div class="charts-grid" id="stats-details">
+        <div class="charts-grid" id="stats-details" data-reveal>
           <article class="chart-card stat-detail is-wide is-active" data-detail="ingresos">
             <div class="ph revenue-head">
               <div><p class="eyebrow">INGRESOS</p><h3 class="h2">Curva de ingresos y ticket medio</h3></div>
