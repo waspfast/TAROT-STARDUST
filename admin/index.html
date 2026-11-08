@@ -452,6 +452,7 @@
               <span class="kpi-icon gold" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M3.5 8.5h13a3 3 0 0 1 3 3v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17.5z"></path><path d="M3.5 8.5 6.5 4h8.5l2.5 4.5"></path><path d="M16.5 13.5h1.8"></path></svg>
               </span>
+              <span class="kpi-spark" id="kpi-ingresos-spark" aria-hidden="true"></span>
               <span class="kpi-chip flat" id="kpi-ingresos-chip">—</span>
             </span>
             <span class="kpi-label" id="kpi-ingresos-label">Ingresos del mes</span>
@@ -476,6 +477,7 @@
               <span class="kpi-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M4 9.2A2.2 2.2 0 0 1 6.2 7h11.6A2.2 2.2 0 0 1 20 9.2v5.6a2.2 2.2 0 0 1-2.2 2.2H6.2A2.2 2.2 0 0 1 4 14.8z"></path><path d="M4 10.6h16"></path><path d="M8 15h3.5"></path></svg>
               </span>
+              <span class="kpi-spark" id="kpi-promedio-spark" aria-hidden="true"></span>
               <span class="kpi-chip flat" id="kpi-promedio-chip">—</span>
             </span>
             <span class="kpi-label">Ticket promedio (finalizadas)</span>
@@ -534,8 +536,13 @@
                 <span class="curve-key avg"><i aria-hidden="true"></i>Ticket medio</span>
                 <span class="curve-max" id="ingresos-curve-max"></span>
               </div>
-              <div class="curve-plot" id="ingresos-curve" role="img" aria-label="Curva de ingresos y ticket medio por periodo"></div>
+              <div class="curve-plot" id="ingresos-curve" role="img" tabindex="0"
+                aria-label="Curva de ingresos y ticket medio por periodo"
+                aria-describedby="ingresos-curve-help"></div>
               <div class="curve-labels" id="ingresos-curve-labels" aria-hidden="true"></div>
+              <p class="sr-only" id="ingresos-curve-help">Con la gráfica enfocada, usa las flechas
+                izquierda y derecha para recorrer los periodos: se anuncian el periodo, los ingresos,
+                el ticket medio y el número de consultas.</p>
             </div>
             <p class="hint">Cada punto suma el total cobrado del periodo; la línea punteada es el ticket medio. Los contadores manuales sin ficha no entran aquí.</p>
           </article>

@@ -1878,6 +1878,232 @@ function markChartsReady(key) {
   if (section) section.classList.remove("is-loading");
 }
 
+/* ---------- tooltip único de las gráficas ----------
+   Una sola tarjeta (position:fixed en <body>) que reutilizan la curva, las barras
+   de ocupación y el ranking. Se ancla al rectángulo de su contenedor, así nunca se
+   sale por los bordes. El texto para lectores de pantalla va por una región aparte
+   que solo escribe la navegación por teclado (así no se anuncia cada movimiento
+   del puntero). */
+const CHART_TIP_GAP = 12;
+const CHART_TIP_TOUCH_DELAY = 1500;
+const chartTip = { node: null, live: null, owner: null, timer: 0 };
+const barTipData = new WeakMap(); // .bar -> item de ocupación
+const rankingTipData = new WeakMap(); // .ratio-row -> { label, value, share }
+
+function chartTipNode() {
+  if (!chartTip.node) {
+    const node = document.createElement("div");
+    node.className = "chart-tip";
+    node.setAttribute("aria-hidden", "true");
+    document.body.append(node);
+    chartTip.node = node;
+  }
+  return chartTip.node;
+}
+
+function chartLiveNode() {
+  if (!chartTip.live) {
+    const live = document.createElement("p");
+    live.className = "sr-only";
+    live.id = "chart-live";
+    live.setAttribute("role", "status");
+    live.setAttribute("aria-live", "polite");
+    document.body.append(live);
+    chartTip.live = live;
+  }
+  return chartTip.live;
+}
+
+function fillChartTip(node, content) {
+  const parts = [];
+  if (content?.title) {
+    const head = document.createElement("p");
+    head.className = "chart-tip-title";
+    head.textContent = content.title;
+    parts.push(head);
+  }
+  const rows = (Array.isArray(content?.rows) ? content.rows : []).filter(Boolean);
+  if (rows.length) {
+    const list = document.createElement("dl");
+    list.className = "chart-tip-rows";
+    for (const row of rows) {
+      const item = document.createElement("div");
+      const label = document.createElement("dt");
+      label.textContent = row.label;
+      const value = document.createElement("dd");
+      value.textContent = row.value;
+      item.append(label, value);
+      list.append(item);
+    }
+    parts.push(list);
+  }
+  node.replaceChildren(...parts);
+}
+
+// Si no cabe a la derecha del punto se pinta a la izquierda, y en vertical igual:
+// siempre con 8 px de margen dentro del contenedor.
+function placeChartTip(node, point, bounds) {
+  const box = node.getBoundingClientRect();
+  const frame = bounds.getBoundingClientRect();
+  const pad = 8;
+  let left = point.x + CHART_TIP_GAP;
+  if (left + box.width > frame.right - pad) left = point.x - box.width - CHART_TIP_GAP;
+  left = Math.max(frame.left + pad, Math.min(left, frame.right - box.width - pad));
+  let top = point.y - box.height - CHART_TIP_GAP;
+  if (top < frame.top + pad) top = point.y + CHART_TIP_GAP;
+  top = Math.max(frame.top + pad, Math.min(top, frame.bottom - box.height - pad));
+  node.style.left = `${Math.round(left)}px`;
+  node.style.top = `${Math.round(top)}px`;
+}
+
+function showChartTip(owner, content, point, bounds) {
+  const node = chartTipNode();
+  window.clearTimeout(chartTip.timer);
+  fillChartTip(node, content);
+  if (chartTip.owner && chartTip.owner !== owner) chartTip.owner.classList.remove("is-hot");
+  chartTip.owner = owner || null;
+  if (owner) owner.classList.add("is-hot");
+  placeChartTip(node, point, bounds);
+  node.classList.add("is-visible");
+}
+
+function hideChartTip(options = {}) {
+  window.clearTimeout(chartTip.timer);
+  if (options.delay) {
+    chartTip.timer = window.setTimeout(() => hideChartTip(), options.delay);
+    return;
+  }
+  if (chartTip.node) chartTip.node.classList.remove("is-visible");
+  if (chartTip.owner) chartTip.owner.classList.remove("is-hot");
+  chartTip.owner = null;
+}
+
+function announceChart(text) {
+  chartLiveNode().textContent = String(text || "");
+}
+
+/* Engancha el tooltip a un contenedor: `resolve(event)` devuelve { title, rows,
+   x, y, owner } o null. Con puntero sigue al hover; con el dedo se activa al
+   tocar/arrastrar y se queda ~1,5 s tras soltar. Solo se llama una vez por
+   contenedor (los gráficos se repintan por dentro, los listeners no se acumulan). */
+function bindChartTip(container, options) {
+  if (!container) return;
+  const bounds = options.bounds || container;
+  const resolve = options.resolve;
+  let pressed = false;
+  const show = (event) => {
+    const data = resolve(event);
+    if (!data) return false;
+    showChartTip(data.owner || null, data, { x: data.x, y: data.y }, bounds);
+    return true;
+  };
+  container.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "touch" && !pressed) return;
+    if (!show(event)) hideChartTip();
+  });
+  container.addEventListener("pointerleave", (event) => {
+    if (pressed) return;
+    // al levantar el dedo Chrome también emite pointerleave: en táctil manda el
+    // temporizador de cierre, si no el tooltip desaparecería de golpe
+    if (event.pointerType === "touch") return;
+    hideChartTip();
+  });
+  container.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse") return;
+    pressed = true;
+    show(event);
+  });
+  const release = () => {
+    if (!pressed) return;
+    pressed = false;
+    hideChartTip({ delay: CHART_TIP_TOUCH_DELAY });
+  };
+  container.addEventListener("pointerup", release);
+  container.addEventListener("pointercancel", () => {
+    pressed = false;
+    hideChartTip();
+  });
+}
+
+/* ---------- píldora deslizante de las pestañas ---------- */
+const segPills = [];
+const segPillBound = new WeakSet(); // un grupo nunca puede recibir dos píldoras
+
+function placeSegPill(entry) {
+  const { tabs, pill } = entry;
+  const active = tabs.querySelector(".seg-btn.on");
+  if (!active) {
+    pill.style.opacity = "0";
+    return;
+  }
+  const wasHidden = pill.style.opacity !== "1";
+  const box = tabs.getBoundingClientRect();
+  const face = active.getBoundingClientRect();
+  if (!face.width) {
+    pill.style.opacity = "0";
+    return;
+  }
+  pill.style.opacity = "1";
+  pill.style.width = `${face.width}px`;
+  pill.style.height = `${face.height}px`;
+  pill.style.transform = `translate(${face.left - box.left - tabs.clientLeft}px,`
+    + `${face.top - box.top - tabs.clientTop}px)`;
+  if (wasHidden) {
+    // primera colocación (la vista estaba oculta): sin deslizamiento de entrada
+    pill.style.transition = "none";
+    window.requestAnimationFrame(() => pill.style.removeProperty("transition"));
+  }
+}
+
+function refreshSegPills() {
+  for (const entry of segPills) placeSegPill(entry);
+}
+
+function bindSegPill(tabs) {
+  if (!tabs || segPillBound.has(tabs)) return null;
+  segPillBound.add(tabs);
+  const pill = document.createElement("span");
+  pill.className = "seg-pill";
+  pill.setAttribute("aria-hidden", "true");
+  tabs.prepend(pill);
+  tabs.classList.add("has-pill");
+  const entry = { tabs, pill };
+  segPills.push(entry);
+  // cualquier cambio de pestaña activa dentro del grupo recoloca la píldora
+  tabs.addEventListener("click", () => window.requestAnimationFrame(refreshSegPills));
+  placeSegPill(entry);
+  return entry;
+}
+
+// Todos los grupos .seg de la página (ingresos, ocupación, consultas y el
+// contador manual) comparten el mismo indicador deslizante.
+function bindAllSegPills() {
+  for (const tabs of document.querySelectorAll(".seg")) bindSegPill(tabs);
+  refreshSegPills();
+}
+
+/* El anillo es un único conic-gradient: el tramo señalado se ilumina con la capa
+   ::before recortada a sus mismos cortes y el resto de la leyenda baja a .45. */
+function bindLegendHighlight(legend, donut, rows) {
+  if (!legend || !donut) return;
+  const clear = () => {
+    legend.classList.remove("is-hovering");
+    donut.classList.remove("is-highlight");
+    for (const entry of rows) entry.row.classList.remove("is-hot");
+  };
+  for (const entry of rows) {
+    if (!entry.span) continue;
+    entry.row.addEventListener("pointerenter", () => {
+      legend.classList.add("is-hovering");
+      for (const other of rows) other.row.classList.toggle("is-hot", other === entry);
+      donut.style.setProperty("--hi-start", `${entry.span.start.toFixed(2)}%`);
+      donut.style.setProperty("--hi-end", `${entry.span.end.toFixed(2)}%`);
+      donut.classList.add("is-highlight");
+    });
+    entry.row.addEventListener("pointerleave", clear);
+  }
+}
+
 function selectMetric(metric, options = {}) {
   const active = metricLabels[metric] ? metric : "ingresos";
   state.activeMetric = active;
@@ -1918,14 +2144,68 @@ function bindStatMetrics() {
         item.classList.toggle("on", on);
         item.setAttribute("aria-selected", String(on));
       }
+      refreshSegPills();
       renderOcupacion();
     });
   }
   const bars = $("ocupacion-bars");
   if (bars) {
     bars.addEventListener("scroll", () => syncBarsScroll(bars), { passive: true });
-    window.addEventListener("resize", () => syncBarsScroll(bars));
+    bindChartTip(bars, {
+      resolve: (event) => {
+        const bar = event.target instanceof Element ? event.target.closest(".bar") : null;
+        const item = bar ? barTipData.get(bar) : null;
+        if (!bar || !item) return null;
+        const rect = bar.getBoundingClientRect();
+        return {
+          owner: bar,
+          title: occupancyLabel(item, state.ocupacionGran === "semana" ? "semana" : "dia"),
+          rows: item.capacity
+            ? [
+              { label: "Ocupación", value: formatPercent(item.value) },
+              { label: "Cupos", value: `${item.booked} de ${item.capacity}` },
+              { label: "Consultas", value: String(item.consultas) },
+            ]
+            : [
+              { label: "Cupos", value: "Sin publicar" },
+              { label: "Consultas", value: String(item.consultas) },
+            ],
+          x: rect.left + rect.width / 2,
+          y: rect.top + 6,
+        };
+      },
+    });
   }
+  window.addEventListener("resize", () => {
+    syncBarsScroll($("ocupacion-bars"));
+    refreshSegPills();
+  });
+  if (document.fonts?.ready) document.fonts.ready.then(() => refreshSegPills()).catch(() => {});
+  bindRankingTip();
+  bindCurveTip();
+}
+
+function bindRankingTip() {
+  const list = $("ranking-list");
+  if (!list) return;
+  bindChartTip(list, {
+    resolve: (event) => {
+      const row = event.target instanceof Element ? event.target.closest(".ratio-row") : null;
+      const data = row ? rankingTipData.get(row) : null;
+      if (!row || !data) return null;
+      const rect = row.getBoundingClientRect();
+      return {
+        owner: row,
+        title: data.label,
+        rows: [
+          { label: "Lecturas", value: String(data.value) },
+          { label: "Peso", value: formatPercent(data.share) },
+        ],
+        x: rect.left + rect.width / 2,
+        y: rect.top + 4,
+      };
+    },
+  });
 }
 
 function monthlyPeriodos() {
@@ -1939,6 +2219,59 @@ function kpiPeriod() {
   let index = target ? periodos.findIndex((item) => String(item.inicio).slice(0, 7) === target) : -1;
   if (index < 0) index = periodos.length - 1;
   return { current: periodos[index] || null, previous: periodos[index - 1] || null };
+}
+
+/* mini serie de los KPI: los últimos 8 periodos mensuales, sin ejes y con el
+   mismo revelado por clip-path de la curva. Con menos de 2 puntos no se pinta
+   nada: la tarjeta reserva el hueco con el icono de la cabecera, así que el alto
+   no cambia ni al aparecer ni al desaparecer. */
+const SPARK_POINTS = 8;
+
+function renderSpark(container, values, color) {
+  if (!container) return;
+  container.replaceChildren();
+  container.classList.remove("is-revealed", "has-spark");
+  const series = values.slice(-SPARK_POINTS);
+  if (series.length < 2) return;
+  container.classList.add("has-spark");
+  const width = 64;
+  const height = 24;
+  const pad = 3;
+  const max = Math.max(...series);
+  const min = Math.min(...series);
+  const span = max - min;
+  const stepX = (width - pad * 2) / (series.length - 1);
+  const points = series.map((value, index) => {
+    const ratio = span ? (value - min) / span : 0.5;
+    const x = pad + index * stepX;
+    const y = height - pad - ratio * (height - pad * 2);
+    return `${x.toFixed(1)} ${y.toFixed(1)}`;
+  });
+  const line = `M${points.join(" L")}`;
+  const svg = svgNode("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    preserveAspectRatio: "none",
+    "aria-hidden": "true",
+    focusable: "false",
+  });
+  svg.append(svgNode("path", {
+    class: "spark-area",
+    d: `${line} L${(width - pad).toFixed(1)} ${height - pad} L${pad} ${height - pad} Z`,
+  }));
+  svg.append(svgNode("path", {
+    class: "spark-line",
+    d: line,
+    "vector-effect": "non-scaling-stroke",
+  }));
+  svg.style.setProperty("--spark", color);
+  container.append(svg);
+  if (motionOK()) container.classList.add("is-revealed");
+}
+
+function renderKpiSparks() {
+  const periodos = monthlyPeriodos().slice(-SPARK_POINTS);
+  renderSpark($("kpi-ingresos-spark"), periodos.map((periodo) => Number(periodo.ingresos) || 0), "var(--rose)");
+  renderSpark($("kpi-promedio-spark"), periodos.map((periodo) => Number(periodo.promedio) || 0), "var(--gold)");
 }
 
 function deltaChip(current, previous) {
@@ -2013,6 +2346,7 @@ function occupancyLabel(item, gran) {
 }
 
 function renderOcupacion() {
+  hideChartTip();
   const summary = occupancySummary();
   const gran = state.ocupacionGran === "semana" ? "semana" : "dia";
   $("ocupacion-media").textContent = summary.rate === null ? "—" : formatPercent(summary.rate);
@@ -2037,9 +2371,8 @@ function renderOcupacion() {
   for (const item of items) {
     const bar = document.createElement("div");
     bar.className = item.capacity ? "bar" : "bar is-closed";
-    bar.title = item.capacity
-      ? `${occupancyLabel(item, gran)} · ${formatPercent(item.value)} de ocupación · ${item.booked} de ${item.capacity} cupos · ${item.consultas} ${item.consultas === 1 ? "consulta" : "consultas"}`
-      : `${occupancyLabel(item, gran)} · sin cupos publicados`;
+    // el detalle va en el tooltip compartido: nada de title nativo
+    barTipData.set(bar, item);
     const track = document.createElement("div");
     track.className = "bar-track";
     const fill = document.createElement("div");
@@ -2064,6 +2397,7 @@ function renderOcupacion() {
 function renderRanking(entries) {
   const list = $("ranking-list");
   if (!list) return;
+  hideChartTip();
   list.replaceChildren();
   const items = groupReadings(Array.isArray(entries) ? entries : []);
   const total = items.reduce((sum, item) => sum + item.value, 0);
@@ -2082,7 +2416,6 @@ function renderRanking(entries) {
     const name = document.createElement("span");
     name.className = "ratio-name";
     name.textContent = item.label;
-    name.title = item.label;
     const value = document.createElement("span");
     value.className = "ratio-value";
     value.textContent = `${formatPercent(share)} · ${item.value}`;
@@ -2096,6 +2429,7 @@ function renderRanking(entries) {
     fills.push(fill);
     track.append(fill);
     row.append(head, track);
+    rankingTipData.set(row, { label: item.label, value: item.value, share });
     list.append(row);
   }
   playEntrance(fills);
@@ -2153,6 +2487,22 @@ function renderDonut(donut, stops) {
   window.requestAnimationFrame(() => applyDonut(donut, stops, ends));
 }
 
+/* Tramos de la dona alineados con los items originales (null si el valor es 0):
+   permite iluminar el arco de una fila de la leyenda sin recalcular el degradado. */
+function donutSpans(items) {
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  let cursor = 0;
+  const spans = items.map((item) => {
+    if (!item.value) return null;
+    const start = cursor;
+    cursor += percentOf(item.value, total);
+    return { start, end: cursor };
+  });
+  const filled = spans.filter(Boolean);
+  if (filled.length) filled[filled.length - 1].end = 100;
+  return spans;
+}
+
 function renderFrecuencia(consultantes) {
   const counts = {
     nueva: Number(consultantes?.nueva) || 0,
@@ -2164,6 +2514,8 @@ function renderFrecuencia(consultantes) {
   const legend = $("frecuencia-legend");
   if (!donut || !legend) return;
   legend.replaceChildren();
+  legend.classList.remove("is-hovering");
+  donut.classList.remove("is-highlight");
   const totalLabel = $("frecuencia-donut-total");
   if (totalLabel) totalLabel.textContent = String(total);
   const label = $("frecuencia-donut-label");
@@ -2175,13 +2527,16 @@ function renderFrecuencia(consultantes) {
     return;
   }
   const plurals = { nueva: "Nuevas", frecuente: "Frecuentes", sin_dato: "Sin dato" };
-  renderDonut(donut, donutStops([
-    { value: counts.frecuente, color: consultanteColors.frecuente },
-    { value: counts.nueva, color: consultanteColors.nueva },
-    { value: counts.sin_dato, color: consultanteColors.sin_dato },
-  ]));
+  const items = [
+    { key: "frecuente", value: counts.frecuente, color: consultanteColors.frecuente },
+    { key: "nueva", value: counts.nueva, color: consultanteColors.nueva },
+    { key: "sin_dato", value: counts.sin_dato, color: consultanteColors.sin_dato },
+  ];
+  renderDonut(donut, donutStops(items));
+  const spans = donutSpans(items);
   donut.setAttribute("aria-label",
     `Consultantes: ${counts.frecuente} frecuentes, ${counts.nueva} nuevas, ${counts.sin_dato} sin dato`);
+  const rows = [];
   for (const key of ["frecuente", "nueva", "sin_dato"]) {
     const row = document.createElement("li");
     const dot = document.createElement("span");
@@ -2195,7 +2550,9 @@ function renderFrecuencia(consultantes) {
     value.textContent = `${counts[key]} · ${formatPercent(percentOf(counts[key], total))}`;
     row.append(dot, name, value);
     legend.append(row);
+    rows.push({ row, span: spans[items.findIndex((item) => item.key === key)] || null });
   }
+  bindLegendHighlight(legend, donut, rows);
 }
 
 function renderTipos(tipos) {
@@ -2208,6 +2565,8 @@ function renderTipos(tipos) {
   const legend = $("tipos-legend");
   if (!donut || !legend) return;
   legend.replaceChildren();
+  legend.classList.remove("is-hovering");
+  donut.classList.remove("is-highlight");
   const totalLabel = $("tipos-donut-total");
   if (totalLabel) totalLabel.textContent = String(total);
   const label = $("tipos-donut-label");
@@ -2218,12 +2577,15 @@ function renderTipos(tipos) {
     legend.append(chartEmptyItem("Aún no hay consultas registradas en este periodo."));
     return;
   }
-  renderDonut(donut, donutStops([
-    { value: counts.emergencia, color: tipoColors.emergencia },
-    { value: counts.normal, color: tipoColors.normal },
-  ]));
+  const items = [
+    { key: "emergencia", value: counts.emergencia, color: tipoColors.emergencia },
+    { key: "normal", value: counts.normal, color: tipoColors.normal },
+  ];
+  renderDonut(donut, donutStops(items));
+  const spans = donutSpans(items);
   donut.setAttribute("aria-label",
     `Modalidad: ${counts.emergencia} con emergencia, ${counts.normal} sin emergencia`);
+  const rows = [];
   for (const key of ["emergencia", "normal"]) {
     const row = document.createElement("li");
     const dot = document.createElement("span");
@@ -2237,7 +2599,9 @@ function renderTipos(tipos) {
     value.textContent = `${counts[key]} · ${formatPercent(percentOf(counts[key], total))}`;
     row.append(dot, name, value);
     legend.append(row);
+    rows.push({ row, span: spans[items.findIndex((item) => item.key === key)] || null });
   }
+  bindLegendHighlight(legend, donut, rows);
 }
 
 function renderKpis() {
@@ -2309,6 +2673,7 @@ function renderKpis() {
     ? `${topCount} ${topCount === 1 ? "pedida" : "pedidas"} de ${totalLecturas} · ${periodName}`
     : "Sin lecturas en el periodo";
 
+  renderKpiSparks();
   selectMetric(state.activeMetric);
 }
 
@@ -2418,10 +2783,89 @@ function findPeaks(values) {
   return peaks;
 }
 
+/* La curva se reconstruye en cada render, así que la interacción se engancha una
+   sola vez y lee la geometría vigente (curveGeom) en cada evento. */
+let curveGeom = null;
+
+function curveIndexAt(plot, clientX) {
+  const count = curveGeom?.periodos.length || 0;
+  if (count < 2) return 0;
+  const rect = plot.getBoundingClientRect();
+  if (!rect.width) return 0;
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  return Math.round(ratio * (count - 1));
+}
+
+function curveTipAt(plot, index) {
+  const geom = curveGeom;
+  if (!geom) return null;
+  const periodo = geom.periodos[index] || {};
+  const rect = plot.getBoundingClientRect();
+  const left = geom.xAt(index) / geom.width * 100;
+  const top = geom.yIncome(Number(periodo.ingresos) || 0) / geom.height * 100;
+  if (geom.cross) geom.cross.style.left = `${left}%`;
+  if (geom.dot) {
+    geom.dot.style.left = `${left}%`;
+    geom.dot.style.top = `${top}%`;
+  }
+  geom.index = index;
+  return {
+    owner: plot,
+    title: periodLabel(periodo, geom.granularidad),
+    rows: [
+      { label: "Ingresos", value: formatMoney(periodo.ingresos) },
+      { label: "Ticket medio", value: formatMoney(periodo.promedio) },
+      { label: "Consultas", value: String(Number(periodo.consultas) || 0) },
+    ],
+    x: rect.left + geom.xAt(index) / geom.width * rect.width,
+    y: rect.top + top / 100 * rect.height,
+  };
+}
+
+function showCurveIndex(plot, index, options = {}) {
+  if (!curveGeom || !plot) return;
+  const data = curveTipAt(plot, index);
+  if (!data) return;
+  showChartTip(plot, data, { x: data.x, y: data.y }, plot);
+  if (options.announce) {
+    announceChart(`${data.title}: ${data.rows[0].value} de ingresos, `
+      + `ticket medio ${data.rows[1].value}, ${data.rows[2].value} consultas.`);
+  }
+}
+
+function bindCurveTip() {
+  const plot = $("ingresos-curve");
+  if (!plot) return;
+  bindChartTip(plot, {
+    resolve: (event) => curveTipAt(plot, curveIndexAt(plot, event.clientX)),
+  });
+  // Un toque también enfoca la gráfica (tiene tabindex): se recuerda el último
+  // pointerdown para no dejar el tooltip clavado al tocar con el dedo.
+  let pointerAt = 0;
+  plot.addEventListener("pointerdown", () => { pointerAt = performance.now(); }, { passive: true });
+  plot.addEventListener("focus", () => {
+    if (!curveGeom) return;
+    if (performance.now() - pointerAt < 900) return;
+    showCurveIndex(plot, curveGeom.index ?? curveGeom.periodos.length - 1);
+  });
+  plot.addEventListener("blur", () => hideChartTip());
+  plot.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (!curveGeom) return;
+    event.preventDefault();
+    const last = curveGeom.periodos.length - 1;
+    const base = curveGeom.index ?? last;
+    const index = Math.min(last, Math.max(0, base + (event.key === "ArrowRight" ? 1 : -1)));
+    showCurveIndex(plot, index, { announce: true });
+  });
+}
+
 function renderCurve(periodos, granularidad) {
   const plot = $("ingresos-curve");
   const labels = $("ingresos-curve-labels");
   if (!plot || !labels) return;
+  hideChartTip();
+  curveGeom = null;
   plot.replaceChildren();
   labels.replaceChildren();
   $("ingresos-curve-max").textContent = "";
@@ -2531,6 +2975,19 @@ function renderCurve(periodos, granularidad) {
     label.textContent = periodLabel(periodos[index], granularidad);
     labels.append(label);
   }
+  // crosshair y punto resaltado en HTML (dentro del SVG se deformarían con
+  // preserveAspectRatio="none")
+  const cross = document.createElement("span");
+  cross.className = "curve-cross";
+  cross.setAttribute("aria-hidden", "true");
+  const hot = document.createElement("span");
+  hot.className = "curve-hot";
+  hot.setAttribute("aria-hidden", "true");
+  plot.append(cross, hot);
+  curveGeom = {
+    periodos, granularidad, xAt, yIncome, width, height, cross, dot: hot,
+    index: periodos.length - 1,
+  };
   // El SVG nuevo arranca recortado y la animación CSS lo abre de izquierda a
   // derecha; puntos, picos y etiquetas entran con su propio retraso. Con
   // prefers-reduced-motion no se marca: el estado base ya es el final.
@@ -2572,6 +3029,7 @@ function bindIngresosTabs() {
       item.classList.toggle("on", active);
       item.setAttribute("aria-selected", String(active));
     }
+    refreshSegPills();
     loadIngresos({ transition: true }).catch((error) => showError(error.message));
   });
 }
@@ -2710,6 +3168,8 @@ function bindView() {
         reveal(view);
         const bars = view.querySelector(".bars");
         if (bars) window.requestAnimationFrame(() => syncBarsScroll(bars));
+        // la píldora no se puede medir mientras la vista está oculta
+        window.requestAnimationFrame(refreshSegPills);
       }
     }
     for (const link of navLinks) {
@@ -2831,6 +3291,7 @@ async function initialize() {
   bindCalendarSwipe();
   bindConsultasFilters();
   bindManualReserva();
+  bindAllSegPills();
   try {
     const user = await request("/api/admin/me");
     state.identity = String(user.email || "");
