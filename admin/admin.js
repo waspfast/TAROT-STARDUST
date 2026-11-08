@@ -1785,6 +1785,99 @@ function formatPercent(value) {
   return `${Math.round(Number(value) || 0)}%`;
 }
 
+/* ---------- movimiento: helpers compartidos por las gráficas ---------- */
+const COUNT_DURATION = 700;
+const countFrames = new WeakMap(); // elemento -> frame pendiente
+const countValues = new WeakMap(); // elemento -> último número pintado
+
+// Con prefers-reduced-motion las gráficas muestran su estado final, sin animar.
+function motionOK() {
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3;
+}
+
+function readCount(element) {
+  const stored = countValues.get(element);
+  if (typeof stored === "number") return stored;
+  const parsed = Number.parseFloat(String(element.textContent).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/* Cifras que ruedan: van del número que se está viendo al nuevo, cancelando el
+   frame anterior del mismo elemento (renderKpis se llama varias veces por carga).
+   Si el valor no cambió, se escribe una sola vez sin animación. */
+function countTo(element, value, formatter = (number) => String(Math.round(number))) {
+  if (!element) return;
+  const pending = countFrames.get(element);
+  if (pending) {
+    window.cancelAnimationFrame(pending);
+    countFrames.delete(element);
+  }
+  const target = Number(value);
+  if (value === null || value === undefined || value === "" || !Number.isFinite(target)) {
+    countValues.delete(element);
+    element.textContent = "—";
+    return;
+  }
+  const start = readCount(element);
+  const draw = (number) => {
+    countValues.set(element, number);
+    element.textContent = formatter(number);
+  };
+  if (!motionOK() || Math.abs(target - start) < 0.005) {
+    draw(target);
+    return;
+  }
+  const begin = window.performance.now();
+  const tick = (now) => {
+    const progress = Math.min(1, (now - begin) / COUNT_DURATION);
+    if (progress >= 1) {
+      countFrames.delete(element);
+      draw(target);
+      return;
+    }
+    draw(start + (target - start) * easeOutCubic(progress));
+    countFrames.set(element, window.requestAnimationFrame(tick));
+  };
+  countFrames.set(element, window.requestAnimationFrame(tick));
+}
+
+/* Los gráficos se reconstruyen en cada render (replaceChildren), así que la
+   transición CSS de transform no se dispararía sola. `prepareEntrance` marca el
+   estado inicial al crear el nodo —antes de insertarlo— y `playEntrance` suelta
+   el final en el siguiente frame. El orden importa: si el estado inicial se
+   aplica después de un flush de layout, el navegador toma "sin transform" como
+   punto de partida y la entrada se dispara al revés. */
+function prepareEntrance(node, from, index, options = {}) {
+  if (!node) return node;
+  const staggerLimit = Number.isFinite(options.staggerLimit) ? options.staggerLimit : Infinity;
+  node.style.setProperty("--i", String(Math.min(index, staggerLimit)));
+  if (motionOK()) node.style.transform = from;
+  return node;
+}
+
+function playEntrance(nodes) {
+  const items = nodes.filter(Boolean);
+  if (!items.length || !motionOK()) return;
+  void items[0].getBoundingClientRect(); // fija el estado inicial antes de soltarlo
+  window.requestAnimationFrame(() => {
+    for (const node of items) node.style.removeProperty("transform");
+  });
+}
+
+/* skeleton de la primera carga: se apaga cuando estadísticas e ingresos pintaron */
+const chartsReady = { stats: false, ingresos: false };
+
+function markChartsReady(key) {
+  if (key) chartsReady[key] = true;
+  if (!chartsReady.stats || !chartsReady.ingresos) return;
+  const section = $("vista-graficos");
+  if (section) section.classList.remove("is-loading");
+}
+
 function selectMetric(metric, options = {}) {
   const active = metricLabels[metric] ? metric : "ingresos";
   state.activeMetric = active;
@@ -1940,6 +2033,7 @@ function renderOcupacion() {
   }
   container.setAttribute("aria-label",
     `Ocupación por ${gran}: ${items.length} ${items.length === 1 ? "periodo" : "periodos"}, media ${formatPercent(summary.rate || 0)}`);
+  const fills = [];
   for (const item of items) {
     const bar = document.createElement("div");
     bar.className = item.capacity ? "bar" : "bar is-closed";
@@ -1951,6 +2045,8 @@ function renderOcupacion() {
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.height = item.capacity ? `${Math.max(2, Math.round(item.value))}%` : "0%";
+    prepareEntrance(fill, "scaleY(0)", fills.length, { staggerLimit: 12 });
+    fills.push(fill);
     track.append(fill);
     const value = document.createElement("span");
     value.className = "bar-value";
@@ -1962,6 +2058,7 @@ function renderOcupacion() {
     container.append(bar);
   }
   syncBarsScroll(container);
+  playEntrance(fills);
 }
 
 function renderRanking(entries) {
@@ -1975,6 +2072,7 @@ function renderRanking(entries) {
     list.append(chartEmptyItem("Aún no hay lecturas registradas en este periodo."));
     return;
   }
+  const fills = [];
   for (const item of items) {
     const share = percentOf(item.value, total);
     const row = document.createElement("li");
@@ -1994,10 +2092,65 @@ function renderRanking(entries) {
     const fill = document.createElement("i");
     fill.style.width = `${Math.max(3, share).toFixed(1)}%`;
     fill.style.background = item.color;
+    prepareEntrance(fill, "scaleX(0)", fills.length);
+    fills.push(fill);
     track.append(fill);
     row.append(head, track);
     list.append(row);
   }
+  playEntrance(fills);
+}
+
+/* ---------- donas: conic-gradient animado con custom properties ---------- */
+// Tres cortes registrados con @property permiten interpolar el degradado. Si el
+// navegador no expone la API de @property o el usuario pide menos movimiento, la
+// dona se pinta directamente en su estado final.
+const DONUT_GRADIENT = "conic-gradient("
+  + "var(--c1,transparent) 0% var(--a1,0%),"
+  + "var(--c2,transparent) var(--a1,0%) var(--a2,0%),"
+  + "var(--c3,transparent) var(--a2,0%) var(--a3,0%),"
+  + "transparent var(--a3,0%) 100%)";
+const donutAnimatable = typeof CSS === "undefined"
+  ? false
+  : typeof CSS.registerProperty === "function"
+    && (typeof CSS.supports !== "function"
+      || CSS.supports("background-image", "conic-gradient(#000 0% 50%, #fff 50% 100%)"));
+
+function donutStops(items) {
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  let cursor = 0;
+  const stops = [];
+  for (const item of items) {
+    if (!item.value) continue;
+    cursor += percentOf(item.value, total);
+    stops.push({ color: item.color, end: cursor });
+  }
+  if (stops.length) stops[stops.length - 1].end = 100;
+  return stops;
+}
+
+// Los cortes que faltan se pegan al 100%: su banda queda vacía y el resto del
+// anillo es transparente, así se ve el fondo de la torta mientras se llena.
+function applyDonut(donut, stops, ends) {
+  for (let index = 0; index < 3; index += 1) {
+    const stop = stops[index];
+    donut.style.setProperty(`--c${index + 1}`, stop ? stop.color : "transparent");
+    const end = Number.isFinite(ends[index]) ? ends[index] : 100;
+    donut.style.setProperty(`--a${index + 1}`, `${end.toFixed(2)}%`);
+  }
+  donut.style.backgroundImage = DONUT_GRADIENT;
+}
+
+function renderDonut(donut, stops) {
+  if (!donut) return;
+  const ends = stops.map((stop) => stop.end);
+  if (!motionOK() || !donutAnimatable) {
+    applyDonut(donut, stops, ends);
+    return;
+  }
+  applyDonut(donut, stops, [0, 0, 0]); // anillo vacío como punto de partida
+  void donut.offsetWidth;
+  window.requestAnimationFrame(() => applyDonut(donut, stops, ends));
 }
 
 function renderFrecuencia(consultantes) {
@@ -2016,21 +2169,17 @@ function renderFrecuencia(consultantes) {
   const label = $("frecuencia-donut-label");
   if (label) label.textContent = total === 1 ? "consulta" : "consultas";
   if (!total) {
-    donut.style.removeProperty("background");
+    donut.style.removeProperty("background-image");
     donut.setAttribute("aria-label", "Sin consultas registradas en este periodo");
     legend.append(chartEmptyItem("Aún no hay consultas registradas en este periodo."));
     return;
   }
   const plurals = { nueva: "Nuevas", frecuente: "Frecuentes", sin_dato: "Sin dato" };
-  const segments = [];
-  let cursor = 0;
-  for (const key of ["frecuente", "nueva", "sin_dato"]) {
-    if (!counts[key]) continue;
-    const next = cursor + percentOf(counts[key], total);
-    segments.push(`${consultanteColors[key]} ${cursor.toFixed(2)}% ${next.toFixed(2)}%`);
-    cursor = next;
-  }
-  donut.style.background = `conic-gradient(${segments.join(", ")})`;
+  renderDonut(donut, donutStops([
+    { value: counts.frecuente, color: consultanteColors.frecuente },
+    { value: counts.nueva, color: consultanteColors.nueva },
+    { value: counts.sin_dato, color: consultanteColors.sin_dato },
+  ]));
   donut.setAttribute("aria-label",
     `Consultantes: ${counts.frecuente} frecuentes, ${counts.nueva} nuevas, ${counts.sin_dato} sin dato`);
   for (const key of ["frecuente", "nueva", "sin_dato"]) {
@@ -2064,20 +2213,15 @@ function renderTipos(tipos) {
   const label = $("tipos-donut-label");
   if (label) label.textContent = total === 1 ? "consulta" : "consultas";
   if (!total) {
-    donut.style.removeProperty("background");
+    donut.style.removeProperty("background-image");
     donut.setAttribute("aria-label", "Sin consultas registradas en este periodo");
     legend.append(chartEmptyItem("Aún no hay consultas registradas en este periodo."));
     return;
   }
-  const segments = [];
-  let cursor = 0;
-  for (const key of ["emergencia", "normal"]) {
-    if (!counts[key]) continue;
-    const next = cursor + percentOf(counts[key], total);
-    segments.push(`${tipoColors[key]} ${cursor.toFixed(2)}% ${next.toFixed(2)}%`);
-    cursor = next;
-  }
-  donut.style.background = `conic-gradient(${segments.join(", ")})`;
+  renderDonut(donut, donutStops([
+    { value: counts.emergencia, color: tipoColors.emergencia },
+    { value: counts.normal, color: tipoColors.normal },
+  ]));
   donut.setAttribute("aria-label",
     `Modalidad: ${counts.emergencia} con emergencia, ${counts.normal} sin emergencia`);
   for (const key of ["emergencia", "normal"]) {
@@ -2108,7 +2252,7 @@ function renderKpis() {
   const previousName = previous ? periodLabel(previous, "mes") : "";
 
   $("kpi-ingresos-label").textContent = all ? "Ingresos · histórico" : "Ingresos del mes";
-  $("kpi-ingresos").textContent = formatMoney(all ? state.ingresosMes?.total : current?.ingresos);
+  countTo($("kpi-ingresos"), Number(all ? state.ingresosMes?.total : current?.ingresos) || 0, formatMoney);
   $("kpi-ingresos").title = current
     ? `${formatMoney(current.ingresos)} en ${currentName}${previous ? ` · ${formatMoney(previous.ingresos)} en ${previousName}` : ""}`
     : "Sin importes registrados";
@@ -2122,7 +2266,7 @@ function renderKpis() {
       : "Sin periodos registrados";
 
   const summary = occupancySummary();
-  $("kpi-ocupacion").textContent = summary.rate === null ? "—" : formatPercent(summary.rate);
+  countTo($("kpi-ocupacion"), summary.rate, formatPercent);
   $("kpi-ocupacion-foot").textContent = summary.rate === null
     ? "Elige un mes para ver la ocupación"
     : `${consultas} ${consultas === 1 ? "consulta realizada" : "consultas realizadas"}`;
@@ -2134,7 +2278,7 @@ function renderKpis() {
     mini.append(notch);
   }
 
-  $("kpi-promedio").textContent = formatMoney(all ? state.ingresosMes?.promedio_consulta : current?.promedio);
+  countTo($("kpi-promedio"), Number(all ? state.ingresosMes?.promedio_consulta : current?.promedio) || 0, formatMoney);
   renderChip("kpi-promedio-chip", deltaChip(current?.promedio, previous?.promedio));
   $("kpi-promedio-foot").textContent = current
     ? `${Number(current.consultas) || 0} ${Number(current.consultas) === 1 ? "consulta" : "consultas"} en ${currentName}`
@@ -2174,7 +2318,10 @@ function renderStats(data) {
   renderRanking(Array.isArray(data?.lecturas) ? data.lecturas : []);
   renderFrecuencia(data?.consultantes || {});
   renderTipos(data?.tipos || {});
-  $("stats-total").textContent = `${total} ${total === 1 ? "finalizada" : "finalizadas"}`;
+  countTo($("stats-total"), total, (number) => {
+    const finished = Math.round(number);
+    return `${finished} ${finished === 1 ? "finalizada" : "finalizadas"}`;
+  });
   $("stats-total").title = $("stats-all").checked
     ? "Histórico completo"
     : formatMonthLabel($("stats-month").value);
@@ -2189,6 +2336,7 @@ function renderStats(data) {
   }
   renderOcupacion();
   renderKpis();
+  markChartsReady("stats");
 }
 
 async function loadStats() {
@@ -2298,6 +2446,21 @@ function renderCurve(periodos, granularidad) {
     .join(" ");
 
   const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: "none" });
+  // Relleno del área: degradado vertical rosa -> transparente (los colores y la
+  // opacidad se ajustan desde CSS con .curve-stop-top / .curve-stop-bottom).
+  const defs = svgNode("defs");
+  const areaGradient = svgNode("linearGradient", {
+    id: "curve-area-gradient",
+    gradientUnits: "userSpaceOnUse",
+    x1: 0,
+    y1: padY,
+    x2: 0,
+    y2: height - padY,
+  });
+  areaGradient.append(svgNode("stop", { class: "curve-stop-top", offset: "0%" }));
+  areaGradient.append(svgNode("stop", { class: "curve-stop-bottom", offset: "100%" }));
+  defs.append(areaGradient);
+  svg.append(defs);
   const grid = svgNode("g", { class: "curve-grid" });
   for (const ratio of [0, 0.5, 1]) {
     const y = (padY + (height - padY * 2) * ratio).toFixed(1);
@@ -2368,17 +2531,22 @@ function renderCurve(periodos, granularidad) {
     label.textContent = periodLabel(periodos[index], granularidad);
     labels.append(label);
   }
+  // El SVG nuevo arranca recortado y la animación CSS lo abre de izquierda a
+  // derecha; puntos, picos y etiquetas entran con su propio retraso. Con
+  // prefers-reduced-motion no se marca: el estado base ya es el final.
+  plot.classList.toggle("is-revealed", motionOK());
 }
 
 function renderIngresos(data) {
   const periodos = Array.isArray(data?.periodos) ? data.periodos : [];
   const granularidad = data?.granularidad || state.granularidad;
-  $("ingresos-total").textContent = formatMoney(data?.total);
-  $("ingresos-promedio").textContent = formatMoney(data?.promedio_consulta);
+  countTo($("ingresos-total"), Number(data?.total) || 0, formatMoney);
+  countTo($("ingresos-promedio"), Number(data?.promedio_consulta) || 0, formatMoney);
   $("ingresos-count").textContent = String(Number(data?.consultas) || 0);
   renderCurve(periodos, granularidad);
   if (granularidad === "mes") state.ingresosMes = data;
   renderKpis();
+  markChartsReady("ingresos");
 }
 
 async function loadIngresos(options = {}) {
@@ -2686,6 +2854,9 @@ async function initialize() {
     window.setInterval(() => renderDashboard(), 30000);
   } catch (error) {
     showError(error.message);
+    // sin datos no hay gráficas que esperar: se apaga el skeleton de la primera carga
+    markChartsReady("stats");
+    markChartsReady("ingresos");
     $("identity").textContent = "No se pudo verificar la sesión.";
   }
 }

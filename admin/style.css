@@ -22,6 +22,10 @@
   --shadow:0 8px 30px rgba(168,92,126,.08);
   --cal-gap:6px;
   --space:16px; --panel-pad:22px;
+  /* movimiento de las gráficas: curvas y duraciones compartidas */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --dur-fast:160ms; --dur-base:320ms; --dur-slow:600ms;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:18px}
@@ -393,8 +397,11 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 .bar{display:flex;flex:1 1 0;min-width:48px;flex-direction:column;justify-content:flex-end;gap:4px}
 .bar-track{position:relative;display:flex;flex:1;align-items:flex-end;justify-content:center;border-radius:10px;
   background:linear-gradient(180deg,rgba(215,163,180,.13),rgba(215,163,180,.03))}
-.bar-fill{width:min(100%,32px);border-radius:8px 8px 4px 4px;
-  background:linear-gradient(180deg,var(--gold),var(--rose));transition:height .5s ease,background .2s}
+/* la barra ya nace con su alto final: lo que se anima es el scaleY, así el
+   layout no cambia y no hay saltos al llegar los datos. --i escalona la entrada. */
+.bar-fill{width:min(100%,32px);border-radius:8px 8px 4px 4px;transform-origin:50% 100%;
+  background:linear-gradient(180deg,var(--gold),var(--rose));
+  transition:transform var(--dur-slow) var(--ease-out) calc(var(--i,0) * 45ms),background var(--dur-fast) ease}
 .bar:hover .bar-fill{background:linear-gradient(180deg,var(--rose),var(--mauve))}
 .bar-value,.bar-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:11px}
 .bar-value{color:var(--ink);font-family:var(--font-number);font-variant-numeric:lining-nums tabular-nums}
@@ -465,8 +472,16 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 
 /* torta de consultantes (nuevas vs. frecuentes) */
 .donut-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+/* Las donas se pintan con conic-gradient. Para que el degradado se pueda
+   interpolar, los tres cortes son custom properties registradas como <percentage>:
+   sin @property la transición no interpola y el anillo salta a su estado final. */
+@property --a1{syntax:"<percentage>";inherits:false;initial-value:0%}
+@property --a2{syntax:"<percentage>";inherits:false;initial-value:0%}
+@property --a3{syntax:"<percentage>";inherits:false;initial-value:0%}
 .donut{position:relative;display:grid;flex:0 0 auto;width:132px;height:132px;place-items:center;
-  border-radius:999px;background:var(--fog);transition:background .4s ease;
+  border-radius:999px;background:var(--fog);
+  transition:--a1 var(--dur-slow) var(--ease-out),--a2 var(--dur-slow) var(--ease-out),
+    --a3 var(--dur-slow) var(--ease-out);
   box-shadow:inset 0 0 0 1px rgba(168,92,126,.08)}
 .donut::after{content:"";position:absolute;inset:27px;border-radius:999px;background:var(--card);
   box-shadow:inset 0 1px 3px rgba(168,92,126,.1)}
@@ -478,6 +493,32 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 .donut-group{display:grid;gap:10px}
 .donut-group + .donut-group{padding-top:14px;border-top:1px solid var(--soft-line)}
 
+/* ---------- skeleton de la primera carga ----------
+   El JS quita .is-loading de #vista-graficos cuando estadísticas e ingresos ya
+   pintaron. El texto se mantiene (color transparente) para no mover el layout. */
+#vista-graficos.is-loading :is(#kpi-ingresos,#kpi-promedio,#kpi-ocupacion,#stats-total,
+  #ingresos-total,#ingresos-promedio,#ocupacion-media,#ocupacion-cupos,#ocupacion-consultas,
+  #ranking-total,#kpi-ranking-share,#kpi-frecuente-pct,#kpi-nueva-pct,
+  #frecuencia-donut-total,#tipos-donut-total){
+  color:transparent;border-radius:6px;
+  background-image:linear-gradient(90deg,var(--fog) 0%,var(--wash) 42%,#fff 52%,var(--fog) 100%);
+  background-size:240% 100%;background-repeat:no-repeat;
+  animation:shimmer 1.4s linear infinite}
+#vista-graficos.is-loading .curve-plot,
+#vista-graficos.is-loading .bars,
+#vista-graficos.is-loading #ranking-list,
+#vista-graficos.is-loading .donut{
+  border-radius:14px;
+  background-image:linear-gradient(90deg,var(--fog) 0%,var(--wash) 42%,#fff 52%,var(--fog) 100%);
+  background-size:240% 100%;background-repeat:no-repeat;
+  animation:shimmer 1.6s linear infinite}
+#vista-graficos.is-loading .donut{border-radius:999px}
+#vista-graficos.is-loading #ranking-list{min-height:240px}
+/* el eje de la curva se dibuja después: se reserva su alto para no mover nada */
+#vista-graficos.is-loading .curve-labels{min-height:15px}
+/* el barrido mueve solo el fondo: no dispara layout ni desplaza contenido */
+@keyframes shimmer{from{background-position:140% 50%}to{background-position:-140% 50%}}
+
 /* curva de ingresos + ticket medio */
 .curve{display:grid;gap:6px}
 .curve-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;color:var(--ink-muted);font-size:11px}
@@ -487,11 +528,21 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 .curve-max{margin-left:auto;font-variant-numeric:tabular-nums}
 .curve-plot{position:relative;height:200px}
 .curve-plot svg{display:block;width:100%;height:100%;overflow:visible}
+/* revelado de izquierda a derecha abriendo el clip-path del SVG.
+   No usamos stroke-dashoffset: los trazos llevan vector-effect="non-scaling-stroke". */
+.curve-plot.is-revealed svg{animation:curve-reveal calc(var(--dur-slow) + 100ms) var(--ease-out) both}
+@keyframes curve-reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+@keyframes curve-pop{from{opacity:0}to{opacity:1}}
 .curve-grid line{stroke:var(--soft-line);stroke-width:1}
-.curve-area{fill:rgba(215,163,180,.22)}
+.curve-area{fill:url(#curve-area-gradient)}
+.curve-stop-top{stop-color:var(--rose);stop-opacity:.42}
+.curve-stop-bottom{stop-color:var(--rose);stop-opacity:0}
 .curve-line{fill:none;stroke:var(--rose);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .curve-avg{fill:none;stroke:var(--gold);stroke-width:2;stroke-dasharray:5 4;stroke-linecap:round}
 .curve-dot{fill:var(--card);stroke:var(--rose);stroke-width:2}
+/* puntos y picos aparecen con un pequeño retraso, cuando la línea ya se abrió */
+.curve-plot.is-revealed .curve-dot,.curve-plot.is-revealed .curve-peak{
+  animation:curve-pop var(--dur-base) var(--ease-spring) calc(var(--dur-slow) * .7) both}
 .curve-labels{display:flex;gap:4px;overflow:hidden;color:var(--muted);font-size:10px}
 .curve-labels span{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .curve-labels span:first-child{text-align:left}
@@ -504,7 +555,8 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 .ratio-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
 .ratio-value{color:var(--ink-muted);font-family:var(--font-number);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ratio-track{display:block;height:8px;border-radius:99px;background:var(--fog);overflow:hidden}
-.ratio-track i{display:block;height:100%;min-width:3px;border-radius:99px;background:var(--rose);transition:width .4s ease}
+.ratio-track i{display:block;height:100%;min-width:3px;border-radius:99px;background:var(--rose);transform-origin:0 50%;
+  transition:transform var(--dur-base) var(--ease-out) calc(var(--i,0) * 45ms),background var(--dur-fast) ease}
 /* el realce al pasar el cursor solo en punteros finos */
 @media (hover:hover){
   .kpi:hover{transform:translateY(-2px);box-shadow:0 16px 34px -22px rgba(168,92,126,.55)}
@@ -676,8 +728,12 @@ footer{color:var(--muted);text-align:center;font-size:12px}
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;transition-delay:0ms!important;animation-delay:0ms!important}
   .reveal{opacity:1;transform:none}
+  /* las gráficas muestran su estado final, sin revelado ni entradas escalonadas */
+  .curve-plot svg{clip-path:none!important}
+  .curve-dot,.curve-peak,.curve-peak-label{opacity:1!important}
 }
 /* --- consultas: KPIs, modo día/mes, tira de días y bento --- */
 .consultas-view{gap:14px}
@@ -819,6 +875,8 @@ footer{color:var(--muted);text-align:center;font-size:12px}
   transform:translate(-50%,-140%);background:rgba(43,29,36,.82);color:#fff;white-space:nowrap;
   font:600 9px/1.5 var(--font-subtitle);letter-spacing:.04em;pointer-events:none;
   box-shadow:0 8px 18px -12px rgba(43,29,36,.9)}
+.curve-plot.is-revealed .curve-peak-label{
+  animation:curve-pop var(--dur-base) var(--ease-out) calc(var(--dur-slow) * .8) both}
 .curve-peak-label[data-edge="start"]{transform:translate(0,-140%)}
 .curve-peak-label[data-edge="end"]{transform:translate(-100%,-140%)}
 
