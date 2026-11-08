@@ -879,7 +879,7 @@ function renderConsultas(consultas) {
           body: JSON.stringify({ estado: status.value }),
         });
         showNotice("El estado de la consulta quedó actualizado.");
-        await Promise.all([loadConsultas(), loadDashboardConsultas(), loadStats()]);
+        await Promise.all([loadConsultas(), loadDashboardConsultas(), loadStats(), loadIngresos()]);
       } catch (error) {
         status.value = previousStatus;
         showError(error.message);
@@ -2100,20 +2100,26 @@ function renderKpis() {
   const { current, previous } = kpiPeriod();
   const stats = state.stats || {};
   const consultas = Number(stats.total) || 0;
-  const periodName = $("stats-all")?.checked
+  const all = Boolean($("stats-all")?.checked);
+  const periodName = all
     ? "Todo el histórico"
     : monthTitle($("stats-month").value || monthValue());
   const currentName = current ? periodLabel(current, "mes") : "";
   const previousName = previous ? periodLabel(previous, "mes") : "";
 
-  $("kpi-ingresos").textContent = formatMoney(current?.ingresos);
+  $("kpi-ingresos-label").textContent = all ? "Ingresos · histórico" : "Ingresos del mes";
+  $("kpi-ingresos").textContent = formatMoney(all ? state.ingresosMes?.total : current?.ingresos);
   $("kpi-ingresos").title = current
     ? `${formatMoney(current.ingresos)} en ${currentName}${previous ? ` · ${formatMoney(previous.ingresos)} en ${previousName}` : ""}`
     : "Sin importes registrados";
-  renderChip("kpi-ingresos-chip", deltaChip(current?.ingresos, previous?.ingresos));
-  $("kpi-ingresos-foot").textContent = current
-    ? `${currentName} · vs. ${previousName || "sin periodo previo"}`
-    : "Sin periodos registrados";
+  renderChip("kpi-ingresos-chip", all
+    ? { text: "—", tone: "flat" }
+    : deltaChip(current?.ingresos, previous?.ingresos));
+  $("kpi-ingresos-foot").textContent = all
+    ? "Todos los meses · solo finalizadas"
+    : current
+      ? `${currentName} · vs. ${previousName || "sin periodo previo"}`
+      : "Sin periodos registrados";
 
   const summary = occupancySummary();
   $("kpi-ocupacion").textContent = summary.rate === null ? "—" : formatPercent(summary.rate);
@@ -2128,7 +2134,7 @@ function renderKpis() {
     mini.append(notch);
   }
 
-  $("kpi-promedio").textContent = formatMoney(current?.promedio ?? state.ingresosMes?.promedio_consulta);
+  $("kpi-promedio").textContent = formatMoney(all ? state.ingresosMes?.promedio_consulta : current?.promedio);
   renderChip("kpi-promedio-chip", deltaChip(current?.promedio, previous?.promedio));
   $("kpi-promedio-foot").textContent = current
     ? `${Number(current.consultas) || 0} ${Number(current.consultas) === 1 ? "consulta" : "consultas"} en ${currentName}`
@@ -2168,7 +2174,7 @@ function renderStats(data) {
   renderRanking(Array.isArray(data?.lecturas) ? data.lecturas : []);
   renderFrecuencia(data?.consultantes || {});
   renderTipos(data?.tipos || {});
-  $("stats-total").textContent = `${total} ${total === 1 ? "consulta" : "consultas"}`;
+  $("stats-total").textContent = `${total} ${total === 1 ? "finalizada" : "finalizadas"}`;
   $("stats-total").title = $("stats-all").checked
     ? "Histórico completo"
     : formatMonthLabel($("stats-month").value);

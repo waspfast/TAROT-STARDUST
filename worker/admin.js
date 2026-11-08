@@ -494,10 +494,13 @@ async function statsConsultas(db, params) {
   let total = 0;
 
   for (const row of result.results || []) {
-    total += 1;
     if (row.estado === "finalizado") states.finalizado += 1;
     else if (row.estado === "cancelada") states.cancelada += 1;
     else states.en_proceso += 1;
+    // Solo las consultas finalizadas alimentan el conteo, los clientes, los tipos
+    // y el ranking; las que están en progreso o canceladas no aportan a las métricas.
+    if (row.estado !== "finalizado") continue;
+    total += 1;
     if (row.consultante === "nueva" || row.consultante === "frecuente") clients[row.consultante] += 1;
     else clients.sin_dato += 1;
     if (row.tipo === "emergencia") types.emergencia += 1;
@@ -603,10 +606,10 @@ async function statsIngresos(db, params) {
   const result = await db.prepare(
     "SELECT fecha, total, precios, estado FROM consultas"
   ).all();
-  // Las consultas canceladas no producen ingresos: no entran en la curva, ni en
-  // el total, ni en el ticket medio.
+  // Solo las consultas finalizadas producen ingresos: las que están en progreso o
+  // canceladas no entran en la curva, ni en el total, ni en el ticket medio.
   const filas = (result.results || []).filter((row) =>
-    typeof row.fecha === "string" && isRealDate(row.fecha) && row.estado !== "cancelada");
+    typeof row.fecha === "string" && isRealDate(row.fecha) && row.estado === "finalizado");
 
   let cutoff = "";
   if (granularidad === "dia" && filas.length > LIMITE_DIAS_INGRESOS) {
