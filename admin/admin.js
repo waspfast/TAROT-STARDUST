@@ -24,6 +24,7 @@ const state = {
   ocupacionGran: "dia",
   activeMetric: "ingresos",
   pendingFlash: null, // ids a destellar cuando se abra Gráficos
+  statsStale: false, // estadísticas pendientes de recargar al abrir Gráficos
 };
 
 const $ = (id) => document.getElementById(id);
@@ -883,7 +884,9 @@ function renderConsultas(consultas) {
           body: JSON.stringify({ estado: status.value }),
         });
         showNotice("El estado de la consulta quedó actualizado.");
-        await Promise.all([loadConsultas(), loadDashboardConsultas(), loadStats(), loadIngresos()]);
+        // Con Gráficos oculta solo se recarga Consultas: las cifras y sus
+        // animaciones se reservan para cuando la vista entre en pantalla.
+        await Promise.all([loadConsultas(), loadDashboardConsultas(), refreshStatsLive()]);
         if (finalizing) queueMoneyFlash(consultaHasAmount(consulta));
       } catch (error) {
         status.value = previousStatus;
@@ -1658,7 +1661,7 @@ async function submitManualReserva(event) {
       loadAvailability(),
       loadConsultas(),
       loadDashboardConsultas(),
-      loadStats(),
+      refreshStatsLive(), // las cifras, solo si Gráficos está a la vista
     ]);
     await loadTiposHoy().catch(() => {});
     setConsultaMode("dia");
@@ -3184,6 +3187,55 @@ function queueMoneyFlash(withAmount) {
   flashElements(ids);
 }
 
+/* ---------- cifras que se ponen al día al abrir Gráficos ----------
+   Recargarlas con la vista oculta gasta las animaciones donde nadie las ve:
+   countTo rueda a escondidas, las barras/ranking no llegan a entrar y la curva
+   queda a medias. Por eso un cambio que toca las cifras con Gráficos fuera de
+   pantalla solo marca state.statsStale; la recarga ocurre al entrar. */
+let statsReload = null; // recarga en vuelo, para no duplicar peticiones
+
+function refreshStatsLive() {
+  if (!chartsViewVisible()) {
+    state.statsStale = true;
+    return Promise.resolve();
+  }
+  state.statsStale = false;
+  return Promise.all([loadStats(), loadIngresos()]).catch((error) => {
+    state.statsStale = true; // se reintenta al volver a abrir Gráficos
+    throw error;
+  });
+}
+
+// Una sola recarga en vuelo. Resuelve true si las cifras quedaron al día; si
+// falla deja statsStale y pendingFlash intactos para el siguiente intento.
+function reloadStatsOnEntry() {
+  if (statsReload) return statsReload;
+  state.statsStale = false; // evita recargas duplicadas mientras carga
+  statsReload = Promise.all([loadStats(), loadIngresos()])
+    .then(
+      () => true,
+      (error) => {
+        showError(error.message);
+        return false;
+      }
+    )
+    .then((ok) => {
+      statsReload = null;
+      if (!ok) state.statsStale = true;
+      return ok;
+    });
+  return statsReload;
+}
+
+// El destello se reproduce una sola vez y solo con Gráficos a la vista: si se
+// cambió de vista mientras cargaba, queda pendiente para la próxima entrada.
+function playPendingFlash() {
+  const pending = state.pendingFlash;
+  if (!pending || !chartsViewVisible()) return;
+  state.pendingFlash = null;
+  window.requestAnimationFrame(() => flashElements(pending));
+}
+
 function closeExpandedTile() {
   if (!state.expandedTile) return;
   const previous = state.expandedTile;
@@ -3282,10 +3334,12 @@ function bindView() {
       view.classList.toggle("is-active", active);
       if (active) {
         reveal(view);
-        if (target.dataset.view === "graficos" && state.pendingFlash) {
-          const pending = state.pendingFlash;
-          state.pendingFlash = null;
-          window.requestAnimationFrame(() => flashElements(pending));
+        if (target.dataset.view === "graficos") {
+          // Con datos pendientes se recarga ya a la vista y el destello espera al
+          // render de ambas cargas, para que coincida con el rodar de las cifras.
+          const reload = statsReload || (state.statsStale ? reloadStatsOnEntry() : null);
+          if (reload) reload.then((ok) => { if (ok) playPendingFlash(); });
+          else playPendingFlash();
         }
         const bars = view.querySelector(".bars");
         if (bars) window.requestAnimationFrame(() => syncBarsScroll(bars));
