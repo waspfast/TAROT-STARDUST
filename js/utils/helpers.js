@@ -121,8 +121,7 @@ function updateEmergencyToggle() {
   // si no cae en la ventana (o el día ya no tiene cupo), se apaga sola.
   let dateOk = true;
   if (state.fecha) {
-    const avail = getDayAvailability(state.fecha);
-    dateOk = isEmergencyWindow(state.fecha) && avail.emergenciaLeft > 0;
+    dateOk = isEmergencyWindow(state.fecha) && getDayCupo(state.fecha).emergencia;
   }
 
   if (!(readingEligible && dateOk) && state.emergency) {

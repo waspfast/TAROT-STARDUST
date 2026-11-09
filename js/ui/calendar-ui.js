@@ -11,6 +11,7 @@ let _availLoaded = {};
 let _availLoading = {};
 let _availFailed = {};
 let _availErrorShown = {};
+let _fdateIso = ''; // día tocado en el modal "agenda llena / solo emergencia"
 
 function _capWord(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -81,10 +82,10 @@ function selectCalendarDate(iso) {
   if (!(typeof isOpenWeekend === 'function' && isOpenWeekend(iso))) return;
   const minIso = formatDateValue(getCalendarMinDate());
   if (iso < minIso) return; // dia ya pasado o no disponible
-  const avail = getDayAvailability(iso);
+  const cupo = getDayCupo(iso);
   const useEmergency = state.emergency && isEmergencyWindow(iso)
-    && getEmergencySurcharge() > 0 && avail.emergenciaLeft > 0;
-  if (useEmergency ? avail.emergenciaLeft <= 0 : avail.normalLeft <= 0) return; // sin cupo del tipo elegido
+    && getEmergencySurcharge() > 0 && cupo.emergencia;
+  if (useEmergency ? !cupo.emergencia : !cupo.normal) return; // sin cupo del tipo elegido
   state.fecha = iso;
   const input = document.getElementById('inpDate');
   if (input) input.value = iso;
@@ -108,10 +109,23 @@ function renderCalendar() {
   if (!container) return;
 
   const minDate = getCalendarMinDate();
-  const minIso = formatDateValue(minDate);
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const todayIso = formatDateValue(now);
+
+  // Mínimos reales para reservar, independientes del estado actual de emergencia:
+  //   normal     -> hoy + 2 días
+  //   emergencia -> hoy (la ventana de emergencia empieza hoy)
+  // Las lecturas extensas nunca reservan antes de EXTENSIVE_MIN_FECHA (ni con emergencia).
+  const normalMinDate = new Date(now);
+  normalMinDate.setDate(now.getDate() + 2);
+  let normalMinIso = formatDateValue(normalMinDate);
+  let emergencyMinIso = todayIso;
+  if (typeof hasExtensiveSelection === 'function' && hasExtensiveSelection()) {
+    const extensaMinIso = formatDateValue(new Date(EXTENSIVE_MIN_FECHA + 'T00:00:00'));
+    if (extensaMinIso > normalMinIso) normalMinIso = extensaMinIso;
+    if (extensaMinIso > emergencyMinIso) emergencyMinIso = extensaMinIso;
+  }
 
   // La primera vez inicia en el mes de la fecha minima disponible
   if (_calYear === null || _calMonth === null) {
@@ -161,21 +175,28 @@ function renderCalendar() {
     const isOpen = typeof isOpenWeekend === 'function' && isOpenWeekend(iso);
     const isWeekend = (dow === 0 || dow === 6) && !isOpen;
     const isClosed = !isOpen;
-    const isPast = isOpen && iso < minIso;
     const isToday = iso === todayIso;
     const isSelected = state.fecha === iso;
-    const avail = getDayAvailability(iso);
+    const cupo = getDayCupo(iso);
+
+    // Capacidad real del día según el calendario (no sólo los contadores de D1):
+    //   canBookNormal    -> agenda con hueco normal dentro del mínimo normal
+    //   canBookEmergency -> hueco de emergencia dentro de su ventana (hoy → domingo siguiente)
+    const emergencyOk = isOpen && isEmergencyWindow(iso) && canEmergencyReading && cupo.emergencia;
+    const canBookNormal = isOpen && iso >= normalMinIso && cupo.normal;
+    const canBookEmergency = isOpen && iso >= emergencyMinIso && emergencyOk;
+
+    // Día bloqueado (gris): antes del mínimo normal y sin opción de emergencia.
+    // Los días previos al mínimo normal (hoy / mañana) SÍ se ofrecen si hay emergencia.
+    const isPast = isOpen && iso < normalMinIso && !canBookEmergency;
+
     // Estado del dia segun el modo activo:
-    //   open = hay cupo | only-emergency = normal lleno pero emergencia libre | full = sin cupo
-    // La emergencia aplica dentro de la ventana (hoy → domingo de la semana que viene) si la lectura califica.
+    //   open = hay cupo (normal, o emergencia ya activada) | only-emergency = normal lleno pero emergencia libre | full = sin cupo
     let status = isClosed ? 'full' : 'open';
-    if (isOpen && !isPast) {
-      const emergencyOk = isEmergencyWindow(iso) && canEmergencyReading && avail.emergenciaLeft > 0;
-      if (state.emergency && emergencyOk) {
-        status = 'open';
-      } else if (avail.normalLeft <= 0) {
-        status = emergencyOk ? 'only-emergency' : 'full';
-      }
+    if (isOpen) {
+      if (canBookNormal) status = 'open';
+      else if (canBookEmergency) status = state.emergency ? 'open' : 'only-emergency';
+      else status = 'full';
     }
     const isFull = status === 'full';
     const isOnlyEmergency = status === 'only-emergency';
@@ -199,7 +220,7 @@ function renderCalendar() {
     html += '<button type="button" class="' + cls + '" data-iso="' + iso + '"' + (isClosed || isPast ? ' disabled' : '') + '>' + inner + '</button>';
   }
   html += '</div>';
-  html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-gold"></i>solo emergencia</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
+  html += '<div class="calendar-note"><span class="note-row"><span class="note-item"><i class="dot dot-green"></i>disponible</span><span class="note-item"><i class="dot dot-gold"></i>solo emergencia disponible</span><span class="note-item"><i class="dot dot-red"></i>agenda llena</span></span></div>';
   }
 
   container.innerHTML = html;
@@ -212,8 +233,8 @@ function renderCalendar() {
   if (retryBtn) retryBtn.addEventListener('click', retryMonthAvailability);
   container.querySelectorAll('.cal-day:not(:disabled)').forEach(function (btn) {
     btn.addEventListener('click', function () {
-        if (btn.classList.contains('is-full')) showFullDateModal('full');
-        else if (btn.classList.contains('is-only-emergency')) showFullDateModal('emergency');
+        if (btn.classList.contains('is-full')) showFullDateModal('full', btn.dataset.iso);
+        else if (btn.classList.contains('is-only-emergency')) showFullDateModal('emergency', btn.dataset.iso);
         else selectCalendarDate(btn.dataset.iso);
       });
   });
@@ -256,20 +277,19 @@ function toggleCalendar() {
   setCalendarOpen(!isCalendarOpen());
 }
 
-function showFullDateModal(mode) {
+function showFullDateModal(mode, iso) {
   const isEmergency = mode === 'emergency';
+  _fdateIso = iso || '';
   const title = document.getElementById('fdateTitle');
   const text = document.getElementById('fdateText');
   const btn = document.getElementById('fdateBtn');
   const emergencyBox = document.getElementById('fdateEmergency');
-  const toggle = document.getElementById('fdateToggle');
 
   if (isEmergency) {
-    if (title) title.textContent = 'solo emergencia ✨';
-    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$' + getEmergencySurcharge().toFixed(2) + '). actívala para reservar este día ♥';
+    if (title) title.textContent = 'solo emergencia disponible ✨';
+    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$' + getEmergencySurcharge().toFixed(2) + '). actívala para el día pautado ♥';
     if (btn) btn.hidden = true;
     if (emergencyBox) emergencyBox.hidden = false;
-    if (toggle) { toggle.classList.remove('on'); toggle.classList.add('off'); }
   } else {
     if (title) title.textContent = 'agenda llena ✨';
     if (text) text.textContent = 'esa fecha ya no tiene cupo. elige otro día disponible ✨';
@@ -280,11 +300,12 @@ function showFullDateModal(mode) {
   if (m) m.classList.add('open');
 }
 
-// Interruptor del modal: activa el modo emergencia y cierra tras ver la animacion.
+// Botón "solo emergencia disponible": activa la emergencia y deja pautado ese día.
 function fdateToggleEmergency() {
-  const toggle = document.getElementById('fdateToggle');
-  if (toggle) { toggle.classList.remove('off'); toggle.classList.add('on'); }
+  const iso = _fdateIso;
   if (!state.emergency) toggleEmergency();
+  // Deja la fecha elegida con sus horarios de emergencia ⚡ listos para tomar.
+  if (iso && typeof selectCalendarDate === 'function') selectCalendarDate(iso);
   setTimeout(closeFullDateModal, 300);
 }
 

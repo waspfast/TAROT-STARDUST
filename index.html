@@ -403,10 +403,8 @@
       <p class="fdate-text" id="fdateText">esa fecha ya no tiene cupo. elige otro día disponible ✨</p>
       <button type="button" class="fdate-btn" id="fdateBtn" onclick="fdateAction()">entendido</button>
       <div class="fdate-emergency" id="fdateEmergency" hidden>
-        <div class="fdate-toggle-row">
-          <span class="fdate-toggle-label">activar emergencia</span>
-          <div id="fdateToggle" class="toggle-track off" onclick="fdateToggleEmergency()"></div>
-        </div>
+        <button type="button" class="fdate-btn fdate-btn--gold" id="fdateEmergencyBtn"
+          onclick="fdateToggleEmergency()">solo emergencia disponible ⚡</button>
         <button type="button" class="fdate-nothanks" onclick="closeFullDateModal()">no, gracias</button>
       </div>
     </div>

@@ -63,6 +63,8 @@ function updateSelectedReadingsSummary() {
   const list = document.getElementById('selectedReadingsList');
   const keys = Object.keys(state.readings);
   renderBookingReadingList();
+  // La duración (corta/extensa) cambia qué días quedan "solo emergencia".
+  if (typeof renderCalendar === 'function') renderCalendar();
   if (keys.length === 0) {
     summary.classList.add('hidden');
     list.innerHTML = '';

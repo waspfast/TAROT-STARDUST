@@ -248,3 +248,28 @@ function markSlotBooked(iso, inicio, duracion, tipo) {
     if (s[clave].indexOf(b) === -1) s[clave].push(b);
   });
 }
+
+// Cupo real del dia: combina el cupo de lecturas que define D1 (contadores) con
+// la agenda ya reservada (bloques de la rejilla). Hace falta mirar las dos cosas
+// porque un dia puede tener contador libre y no quedar ningun bloque donde entre
+// la lectura (o al revés: cupo agotado aunque queden bloques sueltos).
+//   normal     -> hay cupo normal y al menos un bloque libre
+//   emergencia -> hay cupo de emergencia y al menos un bloque sin otra emergencia
+//                 (la emergencia sí puede solaparse con UNA lectura normal)
+function getDayCupo(iso) {
+  var avail = getDayAvailability(iso);
+  if (!avail.normalLeft && !avail.emergenciaLeft) {
+    return { normal: false, emergencia: false };
+  }
+  var slots = horariosDisponibles(iso, totalReadingDuration());
+  var libre = false, sinEmergencia = false;
+  for (var i = 0; i < slots.length; i++) {
+    var estado = slots[i].estado;
+    if (estado === 'libre') { libre = true; sinEmergencia = true; break; }
+    if (estado === 'normal') sinEmergencia = true;
+  }
+  return {
+    normal: avail.normalLeft > 0 && libre,
+    emergencia: avail.emergenciaLeft > 0 && sinEmergencia
+  };
+}
