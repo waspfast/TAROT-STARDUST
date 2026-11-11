@@ -896,9 +896,12 @@ function renderConsultas(consultas) {
       }
     });
     card.append(details, status);
-    appendText(card, "p", "consulta-detail",
-      `Lecturas: ${consulta.lecturas || "—"}`
-      + `\nPrecios: ${consulta.precios || "—"} · Total: ${consulta.total ?? "—"}`);
+    let consultaDetail = "Lecturas: " + (consulta.lecturas || "—")
+      + "\nPrecios: " + (consulta.precios || "—") + " · Total: " + (consulta.total ?? "—");
+    if (consulta.metodo_pago) consultaDetail += "\nMétodo de pago: " + consulta.metodo_pago;
+    if (consulta.recargo_emergencia > 0) consultaDetail += "\nCargo emergencia: +" + formatMoney(consulta.recargo_emergencia);
+    if (consulta.comision_pago > 0) consultaDetail += "\nComisión de pago: +" + formatMoney(consulta.comision_pago);
+    appendText(card, "p", "consulta-detail", consultaDetail);
     container.append(card);
   }
 
@@ -1285,6 +1288,13 @@ function buildDayPrintText(fecha, consultas, scope = "dia") {
       ].filter(Boolean).join(" · ");
       if (meta) for (const row of wrapText(meta)) lines.push(row);
       if (consulta.lecturas) for (const row of wrapText(`Lecturas: ${consulta.lecturas}`)) lines.push(row);
+      if (consulta.metodo_pago) lines.push("Método de pago: " + consulta.metodo_pago);
+      if (consulta.tipo === "emergencia") {
+        lines.push(consulta.recargo_emergencia > 0
+          ? "Cargo emergencia: +" + formatMoney(consulta.recargo_emergencia)
+          : "Cargo emergencia: Sí");
+      }
+      if (consulta.comision_pago > 0) lines.push("Comisión de pago: +" + formatMoney(consulta.comision_pago));
       const phone = String(consulta.telefono || "").trim();
       if (phone) lines.push(`Tel. ${state.discreet ? formatPhone(phone) : phone}`);
       const detalle = detalleTexto(consulta.detalle);
@@ -1438,6 +1448,11 @@ function openConsultaModal(consulta) {
       : formatMoney(consulta.total)],
     ["Estado", statusLabel(consulta.estado)],
     ["Canal", consulta.canal && manualChannelLabels[consulta.canal] ? manualChannelLabels[consulta.canal] : ""],
+    ["Método de pago", consulta.metodo_pago || ""],
+    ["Cargo de emergencia", consulta.tipo === "emergencia"
+      ? (consulta.recargo_emergencia > 0 ? "Sí · +" + formatMoney(consulta.recargo_emergencia) : "Sí")
+      : "No"],
+    ["Comisión de pago", consulta.comision_pago > 0 ? "+" + formatMoney(consulta.comision_pago) : ""],
     ["Teléfono", consulta.telefono ? (state.discreet ? formatPhone(consulta.telefono) : consulta.telefono) : ""],
     ["Consultante", consulta.consultante ? capitalize(consulta.consultante) : ""],
     ["Registrada", consulta.creado_en || ""],

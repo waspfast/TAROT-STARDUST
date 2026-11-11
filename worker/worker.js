@@ -69,6 +69,43 @@ function textoDetalle(valor) {
   return texto.slice(0, 600);
 }
 
+const CANALES_CONTACTO = ["whatsapp", "correo", "telegram", "discord"];
+
+// La plataforma elegida en la web (whatsapp/correo/telegram/discord) es el canal
+// por el que se hará la lectura. Solo se guarda si coincide con los conocidos.
+function canalDePlataforma(valor) {
+  const v = String(valor == null ? "" : valor).trim().toLowerCase();
+  return CANALES_CONTACTO.includes(v) ? v : null;
+}
+
+// Métodos de pago que ofrece la web, con su nombre canónico para la base.
+const METODOS_PAGO = ["Binance USDT", "Pago Móvil", "PayPal", "Tarjeta Internacional"];
+
+function sinAcentos(valor) {
+  return String(valor == null ? "" : valor).trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// La web manda "Sin método" cuando la consultante no eligió ninguno: se guarda
+// NULL. Cualquier otro valor debe coincidir con los métodos conocidos.
+function metodoDePago(valor) {
+  const v = sinAcentos(valor);
+  if (!v || v === "sin metodo") return null;
+  for (const metodo of METODOS_PAGO) {
+    if (sinAcentos(metodo) === v) return metodo;
+  }
+  return null;
+}
+
+// Comisión por método de pago con recargo (misma regla que el front: $2.50).
+function comisionDePago(metodo) {
+  return metodo === "PayPal" || metodo === "Tarjeta Internacional" ? 2.5 : 0;
+}
+
+function redondear2(value) {
+  return Math.round(value * 100) / 100;
+}
+
 async function registrarConsulta(env, fecha, tipo, inicio, data) {
   if (!useD1(env)) return;
 
@@ -91,32 +128,73 @@ async function registrarConsulta(env, fecha, tipo, inicio, data) {
     : null;
 
   const detalle = textoDetalle(data.detalle);
-  const columnas = "fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios, total";
-  const valores = [
+
+  // ── Pago y cargos ──
+  //   canal       -> plataforma de contacto (whatsapp/correo/telegram/discord)
+  //   metodo_pago -> Binance USDT | Pago Móvil | PayPal | Tarjeta Internacional
+  //   comision    -> $2.50 solo para PayPal y tarjeta internacional
+  //   recargo     -> total - lecturas - comisión (sin duplicar la fórmula del front)
+  const metodoPago = metodoDePago(data.metodo_pago);
+  const canal = canalDePlataforma(data.plataforma != null ? data.plataforma : data.canal);
+  const comision = comisionDePago(metodoPago);
+  const totalNum = montoNumerico(data.total);
+  const sumaPrecios = precios
+    ? precios.split(",").map(function (p) { return parseFloat(p); })
+        .filter(function (n) { return Number.isFinite(n); })
+        .reduce(function (a, b) { return a + b; }, 0)
+    : 0;
+  let recargo = 0;
+  if (tipo === "emergencia" && totalNum !== null && totalNum !== undefined) {
+    recargo = redondear2(Math.max(0, totalNum - sumaPrecios - comision));
+  }
+  const recargoVal = tipo === "emergencia" ? recargo : null;
+  const comisionVal = comision > 0 ? comision : null;
+
+  const baseColumnas = "fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios, total";
+  const baseValores = [
     fecha, tipo, inicio, consultante, nombre, telefono,
-    data.lecturas || null, precios, montoNumerico(data.total),
+    data.lecturas || null, precios, totalNum,
   ];
 
-  try {
-    await env.DB.prepare(
-      `INSERT INTO consultas (${columnas}, detalle)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(...valores, detalle).run();
-  } catch (err) {
-    const mensaje = String((err && err.message) || err);
-    // Si la migración 0004 todavía no se aplicó, guarda la ficha sin el detalle.
-    if (/no such column|has no column named/i.test(mensaje)) {
-      try {
-        await env.DB.prepare(
-          `INSERT INTO consultas (${columnas}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(...valores).run();
-        return;
-      } catch (fallback) {
-        console.error("No se pudo registrar la consulta:", fallback.message);
+  // Niveles para no romper reservas si alguna migración aún no se aplicó:
+  //   pago  -> canal + metodo_pago + recargo_emergencia + comision_pago + detalle
+  //   detalle -> canal + detalle (sin columnas de pago)
+  //   manual -> canal (sin detalle ni pago)
+  //   base  -> sin canal, detalle ni pago
+  const intentos = [
+    {
+      columnas: baseColumnas + ", canal, metodo_pago, recargo_emergencia, comision_pago, detalle",
+      valores: baseValores.concat([canal, metodoPago, recargoVal, comisionVal, detalle]),
+    },
+    {
+      columnas: baseColumnas + ", canal, detalle",
+      valores: baseValores.concat([canal, detalle]),
+    },
+    {
+      columnas: baseColumnas + ", canal",
+      valores: baseValores.concat([canal]),
+    },
+    {
+      columnas: baseColumnas,
+      valores: baseValores,
+    },
+  ];
+
+  for (const intento of intentos) {
+    const marcas = intento.valores.map(function () { return "?"; }).join(", ");
+    try {
+      await env.DB.prepare(
+        "INSERT INTO consultas (" + intento.columnas + ") VALUES (" + marcas + ")"
+      ).bind(...intento.valores).run();
+      return;
+    } catch (err) {
+      const mensaje = String((err && err.message) || err);
+      // "no such column" = esa migración todavía no se aplicó; probamos con menos columnas.
+      if (!/no such column|has no column named/i.test(mensaje)) {
+        console.error("No se pudo registrar la consulta:", mensaje);
         return;
       }
     }
-    console.error("No se pudo registrar la consulta:", mensaje);
   }
 }
 

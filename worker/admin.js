@@ -131,14 +131,15 @@ async function readMonth(db, month) {
 }
 
 // Columnas del registro. Las de las migraciones 0003 (canal, lectura_tipo,
-// origen) y 0004 (detalle) se piden por niveles para que el panel siga
-// funcionando si todavía no se aplicaron.
-const CONSULTA_COLUMNS = `id, fecha, tipo, inicio, consultante, nombre, telefono, lecturas,
-            precios, total, estado, creado_en`;
-const CONSULTA_COLUMNS_MANUAL = `${CONSULTA_COLUMNS}, canal, lectura_tipo, origen`;
-const CONSULTA_COLUMNS_FULL = `${CONSULTA_COLUMNS_MANUAL}, detalle`;
+// origen), 0004 (detalle) y 0005 (metodo_pago, recargo_emergencia, comision_pago)
+// se piden por niveles para que el panel siga funcionando si todavía no se aplicaron.
+const CONSULTA_COLUMNS = "id, fecha, tipo, inicio, consultante, nombre, telefono, lecturas, " +
+  "precios, total, estado, creado_en";
+const CONSULTA_COLUMNS_MANUAL = CONSULTA_COLUMNS + ", canal, lectura_tipo, origen";
+const CONSULTA_COLUMNS_FULL = CONSULTA_COLUMNS_MANUAL + ", detalle";
+const CONSULTA_COLUMNS_PAGO = CONSULTA_COLUMNS_FULL + ", metodo_pago, recargo_emergencia, comision_pago";
 const COLUMN_FALLBACKS = [
-  CONSULTA_COLUMNS_FULL, CONSULTA_COLUMNS_MANUAL, CONSULTA_COLUMNS,
+  CONSULTA_COLUMNS_PAGO, CONSULTA_COLUMNS_FULL, CONSULTA_COLUMNS_MANUAL, CONSULTA_COLUMNS,
 ];
 
 async function selectConsultas(db, where, binds) {
