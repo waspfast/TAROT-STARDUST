@@ -60,6 +60,20 @@ function getEmergencySurcharge() {
   return 10 + 5 * (keys.length - 1);
 }
 
+// ¿La selección actual permite lecturas de emergencia?
+// Se diferencia de getEmergencySurcharge() en que, sin lecturas elegidas, la
+// emergencia sigue siendo posible (depende de lo que se elija después), así que
+// el calendario puede mostrarla como disponible. Devuelve false solo cuando
+// alguna lectura elegida no tiene prioridad.
+function emergencySelectionAllowed() {
+  const keys = Object.keys(state.readings || {});
+  for (const key of keys) {
+    const r = readingsCatalog.find(function (x) { return x.id === key; });
+    if (r && r.emergencyEligible === false) return false;
+  }
+  return true;
+}
+
 // ── Lecturas extensas (20 min o más) ──
 // Las extensas se pueden elegir, pero no se pueden reservar para "esta semana":
 // el calendario no permite fechas anteriores a EXTENSIVE_MIN_FECHA.

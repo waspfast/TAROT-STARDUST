@@ -140,7 +140,11 @@ function renderCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const minMonthStart = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   const canGoBack = new Date(year, month, 1) > minMonthStart;
-  const canEmergencyReading = getEmergencySurcharge() > 0; // la lectura elegida permite emergencia
+  // La emergencia sigue siendo posible mientras la selección no la bloquee: sin
+  // lecturas elegidas el recargo es 0, pero el día debe verse igual (amarillo).
+  const canEmergencyReading = typeof emergencySelectionAllowed === 'function'
+    ? emergencySelectionAllowed()
+    : getEmergencySurcharge() > 0;
 
   let html = '<div class="flex items-center justify-between mb-2">';
   html += '<button type="button" id="calPrevBtn" class="cal-nav"' + (canGoBack ? '' : ' disabled') + ' aria-label="mes anterior"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>';
@@ -286,10 +290,16 @@ function showFullDateModal(mode, iso) {
   const emergencyBox = document.getElementById('fdateEmergency');
 
   if (isEmergency) {
+    const surcharge = getEmergencySurcharge();
+    const canActivate = surcharge > 0; // sin lectura que califique no hay nada que activar
     if (title) title.textContent = 'solo emergencia disponible ✨';
-    if (text) text.textContent = 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$' + getEmergencySurcharge().toFixed(2) + '). actívala para el día pautado ♥';
-    if (btn) btn.hidden = true;
-    if (emergencyBox) emergencyBox.hidden = false;
+    if (text) {
+      text.textContent = canActivate
+        ? 'esta fecha ya no tiene cupo normal, pero sí de emergencia (+$' + surcharge.toFixed(2) + '). actívala para el día pautado ♥'
+        : 'esta fecha ya no tiene cupo normal, pero sí de emergencia. elige primero tu lectura (y que tenga prioridad) para activarla ⚡';
+    }
+    if (btn) btn.hidden = canActivate;
+    if (emergencyBox) emergencyBox.hidden = !canActivate;
   } else {
     if (title) title.textContent = 'agenda llena ✨';
     if (text) text.textContent = 'esa fecha ya no tiene cupo. elige otro día disponible ✨';
@@ -303,6 +313,12 @@ function showFullDateModal(mode, iso) {
 // Botón "solo emergencia disponible": activa la emergencia y deja pautado ese día.
 function fdateToggleEmergency() {
   const iso = _fdateIso;
+  // Sin una lectura que califique no hay emergencia que activar (el botón ya no
+  // se muestra en ese caso, pero se protege el flujo por si se invoca igual).
+  if (getEmergencySurcharge() <= 0) {
+    closeFullDateModal();
+    return;
+  }
   if (!state.emergency) toggleEmergency();
   // Deja la fecha elegida con sus horarios de emergencia ⚡ listos para tomar.
   if (iso && typeof selectCalendarDate === 'function') selectCalendarDate(iso);
