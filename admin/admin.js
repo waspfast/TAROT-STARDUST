@@ -878,6 +878,8 @@ function renderConsultas(consultas) {
       // destellan.
       const finalizing = status.value === "finalizado" && previousStatus !== "finalizado";
       const cancelling = status.value === "cancelada" && previousStatus !== "cancelada";
+      // Reabrir una cancelada puede volver a ocupar su cupo y su horario.
+      const reopening = previousStatus === "cancelada" && status.value !== "cancelada";
       status.disabled = true;
       try {
         const data = await request(`/api/admin/consultas/${consulta.id}/estado`, {
@@ -894,14 +896,23 @@ function renderConsultas(consultas) {
           } else {
             showNotice("La consulta quedó cancelada.");
           }
+        } else if (reopening) {
+          if (data && data.reocupado) {
+            showNotice("Consulta reabierta: volvió a ocupar su cupo y su horario del día.");
+          } else if (data && data.aviso) {
+            showNotice(`Consulta reabierta. ${data.aviso}`);
+          } else {
+            showNotice("La consulta quedó reabierta.");
+          }
         } else {
           showNotice("El estado de la consulta quedó actualizado.");
         }
         // Con Gráficos oculta solo se recarga Consultas: las cifras y sus
         // animaciones se reservan para cuando la vista entre en pantalla.
         const updates = [loadConsultas(), loadDashboardConsultas(), refreshStatsLive()];
-        // Cancelar devuelve cupo y bloques: refresca la cuadrícula del día.
-        if (cancelling) {
+        // Cancelar devuelve cupo y bloques; reabrir puede volver a ocuparlos:
+        // en ambos casos hay que refrescar la cuadrícula del día.
+        if (cancelling || reopening) {
           updates.push(loadAvailability().catch((error) => showError(error.message)));
         }
         await Promise.all(updates);

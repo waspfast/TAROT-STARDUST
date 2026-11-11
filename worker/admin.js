@@ -499,13 +499,80 @@ export async function updateConsultaState(request, env, actor, id) {
       return json({ ok: true, sin_cambios: true, liberado: false });
     }
 
-    // ── Reabrir o finalizar: solo cambia el estado (el cupo no se re-ocupa) ──
+    // ── Reabrir o finalizar una consulta ──────────────────────────────
+    // Si la cancelación ya había devuelto el cupo del día, aquí se vuelve a
+    // ocupar (contadores + bloques) para que la agenda no muestre ese hueco
+    // como libre. Mismas primitivas que la reserva pública: si el horario ya
+    // lo tomó otra persona o el día está lleno, la consulta se reabre igual
+    // pero sin ocupar nada y se avisa al panel.
     if (body.estado !== "cancelada") {
+      const tieneBandera = Object.prototype.hasOwnProperty.call(consulta, "cupo_liberado");
+      const cupoLiberado = tieneBandera && Number(consulta.cupo_liberado) === 1;
+      const ocupacion = cupoLiberado ? ocupacionDe(consulta) : null;
+
+      // Solo cambia el estado (sin tocar cupo ni agenda).
+      const soloEstado = async (detalle, extra) => {
+        await env.DB.batch([
+          env.DB.prepare("UPDATE consultas SET estado = ? WHERE id = ?").bind(body.estado, numero),
+          audit(body.estado, detalle),
+        ]);
+        return json(Object.assign({ ok: true, liberado: false, reocupado: false }, extra));
+      };
+
+      if (!cupoLiberado) return soloEstado({}, {});
+
+      if (!ocupacion) {
+        return soloEstado({ reocupado: false, motivo: "sin_ocupacion" }, {
+          aviso: "Esta reserva es anterior al registro de ocupación (no guardó si era corta o extensa). La consulta quedó reabierta, pero el cupo de ese día no se pudo volver a ocupar: revísalo a mano.",
+        });
+      }
+
+      const inicioMin = toMinutes(consulta.inicio);
+      const bloques = consulta.inicio && Number.isFinite(inicioMin)
+        ? bloquesDe(inicioMin, ocupacion.duracion)
+        : [];
+
+      // 1) Horario: atómico. Si otra reserva ya tomó el bloque, no se ocupa nada.
+      if (bloques.length && !(await reservarSlot(env, consulta.fecha, consulta.tipo, bloques))) {
+        return soloEstado({ reocupado: false, motivo: "horario_ocupado" }, {
+          aviso: "Ese horario ya lo tomó otra reserva. La consulta quedó reabierta, pero el cupo de ese día sigue libre.",
+        });
+      }
+
+      // 2) Cupo diario: si el día llegó a su límite, se devuelve el horario.
+      let rule = null;
+      try {
+        rule = await getDayRule(env.DB, consulta.fecha);
+      } catch (error) {
+        console.error("No se pudo leer la regla del día:", (error && error.message) || error);
+      }
+      let cupoOk = false;
+      if (rule) {
+        cupoOk = await reservarCupo(
+          env, consulta.fecha, consulta.tipo === "emergencia",
+          ocupacion.cortas, ocupacion.extensas, rule
+        );
+      }
+      if (!cupoOk) {
+        await liberarSlot(env, consulta.fecha, consulta.tipo, bloques);
+        return soloEstado({ reocupado: false, motivo: "agenda_llena" }, {
+          aviso: "El cupo de ese día ya está lleno. La consulta quedó reabierta, pero ese cupo sigue libre.",
+        });
+      }
+
+      // 3) Ocupado de nuevo: se limpia la bandera para que una nueva
+      //    cancelación vuelva a liberar el cupo.
       await env.DB.batch([
-        env.DB.prepare("UPDATE consultas SET estado = ? WHERE id = ?").bind(body.estado, numero),
-        audit(body.estado),
+        env.DB.prepare("UPDATE consultas SET estado = ?, cupo_liberado = 0 WHERE id = ?")
+          .bind(body.estado, numero),
+        audit(body.estado, {
+          reocupado: true,
+          cortas: ocupacion.cortas,
+          extensas: ocupacion.extensas,
+          duracion: ocupacion.duracion,
+        }),
       ]);
-      return json({ ok: true, liberado: false });
+      return json({ ok: true, liberado: false, reocupado: true });
     }
 
     // ── Cancelar: devuelve el cupo del día y libera la agenda ──
