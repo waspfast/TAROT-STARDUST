@@ -99,6 +99,22 @@ export async function getCounts(env, iso) {
   return raw ? JSON.parse(raw) : Object.assign({}, CONTEO_VACIO);
 }
 
+// Sentencia del upsert de cupo (la misma SQL que reservarCupo). Permite meter
+// la reserva del cupo dentro de un batch transaccional. Null si no aplica.
+export function reservarCupoStmt(env, fecha, esEmergencia, cortas, extensas, rule) {
+  if (!useD1(env)) return null;
+  const cols = columnas(esEmergencia);
+  const lim = limitesPara(rule)[esEmergencia ? "emergencia" : "normal"];
+  return env.DB.prepare(`
+          INSERT INTO reservas (fecha, ${cols.corta}, ${cols.extensa}) VALUES (?, ?, ?)
+          ON CONFLICT(fecha) DO UPDATE SET
+            ${cols.corta} = ${cols.corta} + excluded.${cols.corta},
+            ${cols.extensa} = ${cols.extensa} + excluded.${cols.extensa}
+          WHERE ${cols.corta} + excluded.${cols.corta} <= ?
+            AND ${cols.extensa} + excluded.${cols.extensa} <= ?
+        `).bind(fecha, cortas, extensas, lim.corta, lim.extensa);
+}
+
 // Reserva el cupo (corta y/o extensa) de forma atomica.
 // Devuelve true si hay cupo, false si AGENDA_LLENA.
 export async function reservarCupo(env, fecha, esEmergencia, cortas, extensas, rule) {
@@ -109,18 +125,10 @@ export async function reservarCupo(env, fecha, esEmergencia, cortas, extensas, r
   if (cortas > lim.corta || extensas > lim.extensa) return false;
 
   if (useD1(env)) {
-    const colCorta = cols.corta;
-    const colExtensa = cols.extensa;
+    const stmt = reservarCupoStmt(env, fecha, esEmergencia, cortas, extensas, rule);
     for (let i = 0; i < 3; i++) {
       try {
-        const res = await env.DB.prepare(`
-          INSERT INTO reservas (fecha, ${colCorta}, ${colExtensa}) VALUES (?, ?, ?)
-          ON CONFLICT(fecha) DO UPDATE SET
-            ${colCorta} = ${colCorta} + excluded.${colCorta},
-            ${colExtensa} = ${colExtensa} + excluded.${colExtensa}
-          WHERE ${colCorta} + excluded.${colCorta} <= ?
-            AND ${colExtensa} + excluded.${colExtensa} <= ?
-        `).bind(fecha, cortas, extensas, lim.corta, lim.extensa).run();
+        const res = await stmt.run();
         return (res.meta && res.meta.changes) > 0;
       } catch (err) {
         // "database is locked" (SQLITE_BUSY) -> reintenta
@@ -175,6 +183,14 @@ async function slotsOcupados(env, fecha, bloques) {
   return res.results || [];
 }
 
+// Sentencias que ocupan los bloques de una lectura (para usarlas en un batch).
+export function reservarSlotStmts(env, fecha, tipo, bloques) {
+  if (!useD1(env) || !bloques.length) return [];
+  return bloques.map((bloque) =>
+    env.DB.prepare("INSERT INTO slots (fecha, inicio, tipo) VALUES (?, ?, ?)").bind(fecha, bloque, tipo)
+  );
+}
+
 // Reserva los bloques de una lectura de forma atomica.
 // Devuelve false si el horario ya esta tomado (HORARIO_OCUPADO).
 export async function reservarSlot(env, fecha, tipo, bloques) {
@@ -188,9 +204,7 @@ export async function reservarSlot(env, fecha, tipo, bloques) {
     if (ocupados.length > 0) return false;
   }
 
-  const stmts = bloques.map((bloque) =>
-    env.DB.prepare("INSERT INTO slots (fecha, inicio, tipo) VALUES (?, ?, ?)").bind(fecha, bloque, tipo)
-  );
+  const stmts = reservarSlotStmts(env, fecha, tipo, bloques);
 
   for (let i = 0; i < 3; i++) {
     try {

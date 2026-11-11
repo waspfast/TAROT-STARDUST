@@ -3,12 +3,15 @@ import {
   DURACION_CORTA_MIN,
   DURACION_EXTENSA_MIN,
   bloquesDe,
+  columnasCupo,
   inicioValido,
   liberarCupoStmt,
   liberarSlot,
   liberarSlotStmt,
   reservarCupo,
+  reservarCupoStmt,
   reservarSlot,
+  reservarSlotStmts,
   toHhmm,
   toMinutes,
   ventanaDe,
@@ -477,6 +480,18 @@ async function selectConsultaEstado(db, id) {
   throw lastError;
 }
 
+// ¿Alguno de estos bloques de agenda ya está ocupado? Sirve para diagnosticar
+// por qué se revirtió el batch atómico (el error de SQLite no dice cuál fue).
+async function horarioOcupado(env, fecha, tipo, bloques) {
+  if (!bloques.length) return false;
+  const marcas = bloques.map(() => "?").join(", ");
+  const filtro = tipo === "emergencia" ? " AND tipo = 'emergencia'" : "";
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS total FROM slots WHERE fecha = ? AND inicio IN (${marcas})${filtro}`
+  ).bind(fecha, ...bloques).first();
+  return Number(row && row.total) > 0;
+}
+
 export async function updateConsultaState(request, env, actor, id) {
   if (!/^[1-9]\d*$/.test(id)) return json({ error: "ID inválido" }, 400);
   const body = await request.json().catch(() => null);
@@ -531,38 +546,57 @@ export async function updateConsultaState(request, env, actor, id) {
       const bloques = consulta.inicio && Number.isFinite(inicioMin)
         ? bloquesDe(inicioMin, ocupacion.duracion)
         : [];
+      const esEmergencia = consulta.tipo === "emergencia";
 
-      // 1) Horario: atómico. Si otra reserva ya tomó el bloque, no se ocupa nada.
-      if (bloques.length && !(await reservarSlot(env, consulta.fecha, consulta.tipo, bloques))) {
-        return soloEstado({ reocupado: false, motivo: "horario_ocupado" }, {
-          aviso: "Ese horario ya lo tomó otra reserva. La consulta quedó reabierta, pero el cupo de ese día sigue libre.",
-        });
-      }
-
-      // 2) Cupo diario: si el día llegó a su límite, se devuelve el horario.
       let rule = null;
       try {
         rule = await getDayRule(env.DB, consulta.fecha);
       } catch (error) {
         console.error("No se pudo leer la regla del día:", (error && error.message) || error);
       }
-      let cupoOk = false;
-      if (rule) {
-        cupoOk = await reservarCupo(
-          env, consulta.fecha, consulta.tipo === "emergencia",
-          ocupacion.cortas, ocupacion.extensas, rule
-        );
-      }
-      if (!cupoOk) {
-        await liberarSlot(env, consulta.fecha, consulta.tipo, bloques);
-        return soloEstado({ reocupado: false, motivo: "agenda_llena" }, {
-          aviso: "El cupo de ese día ya está lleno. La consulta quedó reabierta, pero ese cupo sigue libre.",
+      if (!rule) {
+        return soloEstado({ motivo: "agenda_llena" }, {
+          aviso: "No se pudo leer el cupo de ese día. La consulta quedó reabierta, pero ese cupo sigue libre.",
         });
       }
 
-      // 3) Ocupado de nuevo: se limpia la bandera para que una nueva
-      //    cancelación vuelva a liberar el cupo.
-      await env.DB.batch([
+      const cols = columnasCupo(consulta.tipo);
+      const limiteCorta = Number(rule[cols.corta]) || 0;
+      const limiteExtensa = Number(rule[cols.extensa]) || 0;
+
+      // Guardas: SQLite no tiene RAISE() fuera de un trigger, así que cada
+      // guarda fuerza un error de json_extract si su condición no se cumple.
+      // Con eso D1 revierte el batch entero: no queda estado a medias.
+      const ruptura = "CUPO_NO_DISPONIBLE";
+      const guardas = [];
+      if (bloques.length) {
+        const marcas = bloques.map(() => "?").join(", ");
+        guardas.push(env.DB.prepare(
+          `SELECT CASE WHEN NOT EXISTS (
+              SELECT 1 FROM slots
+               WHERE fecha = ? AND inicio IN (${marcas})${esEmergencia ? " AND tipo = 'emergencia'" : ""}
+            ) THEN 1 ELSE json_extract(?, '$') END AS ok`
+        ).bind(consulta.fecha, ...bloques, ruptura));
+      }
+      guardas.push(env.DB.prepare(
+        `SELECT CASE WHEN COALESCE((SELECT ${cols.corta} FROM reservas WHERE fecha = ?), 0) + ? <= ?
+                   AND COALESCE((SELECT ${cols.extensa} FROM reservas WHERE fecha = ?), 0) + ? <= ?
+                 THEN 1 ELSE json_extract(?, '$') END AS ok`
+      ).bind(
+        consulta.fecha, ocupacion.cortas, limiteCorta,
+        consulta.fecha, ocupacion.extensas, limiteExtensa, ruptura
+      ));
+
+      const cupoStmt = reservarCupoStmt(
+        env, consulta.fecha, esEmergencia, ocupacion.cortas, ocupacion.extensas, rule
+      );
+
+      // Un solo batch: guardas, cupo, agenda, estado y auditoría. O entra todo
+      // (la consulta vuelve a ocupar su cupo) o no entra nada.
+      const sentencias = [
+        ...guardas,
+        ...(cupoStmt ? [cupoStmt] : []),
+        ...reservarSlotStmts(env, consulta.fecha, consulta.tipo, bloques),
         env.DB.prepare("UPDATE consultas SET estado = ?, cupo_liberado = 0 WHERE id = ?")
           .bind(body.estado, numero),
         audit(body.estado, {
@@ -571,7 +605,31 @@ export async function updateConsultaState(request, env, actor, id) {
           extensas: ocupacion.extensas,
           duracion: ocupacion.duracion,
         }),
-      ]);
+      ];
+
+      try {
+        await env.DB.batch(sentencias);
+      } catch (error) {
+        // El batch ya se revirtió: se mira el estado real para saber qué
+        // condición falló y devolver el aviso de siempre.
+        if (await horarioOcupado(env, consulta.fecha, consulta.tipo, bloques)) {
+          return soloEstado({ motivo: "horario_ocupado" }, {
+            aviso: "Ese horario ya lo tomó otra reserva. La consulta quedó reabierta, pero el cupo de ese día sigue libre.",
+          });
+        }
+        const counts = await env.DB.prepare(
+          `SELECT ${cols.corta} AS corta, ${cols.extensa} AS extensa FROM reservas WHERE fecha = ?`
+        ).bind(consulta.fecha).first();
+        const lleno = (Number(counts && counts.corta) || 0) + ocupacion.cortas > limiteCorta
+          || (Number(counts && counts.extensa) || 0) + ocupacion.extensas > limiteExtensa;
+        if (!lleno) throw error;
+        return soloEstado({ motivo: "agenda_llena" }, {
+          aviso: "El cupo de ese día ya está lleno. La consulta quedó reabierta, pero ese cupo sigue libre.",
+        });
+      }
+
+      // Ocupado de nuevo: la bandera queda en 0, así que una nueva cancelación
+      // volverá a liberar el cupo.
       return json({ ok: true, liberado: false, reocupado: true });
     }
 
