@@ -847,6 +847,15 @@ function renderConsultas(consultas) {
       tag.textContent = "Manual";
       details.append(tag);
     }
+    // Sin cupo: se liberó al cancelarla y no se pudo volver a ocupar (o se
+    // reabrió sin ocuparlo). Avisa de que esa lectura no cuenta en el día.
+    if (consulta.estado !== "cancelada" && Number(consulta.cupo_liberado) === 1) {
+      const tag = document.createElement("span");
+      tag.className = "consulta-badge";
+      tag.textContent = "Sin cupo";
+      tag.title = "Esta lectura no está ocupando cupo del día.";
+      details.append(tag);
+    }
     if (consulta.telefono) {
       const phone = document.createElement("p");
       phone.className = "consulta-phone";

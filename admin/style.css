@@ -920,6 +920,9 @@ html.vt-regions::view-transition-new(root){animation-duration:0s}
 .consulta-origen{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:99px;
   background:var(--accent-soft);color:var(--accent);font-family:var(--font-subtitle);
   font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.consulta-badge{display:inline-block;margin-top:3px;margin-left:6px;padding:1px 8px;border-radius:99px;
+  background:rgba(253,238,242,.9);border:1px solid rgba(215,163,180,.7);color:#8f3f5c;
+  font-family:var(--font-subtitle);font-size:9px;letter-spacing:.08em;text-transform:uppercase}
 
 /* tipos de lectura (hoy) */
 .tipos-bars{display:flex;flex-direction:column;gap:12px}

@@ -143,8 +143,10 @@ const CONSULTA_COLUMNS = "id, fecha, tipo, inicio, consultante, nombre, telefono
 const CONSULTA_COLUMNS_MANUAL = CONSULTA_COLUMNS + ", canal, lectura_tipo, origen";
 const CONSULTA_COLUMNS_FULL = CONSULTA_COLUMNS_MANUAL + ", detalle";
 const CONSULTA_COLUMNS_PAGO = CONSULTA_COLUMNS_FULL + ", metodo_pago, recargo_emergencia, comision_pago";
+const CONSULTA_COLUMNS_CUPO = CONSULTA_COLUMNS_PAGO + ", cupo_liberado";
 const COLUMN_FALLBACKS = [
-  CONSULTA_COLUMNS_PAGO, CONSULTA_COLUMNS_FULL, CONSULTA_COLUMNS_MANUAL, CONSULTA_COLUMNS,
+  CONSULTA_COLUMNS_CUPO, CONSULTA_COLUMNS_PAGO, CONSULTA_COLUMNS_FULL, CONSULTA_COLUMNS_MANUAL,
+  CONSULTA_COLUMNS,
 ];
 
 async function selectConsultas(db, where, binds) {
