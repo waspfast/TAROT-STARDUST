@@ -23,10 +23,14 @@ export function useD1(env) {
   return !!env.DB;
 }
 
-// Columnas que toca una reserva segun su modalidad.
-function columnas(esEmergencia) {
-  if (esEmergencia) return { corta: "corta_emergencia", extensa: "extensa_emergencia" };
+// Columnas de cupo que toca una reserva segun su modalidad.
+export function columnasCupo(tipo) {
+  if (tipo === "emergencia") return { corta: "corta_emergencia", extensa: "extensa_emergencia" };
   return { corta: "corta_normal", extensa: "extensa_normal" };
+}
+
+function columnas(esEmergencia) {
+  return columnasCupo(esEmergencia ? "emergencia" : "normal");
 }
 
 // Limites vigentes en la regla semanal o excepcion de la fecha.
@@ -202,15 +206,49 @@ export async function reservarSlot(env, fecha, tipo, bloques) {
   return false;
 }
 
+// Sentencia que borra los bloques de agenda de una reserva (null si no aplica).
+// Se separa del ejecutor para poder liberar dentro de una transaccion (batch).
+export function liberarSlotStmt(env, fecha, tipo, bloques) {
+  if (!useD1(env) || !bloques.length) return null;
+  const marcas = bloques.map(() => "?").join(", ");
+  return env.DB.prepare(
+    `DELETE FROM slots WHERE fecha = ? AND tipo = ? AND inicio IN (${marcas})`
+  ).bind(fecha, tipo, ...bloques);
+}
+
 // Deshace una reserva de horario (se usa si el cupo diario ya estaba lleno).
 export async function liberarSlot(env, fecha, tipo, bloques) {
-  if (!useD1(env) || !bloques.length) return;
+  const stmt = liberarSlotStmt(env, fecha, tipo, bloques);
+  if (!stmt) return;
   try {
-    const marcas = bloques.map(() => "?").join(", ");
-    await env.DB.prepare(
-      `DELETE FROM slots WHERE fecha = ? AND tipo = ? AND inicio IN (${marcas})`
-    ).bind(fecha, tipo, ...bloques).run();
+    await stmt.run();
   } catch (err) {
     console.error("No se pudo liberar el horario:", err.message);
+  }
+}
+
+// Sentencia que devuelve al dia el cupo que ocupaba una reserva cancelada.
+// Nunca baja de 0: si el contador ya estaba en 0 (reinicio manual), lo deja igual.
+export function liberarCupoStmt(env, fecha, tipo, cortas, extensas) {
+  const c = Math.max(0, Number(cortas) || 0);
+  const e = Math.max(0, Number(extensas) || 0);
+  if (!useD1(env) || (!c && !e)) return null;
+  const cols = columnasCupo(tipo);
+  return env.DB.prepare(
+    `UPDATE reservas
+        SET ${cols.corta} = MAX(0, ${cols.corta} - ?),
+            ${cols.extensa} = MAX(0, ${cols.extensa} - ?)
+      WHERE fecha = ?`
+  ).bind(c, e, fecha);
+}
+
+// Libera el cupo diario de una reserva cancelada (fuera de una transaccion).
+export async function liberarCupo(env, fecha, tipo, cortas, extensas) {
+  const stmt = liberarCupoStmt(env, fecha, tipo, cortas, extensas);
+  if (!stmt) return;
+  try {
+    await stmt.run();
+  } catch (err) {
+    console.error("No se pudo liberar el cupo:", err.message);
   }
 }

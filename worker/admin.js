@@ -4,7 +4,9 @@ import {
   DURACION_EXTENSA_MIN,
   bloquesDe,
   inicioValido,
+  liberarCupoStmt,
   liberarSlot,
+  liberarSlotStmt,
   reservarCupo,
   reservarSlot,
   toHhmm,
@@ -221,6 +223,17 @@ const MANUAL_INSERTS = [
   {
     sql: `INSERT INTO consultas
             (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios,
+             total, estado, canal, lectura_tipo, origen, detalle, cortas, extensas, duracion)
+          VALUES (?, ?, ?, NULL, ?, ?, ?, NULL, NULL, 'en_proceso', ?, ?, 'manual', ?, ?, ?, ?)`,
+    values: (row) => [
+      row.fecha, row.tipo, row.inicio, row.nombre, row.contacto,
+      row.lecturas, row.canal, row.lecturaTipo, row.detalle || null,
+      row.cortas, row.extensas, row.duracion,
+    ],
+  },
+  {
+    sql: `INSERT INTO consultas
+            (fecha, tipo, inicio, consultante, nombre, telefono, lecturas, precios,
              total, estado, canal, lectura_tipo, origen, detalle)
           VALUES (?, ?, ?, NULL, ?, ?, ?, NULL, NULL, 'en_proceso', ?, ?, 'manual', ?)`,
     values: (row) => [
@@ -325,6 +338,9 @@ async function createManualConsulta(request, env, actor) {
   const inserted = await insertManualConsulta(env, {
     fecha, tipo: tipoSlot, inicio, nombre, contacto, lecturas, canal, lecturaTipo: tipo,
     detalle: detalle || null,
+    cortas: tipo === "corta" ? 1 : 0,
+    extensas: tipo === "extensa" ? 1 : 0,
+    duracion,
   });
 
   await env.DB.prepare(
@@ -416,19 +432,121 @@ async function saveAvailability(request, env, actor, date) {
   return json({ ok: true, existing_bookings: existing ? existing.total : 0 });
 }
 
-async function updateConsultaState(request, env, actor, id) {
+// Ocupación de una consulta (contadores y duración) para devolver el cupo al
+// cancelarla. Devuelve null si la reserva es anterior a la migración 0006 y no
+// guardó si era corta o extensa: en ese caso no se libera, para no sobre-reservar.
+function ocupacionDe(consulta) {
+  if (!consulta) return null;
+  if (consulta.cortas != null || consulta.extensas != null) {
+    const cortas = Math.max(0, Number(consulta.cortas) || 0);
+    const extensas = Math.max(0, Number(consulta.extensas) || 0);
+    if (!cortas && !extensas) return null;
+    const duracion = Number(consulta.duracion) > 0
+      ? Number(consulta.duracion)
+      : (extensas > 0 ? DURACION_EXTENSA_MIN : DURACION_CORTA_MIN);
+    return { cortas: cortas, extensas: extensas, duracion: duracion };
+  }
+  if (consulta.lectura_tipo === "corta") {
+    return { cortas: 1, extensas: 0, duracion: DURACION_CORTA_MIN };
+  }
+  if (consulta.lectura_tipo === "extensa") {
+    return { cortas: 0, extensas: 1, duracion: DURACION_EXTENSA_MIN };
+  }
+  return null;
+}
+
+// Datos de la consulta necesarios para cancelar. Se piden por niveles para que
+// la cancelación siga funcionando si la migración 0006 aún no está aplicada.
+async function selectConsultaEstado(db, id) {
+  const niveles = [
+    "id, fecha, tipo, inicio, estado, lectura_tipo, cortas, extensas, duracion, cupo_liberado",
+    "id, fecha, tipo, inicio, estado, lectura_tipo",
+    "id, fecha, tipo, inicio, estado",
+  ];
+  let lastError = null;
+  for (const columnas of niveles) {
+    try {
+      return await db.prepare(`SELECT ${columnas} FROM consultas WHERE id = ?`).bind(id).first();
+    } catch (error) {
+      lastError = error;
+      if (!/no such column|has no column named/i.test(String((error && error.message) || error))) {
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+}
+
+export async function updateConsultaState(request, env, actor, id) {
   if (!/^[1-9]\d*$/.test(id)) return json({ error: "ID inválido" }, 400);
   const body = await request.json().catch(() => null);
   if (!body || !STATES.includes(body.estado)) return json({ error: "Estado inválido" }, 400);
+
+  const numero = Number(id);
   try {
-    const result = await env.DB.batch([
-      env.DB.prepare("UPDATE consultas SET estado = ? WHERE id = ?").bind(body.estado, Number(id)),
-      env.DB.prepare(
-        "INSERT INTO admin_audit (actor, action, target, detail) VALUES (?, ?, ?, ?)"
-      ).bind(actor, "consulta.state", id, JSON.stringify({ estado: body.estado })),
-    ]);
-    if (!result[0].meta.changes) return json({ error: "Consulta no encontrada" }, 404);
-    return json({ ok: true });
+    const consulta = await selectConsultaEstado(env.DB, numero);
+    if (!consulta) return json({ error: "Consulta no encontrada" }, 404);
+
+    const audit = (estado, detalle) => env.DB.prepare(
+      "INSERT INTO admin_audit (actor, action, target, detail) VALUES (?, ?, ?, ?)"
+    ).bind(
+      actor, "consulta.state", id,
+      JSON.stringify(Object.assign({ estado: estado, anterior: consulta.estado }, detalle))
+    );
+
+    // Sin cambio real: no se toca el cupo ni se duplica la auditoría.
+    if (consulta.estado === body.estado) {
+      return json({ ok: true, sin_cambios: true, liberado: false });
+    }
+
+    // ── Reabrir o finalizar: solo cambia el estado (el cupo no se re-ocupa) ──
+    if (body.estado !== "cancelada") {
+      await env.DB.batch([
+        env.DB.prepare("UPDATE consultas SET estado = ? WHERE id = ?").bind(body.estado, numero),
+        audit(body.estado),
+      ]);
+      return json({ ok: true, liberado: false });
+    }
+
+    // ── Cancelar: devuelve el cupo del día y libera la agenda ──
+    const guardaBandera = Object.prototype.hasOwnProperty.call(consulta, "cupo_liberado");
+    const yaLiberado = guardaBandera && Number(consulta.cupo_liberado) === 1;
+    const ocupacion = yaLiberado ? null : ocupacionDe(consulta);
+    const liberado = Boolean(ocupacion);
+
+    const cancelStmt = guardaBandera && liberado
+      ? env.DB.prepare("UPDATE consultas SET estado = 'cancelada', cupo_liberado = 1 WHERE id = ?").bind(numero)
+      : env.DB.prepare("UPDATE consultas SET estado = 'cancelada' WHERE id = ?").bind(numero);
+
+    const sentencias = [cancelStmt];
+
+    if (liberado) {
+      let bloques = [];
+      const inicioMin = toMinutes(consulta.inicio);
+      if (consulta.inicio && Number.isFinite(inicioMin)) {
+        bloques = bloquesDe(inicioMin, ocupacion.duracion);
+      }
+      const slotStmt = liberarSlotStmt(env, consulta.fecha, consulta.tipo, bloques);
+      if (slotStmt) sentencias.push(slotStmt);
+      const cupoStmt = liberarCupoStmt(env, consulta.fecha, consulta.tipo, ocupacion.cortas, ocupacion.extensas);
+      if (cupoStmt) sentencias.push(cupoStmt);
+    }
+
+    sentencias.push(audit("cancelada", ocupacion
+      ? { liberado: true, cortas: ocupacion.cortas, extensas: ocupacion.extensas, duracion: ocupacion.duracion }
+      : { liberado: false, ya_liberado: yaLiberado }));
+
+    // Un solo batch = una transacción: si algo falla, no queda a medias.
+    await env.DB.batch(sentencias);
+
+    if (liberado) return json({ ok: true, liberado: true });
+    return json({
+      ok: true,
+      liberado: false,
+      aviso: yaLiberado
+        ? "El cupo de esta consulta ya había sido liberado."
+        : "Esta reserva es anterior al registro de ocupación (no guardó si era corta o extensa). La consulta quedó cancelada, pero revisa el cupo de ese día manualmente.",
+    });
   } catch (error) {
     const mensaje = String((error && error.message) || error);
     // La tabla conserva un CHECK antiguo mientras no se aplique la migración 0004.

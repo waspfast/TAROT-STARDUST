@@ -877,16 +877,34 @@ function renderConsultas(consultas) {
       // Solo el paso a "finalizado" mueve dinero: ni en_proceso ni cancelada
       // destellan.
       const finalizing = status.value === "finalizado" && previousStatus !== "finalizado";
+      const cancelling = status.value === "cancelada" && previousStatus !== "cancelada";
       status.disabled = true;
       try {
-        await request(`/api/admin/consultas/${consulta.id}/estado`, {
+        const data = await request(`/api/admin/consultas/${consulta.id}/estado`, {
           method: "PUT",
           body: JSON.stringify({ estado: status.value }),
         });
-        showNotice("El estado de la consulta quedó actualizado.");
+        if (cancelling) {
+          // El servidor dice si pudo devolver el cupo del día o si hay que
+          // revisarlo a mano (reservas antiguas sin dato de ocupación).
+          if (data && data.liberado) {
+            showNotice("Consulta cancelada: el cupo del día volvió a quedar libre.");
+          } else if (data && data.aviso) {
+            showNotice(`Consulta cancelada. ${data.aviso}`);
+          } else {
+            showNotice("La consulta quedó cancelada.");
+          }
+        } else {
+          showNotice("El estado de la consulta quedó actualizado.");
+        }
         // Con Gráficos oculta solo se recarga Consultas: las cifras y sus
         // animaciones se reservan para cuando la vista entre en pantalla.
-        await Promise.all([loadConsultas(), loadDashboardConsultas(), refreshStatsLive()]);
+        const updates = [loadConsultas(), loadDashboardConsultas(), refreshStatsLive()];
+        // Cancelar devuelve cupo y bloques: refresca la cuadrícula del día.
+        if (cancelling) {
+          updates.push(loadAvailability().catch((error) => showError(error.message)));
+        }
+        await Promise.all(updates);
         if (finalizing) queueMoneyFlash(consultaHasAmount(consulta));
       } catch (error) {
         status.value = previousStatus;

@@ -106,8 +106,14 @@ function redondear2(value) {
   return Math.round(value * 100) / 100;
 }
 
-async function registrarConsulta(env, fecha, tipo, inicio, data) {
+async function registrarConsulta(env, fecha, tipo, inicio, data, ocupacion) {
   if (!useD1(env)) return;
+
+  // Cupo que ocupó la reserva (para poder devolverlo si luego se cancela).
+  const ocupa = ocupacion || {};
+  const cortas = Number(ocupa.cortas);
+  const extensas = Number(ocupa.extensas);
+  const duracionOcupada = Number(ocupa.duracion);
 
   const nombre = data.nombre || data.usuario || null;
   const telefono = data.contacto || null;
@@ -155,17 +161,25 @@ async function registrarConsulta(env, fecha, tipo, inicio, data) {
     fecha, tipo, inicio, consultante, nombre, telefono,
     data.lecturas || null, precios, totalNum,
   ];
+  const pagoColumnas = baseColumnas + ", canal, metodo_pago, recargo_emergencia, comision_pago, detalle";
+  const pagoValores = baseValores.concat([canal, metodoPago, recargoVal, comisionVal, detalle]);
 
   // Niveles para no romper reservas si alguna migración aún no se aplicó:
-  //   pago  -> canal + metodo_pago + recargo_emergencia + comision_pago + detalle
-  //   detalle -> canal + detalle (sin columnas de pago)
-  //   manual -> canal (sin detalle ni pago)
-  //   base  -> sin canal, detalle ni pago
+  //   ocupacion -> pago + cortas/extensas/duracion (migración 0006)
+  //   pago      -> canal + metodo_pago + recargo_emergencia + comision_pago + detalle
+  //   detalle   -> canal + detalle (sin columnas de pago)
+  //   manual    -> canal (sin detalle ni pago)
+  //   base      -> sin canal, detalle ni pago
   const intentos = [
     {
-      columnas: baseColumnas + ", canal, metodo_pago, recargo_emergencia, comision_pago, detalle",
-      valores: baseValores.concat([canal, metodoPago, recargoVal, comisionVal, detalle]),
+      columnas: pagoColumnas + ", cortas, extensas, duracion",
+      valores: pagoValores.concat([
+        Number.isFinite(cortas) ? cortas : null,
+        Number.isFinite(extensas) ? extensas : null,
+        Number.isFinite(duracionOcupada) ? duracionOcupada : null,
+      ]),
     },
+    { columnas: pagoColumnas, valores: pagoValores },
     {
       columnas: baseColumnas + ", canal, detalle",
       valores: baseValores.concat([canal, detalle]),
@@ -419,7 +433,8 @@ async function handleReserva(env, request) {
   }
 
   // 3) Registro historico del detalle (consultante, nombre, telefono, precios).
-  await registrarConsulta(env, fecha, tipo, inicio, data);
+  //    Se guarda tambien el cupo ocupado para poder devolverlo si se cancela.
+  await registrarConsulta(env, fecha, tipo, inicio, data, { cortas, extensas, duracion });
 
   // Envía el mensaje detallado a Telegram
   await enviarTelegram(env, data, esEmergencia);
