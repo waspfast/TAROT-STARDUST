@@ -25,6 +25,13 @@ const CAPACITY_COLUMNS = [
 ];
 const STATES = ["en_proceso", "finalizado", "cancelada"];
 
+// Transiciones de estado permitidas desde cada estado (mismo estado = no-op).
+const TRANSICIONES = {
+  en_proceso: ["finalizado", "cancelada"],
+  finalizado: ["en_proceso", "cancelada"],
+  cancelada: ["en_proceso", "finalizado"],
+};
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -514,6 +521,26 @@ export async function updateConsultaState(request, env, actor, id) {
     // Sin cambio real: no se toca el cupo ni se duplica la auditoría.
     if (consulta.estado === body.estado) {
       return json({ ok: true, sin_cambios: true, liberado: false });
+    }
+
+    // Solo se admiten las transiciones del mapa.
+    const permitidas = TRANSICIONES[consulta.estado] || [];
+    if (!permitidas.includes(body.estado)) {
+      return json({
+        error: "TRANSICION_INVALIDA",
+        message: `No se puede pasar de "${consulta.estado}" a "${body.estado}".`,
+      }, 409);
+    }
+
+    // Cancelar una lectura ya finalizada de un día pasado descuadraría el
+    // histórico (ese cupo se consumió): se rechaza sin liberar nada.
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (body.estado === "cancelada" && consulta.estado === "finalizado"
+      && String(consulta.fecha) < hoy) {
+      return json({
+        error: "CANCELACION_TARDIA",
+        message: "No se puede cancelar una consulta finalizada de un día pasado.",
+      }, 409);
     }
 
     // ── Reabrir o finalizar una consulta ──────────────────────────────
