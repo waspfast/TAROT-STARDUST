@@ -8,7 +8,9 @@
 //   3. bloques de `slots` frente a los bloques que deberían existir
 //
 // Imprime únicamente los días con diferencia, con el campo, lo esperado
-// (según las consultas activas) y lo real (reservas / slots).
+// (según las consultas activas) y lo real (reservas / slots). Los días con
+// consultas antiguas que no guardaron su ocupación (previas a la migración
+// 0006) se marcan como "no comparable" en vez de inventar un esperado.
 //
 // Uso:
 //   node scripts/verificar-cupos.js --remote
@@ -20,7 +22,6 @@
 // dependencias nuevas. Cuando hay diferencias sale con código 1.
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 
 const WORKER_DIR = path.join(__dirname, "..", "worker");
@@ -59,26 +60,23 @@ function filasLocales(db, sql) {
 }
 
 function filasWrangler(sql, opciones) {
-  const archivo = path.join(os.tmpdir(), "verificar-cupos-" + process.pid + ".sql");
-  fs.writeFileSync(archivo, sql, "utf8");
   const bandera = opciones.modo === "remote" ? "--remote" : "--local";
+  // Se pasa en --command entre comillas dobles: así cmd.exe no interpreta
+  // "<" ni ">" como redirecciones. Por eso la consulta no puede llevar ".
+  if (sql.indexOf('"') !== -1) throw new Error("La consulta no puede llevar comillas dobles");
   const comando = ["npx", "-y", WRANGLER, "d1", "execute", opciones.db, bandera,
-    "--json", "--file", `"${archivo}"`, "--config", "wrangler.toml"].join(" ");
+    "--json", "--command", '"' + sql + '"', "--config", "wrangler.toml"].join(" ");
   const env = Object.assign({}, process.env);
   if (opciones.cuenta) env.CLOUDFLARE_ACCOUNT_ID = opciones.cuenta;
-  try {
-    const res = spawnSync(comando, { cwd: WORKER_DIR, env, encoding: "utf8", shell: true });
-    const salida = String(res.stdout || "");
-    const inicio = salida.indexOf("[");
-    const fin = salida.lastIndexOf("]");
-    if (inicio === -1 || fin === -1) {
-      throw new Error("wrangler no devolvió JSON:\n" + (salida || String(res.stderr || "")));
-    }
-    const datos = JSON.parse(salida.slice(inicio, fin + 1));
-    return (datos[0] && datos[0].results) || [];
-  } finally {
-    try { fs.unlinkSync(archivo); } catch (error) { /* temporal: da igual */ }
+  const res = spawnSync(comando, { cwd: WORKER_DIR, env, encoding: "utf8", shell: true });
+  const salida = String(res.stdout || "");
+  const inicio = salida.indexOf("[");
+  const fin = salida.lastIndexOf("]");
+  if (inicio === -1 || fin === -1) {
+    throw new Error("wrangler no devolvió JSON:\n" + (salida || String(res.stderr || "")));
   }
+  const datos = JSON.parse(salida.slice(inicio, fin + 1));
+  return (datos[0] && datos[0].results) || [];
 }
 
 // Las columnas de ocupación pueden no existir en bases antiguas (pre-0006).
@@ -182,9 +180,19 @@ function main() {
   }
 
   const lineas = [];
+  let comparables = 0;
+  let sinComparar = 0;
   const fechas = Array.from(dias.keys()).sort();
   for (const fecha of fechas) {
     const d = dias.get(fecha);
+    // Las consultas anteriores a la migración 0006 no guardaron si eran cortas
+    // o extensas: sin ese dato el día no se puede reconstruir y no se compara.
+    if (d.sinDato > 0) {
+      sinComparar += 1;
+      lineas.push(fecha + "  no comparable (" + d.sinDato + " consulta(s) sin dato de ocupación)");
+      continue;
+    }
+    comparables += 1;
     for (const col of CONTADORES) {
       if (d.esperado[col] !== d.real[col]) {
         lineas.push(fecha + "  " + col.padEnd(20, " ")
@@ -197,13 +205,12 @@ function main() {
           + " esperado=" + d.bloquesEsperados[clave] + "  real=" + d.bloquesReales[clave]);
       }
     }
-    if (d.sinDato > 0) {
-      lineas.push(fecha + "  consultas sin dato de ocupación: " + d.sinDato);
-    }
   }
 
+  const diferencias = lineas.filter((linea) => linea.indexOf("no comparable") === -1).length;
   console.log("Fuente: " + (opciones.modo === "sqlite" ? opciones.sqlite : opciones.modo + " (" + opciones.db + ")"));
-  console.log("Días revisados: " + fechas.length);
+  console.log("Días revisados: " + fechas.length + " · comparables: " + comparables
+    + " · no comparables: " + sinComparar);
   if (!lineas.length) {
     console.log("Sin diferencias.");
     process.exitCode = 0;
@@ -212,8 +219,8 @@ function main() {
   console.log("");
   for (const linea of lineas) console.log(linea);
   console.log("");
-  console.log("Diferencias: " + lineas.length);
-  process.exitCode = 1;
+  console.log("Diferencias: " + diferencias);
+  process.exitCode = diferencias ? 1 : 0;
 }
 
 try {
