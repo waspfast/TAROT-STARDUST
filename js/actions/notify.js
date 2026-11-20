@@ -67,14 +67,11 @@ function getReceiptDataForNotification() {
 async function enviarNotificacionRecibo() {
   try {
     const datosRecibo = getReceiptDataForNotification();
-    console.log('Enviando al worker:', datosRecibo);
     const response = await fetch(WORKER_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosRecibo)
     });
     const text = await response.text();
-    console.log('Status del worker:', response.status);
-    console.log('Respuesta del worker:', text);
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch (e) {}
     if (!response.ok) {

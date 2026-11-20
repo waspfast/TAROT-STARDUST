@@ -92,7 +92,6 @@ function updateSelectedReadingsSummary() {
 function showReadingCategory(category) {
   state.readingCategory = category;
   document.getElementById('categoryMenu').classList.add('hidden');
-  document.getElementById('lecturasGuideLink').classList.add('hidden');
   document.getElementById('backToTypes').classList.add('hidden');
   document.getElementById('readingsPanel').classList.remove('hidden');
   document.getElementById('selectedCategoryLabel').textContent = categoryLabels[category];
@@ -116,7 +115,6 @@ function selectReadingType(type) {
   state.readingType = type;
   state.readingCategory = '';
   document.getElementById('readingTypeMenu').classList.add('hidden');
-  document.getElementById('lecturasGuideLink').classList.add('hidden');
   document.getElementById('readingsPanel').classList.add('hidden');
   document.getElementById('backToTypes').classList.remove('hidden');
   document.getElementById('categoryMenu').classList.remove('hidden');
@@ -132,7 +130,6 @@ function backToTypes() {
   document.getElementById('categoryMenu').classList.add('hidden');
   document.getElementById('backToTypes').classList.add('hidden');
   document.getElementById('readingTypeMenu').classList.remove('hidden');
-  document.getElementById('lecturasGuideLink').classList.remove('hidden');
   document.getElementById('readingStepHint').textContent = '¿qué tipo de lectura necesitas hoy?';
   document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
 }
@@ -204,16 +201,4 @@ function renderBookingReadingList() {
       + '<span class="text-txtsoft text-xs">— ' + r.meta + ' · $' + r.price.toFixed(2) + '</span></span>'
       + '</div>';
   }).join('');
-}
-
-// Selecciona una lectura por su id (usado por el test de recomendación)
-function selectReadingById(id) {
-  const reading = readingsCatalog.find(function (r) { return r.id === id; });
-  if (!reading) return;
-
-  state.readings[id] = reading.price;
-  updateSelectedReadingsSummary();
-  selectReadingType(reading.type);
-  if (reading.categories.length) showReadingCategory(reading.categories[0]);
-  if (typeof showNotification === 'function') showNotification('lectura agregada: ' + reading.title);
 }

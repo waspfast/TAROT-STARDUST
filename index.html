@@ -93,7 +93,6 @@
             <span class="type-subtitle block text-[11px] font-normal opacity-60 mt-0.5">más claridad, profundidad y seguimiento · para un proceso específico con varias dudas</span>
           </button>
         </div>
-        <button type="button" id="lecturasGuideLink" onclick="showQuiz()" class="w-full flex items-center justify-center gap-2 mb-4 py-2.5 rounded-xl border border-accent/40 bg-accent/15 hover:bg-accent/25 text-accent text-sm font-semibold transition"><i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i><span>¿no sabes cuál elegir? haz el test ✦</span></button>
         <button type="button" id="backToTypes" class="hidden flex items-center gap-1 text-sm text-accent font-medium mb-3 hover:opacity-80 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i><span>cambiar tipo de lectura</span></button>
         <div id="categoryMenu" class="grid grid-cols-2 gap-2 mb-4 hidden fade-in">
           <button type="button" class="category-btn border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-center" data-category="amor"><i data-lucide="heart" class="w-5 h-5 mx-auto mb-1.5"></i>amor & relaciones</button>
@@ -169,7 +168,7 @@
         <h2 class="font-title text-2xl font-semibold mb-1">fecha, horario y pago</h2>
         <p class="text-txtsoft text-sm mb-5">elige cuándo y cómo pagar</p>
         <div id="emergencyToggleWrap" class="flex items-center justify-between mb-4 bg-surface rounded-xl px-4 py-3 hidden">
-          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
+          <div><p class="text-sm font-medium">¿lectura de emergencia? (<span id="emergencySurcharge">+$10.00</span>)</p><p id="emergencyToggleHint" class="text-xs text-txtsoft">si necesitas claridad inmediata, sin esperar</p></div>
           <div id="emergencyToggle" class="toggle-track off" onclick="toggleEmergency()"></div>
         </div>
         <label class="block text-sm font-medium text-txtsec mb-1">fecha de la lectura</label>
@@ -357,24 +356,11 @@
     </div>
   </div>
 
-  <!-- Quiz Overlay - Qué lectura necesitas hoy -->
-  <div id="quizOverlay" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4 py-8 overflow-auto" onclick="hideQuiz(event)" style="background: rgba(0,0,0,0.4);">
-    <div class="quiz-card relative card-shadow bg-white rounded-2xl p-8 max-w-lg w-full my-auto" onclick="event.stopPropagation()">
-      <button type="button" class="overlay-card-close" onclick="hideQuiz()" aria-label="cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
-      <div class="text-center mb-6">
-        <p class="text-accentSoft text-sm mb-3">⋆ ˚｡ ⋆ ⊹ ୨ᰔ୧ ⊹ ⋆ ˚｡ ⋆</p>
-        <h2 class="font-title text-2xl italic font-normal text-txt mb-1">¿qué lectura necesitas hoy?</h2>
-        <p class="text-txtsoft text-xs">4 preguntas · 1 minuto ✦</p>
-      </div>
-      <div id="quizBody"></div>
-    </div>
-  </div>
   <!-- JS Modules (order: dependencies first) -->
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
   <script src="js/data/platforms.js"></script>
   <script src="js/data/readings.js"></script>
-  <script src="js/data/quiz.js"></script>
   <script src="js/data/availability.js"></script>
   <script src="js/utils/helpers.js"></script>
   <script src="js/utils/toast.js"></script>
@@ -382,7 +368,6 @@
   <script src="js/core/navigation.js"></script>
   <script src="js/core/router.js"></script>
   <script src="js/ui/readings-ui.js"></script>
-  <script src="js/ui/quiz-ui.js"></script>
   <script src="js/ui/payment-ui.js"></script>
   <script src="js/ui/receipt-ui.js"></script>
   <script src="js/ui/calendar-ui.js"></script>

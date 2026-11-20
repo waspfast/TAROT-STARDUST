@@ -49,15 +49,24 @@ function isEmergencyWindow(iso) {
 
 // Recargo de emergencia según la cantidad de lecturas elegidas.
 // Devuelve 0 cuando la emergencia no aplica (nada elegido o alguna lectura sin prioridad).
-// $10 base + $5 por cada lectura adicional (1 lectura => $10 | 2 lecturas => $15 | 3 => $20)
+// Cortas: $10 base + $5 por cada lectura adicional (1 => $10 | 2 => $15 | 3 => $20)
+// Extensas: tarifa única de emergencia de $30 (aunque se combinen con cortas).
+const EMERGENCY_SURCHARGE_BASE = 10;
+const EMERGENCY_SURCHARGE_EXTRA = 5;
+const EMERGENCY_SURCHARGE_EXTENSA = 30;
+
 function getEmergencySurcharge() {
   const keys = Object.keys(state.readings);
   if (keys.length === 0) return 0;
+  let hasExtensa = false;
   for (const key of keys) {
     const r = readingsCatalog.find(function (x) { return x.id === key; });
     if (r && r.emergencyEligible === false) return 0; // lectura sin prioridad
+    if (isExtensiveReading(r)) hasExtensa = true;
   }
-  return 10 + 5 * (keys.length - 1);
+  // El botón de emergencia para lecturas extensas cuesta $30.
+  if (hasExtensa) return EMERGENCY_SURCHARGE_EXTENSA;
+  return EMERGENCY_SURCHARGE_BASE + EMERGENCY_SURCHARGE_EXTRA * (keys.length - 1);
 }
 
 // ¿La selección actual permite lecturas de emergencia?
@@ -128,6 +137,14 @@ function updateEmergencyToggle() {
   const label = document.getElementById('emergencySurcharge');
   if (label && surcharge > 0) label.textContent = '+$' + surcharge.toFixed(2);
 
+  // Texto de apoyo: deja claro cuando la tarifa corresponde a una lectura extensa.
+  const hint = document.getElementById('emergencyToggleHint');
+  if (hint) {
+    hint.textContent = hasExtensiveSelection()
+      ? 'tarifa única de emergencia para lecturas extensas'
+      : 'si necesitas claridad inmediata, sin esperar';
+  }
+
   // El interruptor acompaña a la fecha: aparece en cuanto hay una lectura que califica.
   wrap.classList.toggle('hidden', !readingEligible);
 
@@ -190,24 +207,6 @@ function hideLecturasGuide(e) {
   smoothHideOverlay('lecturasGuideOverlay');
 }
 
-function showQuiz() {
-  const overlay = document.getElementById('quizOverlay');
-  if (!overlay) return;
-  if (typeof startQuiz === 'function') startQuiz();
-  overlay.classList.remove('hidden');
-  const card = overlay.querySelector('.quiz-card');
-  if (card) {
-    card.classList.remove('fade-in');
-    void card.offsetWidth;
-    card.classList.add('fade-in');
-  }
-}
-
-function hideQuiz(e) {
-  if (e) e.stopPropagation();
-  smoothHideOverlay('quizOverlay');
-}
-
 // Cierre suave de overlays con animacion
 function smoothHideOverlay(id) {
   const overlay = document.getElementById(id);
@@ -222,7 +221,6 @@ function smoothHideOverlay(id) {
 // Cerrar cualquier overlay abierto con la tecla Escape
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Escape') return;
-  smoothHideOverlay('quizOverlay');
   smoothHideOverlay('lecturasGuideOverlay');
   smoothHideOverlay('politicasOverlay');
 });
